@@ -68,5 +68,10 @@
         "*.slnx": "*.csproj"
     },
     "dotnet.defaultSolution": "softgames-task.slnx",
-    "dotnet.enableWorkspaceBasedDevelopment": false
+    "dotnet.enableWorkspaceBasedDevelopment": false,
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+    "[csharp]": {
+        "editor.defaultFormatter": "ms-dotnettools.csharp",
+        "editor.formatOnSave": true
+    }
 }
