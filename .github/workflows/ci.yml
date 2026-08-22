@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+
+env:
+  UNITY_PATH: C:\Program Files\Unity\Hub\Editor\6000.0.82f1\Editor\Unity.exe
+
+jobs:
+  test:
+    name: EditMode tests
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          clean: false # keep Library/ on disk between runs (self-hosted runner, persistent disk)
+
+      - name: Run EditMode tests
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          & $env:UNITY_PATH -batchmode -nographics -projectPath "$PWD" `
+            -runTests -testPlatform EditMode `
+            -testResults "$PWD\artifacts\editmode-results.xml" `
+            -logFile "$PWD\artifacts\editmode-log.txt"
+
+          if (-not (Test-Path artifacts\editmode-results.xml)) {
+            Write-Error "No results file produced - check artifacts/editmode-log.txt"
+            exit 1
+          }
+
+          [xml]$xml = Get-Content artifacts\editmode-results.xml
+          $run = $xml.'test-run'
+          Write-Output "Tests: $($run.total) total, $($run.passed) passed, $($run.failed) failed"
+          if ([int]$run.failed -gt 0) { exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-test-results
+          path: artifacts/
+
+  build-webgl:
+    name: Build WebGL
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          clean: false # keep Library/ on disk between runs (self-hosted runner, persistent disk)
+
+      - name: Build WebGL
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          & $env:UNITY_PATH -batchmode -nographics -quit -projectPath "$PWD" `
+            -executeMethod CI.BuildScript.BuildWebGL `
+            -logFile "$PWD\artifacts\build-log.txt"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed (exit $LASTEXITCODE) - check artifacts/build-log.txt"
+            exit 1
+          }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webgl-build
+          path: |
+            build/WebGL
+            artifacts/build-log.txt
