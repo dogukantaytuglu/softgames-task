@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 namespace Feature.MainMenu.Scripts
 {
+	[RequireComponent(typeof(Button))]
     public class MenuButtonSceneLoader : MonoBehaviour
     {
         [SerializeField] private string sceneName;
