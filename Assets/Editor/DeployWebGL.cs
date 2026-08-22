@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -17,7 +19,7 @@ namespace CI
             var options = new BuildPlayerOptions
             {
                 scenes = EditorBuildSettingsScene.GetActiveSceneList(EditorBuildSettings.scenes),
-                locationPathName = BuildFolder + "/index.html",
+                locationPathName = BuildFolder,
                 target = BuildTarget.WebGL,
                 options = BuildOptions.None
             };
@@ -54,8 +56,18 @@ namespace CI
                 return;
             }
 
-            Debug.Log($"Deployed WebGL build ({report.summary.totalSize / 1024 / 1024} MB).\n{pushOutput}");
-            EditorUtility.DisplayDialog("Deployed", $"Pushed to GitHub Pages.\nBuild size: {report.summary.totalSize / 1024 / 1024} MB", "OK");
+            var onDiskMb = GetDirectorySize(BuildFolder) / 1024 / 1024;
+            Debug.Log($"Deployed WebGL build ({onDiskMb} MB on disk).\n{pushOutput}");
+            EditorUtility.DisplayDialog("Deployed", $"Pushed to GitHub Pages.\nBuild size: {onDiskMb} MB", "OK");
+        }
+
+        // BuildReport.summary.totalSize reports pre-compression size, not the
+        // actual .unityweb bytes that get transferred - measure the real thing.
+        private static long GetDirectorySize(string path)
+        {
+            return Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                .Where(f => !f.Contains(Path.DirectorySeparatorChar + ".git" + Path.DirectorySeparatorChar))
+                .Sum(f => new FileInfo(f).Length);
         }
 
         private static int RunGit(string arguments, out string output)
