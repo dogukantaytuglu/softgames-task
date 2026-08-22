@@ -18,7 +18,7 @@ jobs:
           clean: false # keep Library/ on disk between runs (self-hosted runner, persistent disk)
 
       - name: Run EditMode tests
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           & $env:UNITY_PATH -batchmode -nographics -projectPath "$PWD" `
@@ -53,7 +53,7 @@ jobs:
           clean: false # keep Library/ on disk between runs (self-hosted runner, persistent disk)
 
       - name: Build WebGL
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           & $env:UNITY_PATH -batchmode -nographics -quit -projectPath "$PWD" `
