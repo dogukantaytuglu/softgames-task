@@ -1,12 +1,31 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
-public class MenuButtonSceneLoader : MonoBehaviour
+namespace Feature.MainMenu.Scripts
 {
-    [SerializeField] private string sceneName;
-
-    public void LoadScene()
+    public class MenuButtonSceneLoader : MonoBehaviour
     {
-        SceneManager.LoadScene(sceneName);
+        [SerializeField] private string sceneName;
+        [SerializeField] private Button button;
+
+        private void Awake()
+        {
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(LoadScene);
+        }
+
+        private void OnValidate()
+        {
+            if (TryGetComponent<Button>(out var b))
+            {
+                button = b;
+            }
+        }
+
+        public void LoadScene()
+        {
+            SceneManager.LoadScene(sceneName);
+        }
     }
 }
