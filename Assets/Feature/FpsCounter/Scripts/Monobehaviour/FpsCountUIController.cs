@@ -7,6 +7,7 @@ public class FpsCountUIController : MonoBehaviour
     [SerializeField] private float updateInterval = 0.5f;
 
     private FpsCalculator _fpsCalculator;
+    private int _lastDisplayedFps = -1;
 
     private void Awake()
     {
@@ -16,6 +17,12 @@ public class FpsCountUIController : MonoBehaviour
     private void Update()
     {
         _fpsCalculator.Sample(Time.unscaledDeltaTime);
-        fpsText.text = $"{_fpsCalculator.CurrentFps:0} FPS";
+
+        var roundedFps = Mathf.RoundToInt(_fpsCalculator.CurrentFps);
+        if (roundedFps == _lastDisplayedFps)
+            return;
+
+        _lastDisplayedFps = roundedFps;
+        fpsText.text = $"{roundedFps} FPS";
     }
 }
