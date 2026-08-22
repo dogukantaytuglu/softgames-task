@@ -6,6 +6,21 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D5 — Lightweight `ai-context/` + a `SessionStart` hook, not the full pattern (2026-08-22)
+**Choice:** Adapted the `ai-context/` convention from this developer's larger
+projects (e.g. `menu-app`) down to three files — `README.md` (navigator),
+`current-context.md` (living state), `decisions.md` (this file) — plus a Python
+`SessionStart` hook (`.claude/hooks/session-start.py`) that prints branch + change
+count + a pointer to `current-context.md` on startup/clear. No per-feature docs,
+`planned/`/`todo/` split, or agent fleet.
+**Why:** `menu-app`'s version is built for an ongoing multi-app product with
+multiple contributors; this is a solo 3-task take-home. The trigger was
+practical: a Unity MCP config change required restarting Claude Code, and a
+written, living context doc plus an automatic orientation hook is what makes a
+restart lose nothing. The hook uses Python (not `jq`, which isn't on this
+machine's Git Bash `PATH`) and is skipped on `resume`/`compact` since those
+already carry the conversation.
+
 ### D4 — Unity MCP via the official `com.unity.ai.assistant` package (2026-08-22)
 **Choice:** Use Unity's first-party MCP integration (`com.unity.ai.assistant`,
 installed via Package Manager, exposing a local relay Claude Code connects to)
