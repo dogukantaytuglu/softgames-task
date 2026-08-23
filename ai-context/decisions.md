@@ -6,11 +6,29 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D14 — All scene files got a `Scene` suffix (2026-08-23)
+**Choice:** Renamed every scene: `Shell.unity` → `AppScene.unity`,
+`MainMenu.unity` → `MainMenuScene.unity`, `AceOfShadows.unity` →
+`AceOfShadowsScene.unity`, `MagicWords.unity` → `MagicWordsScene.unity`,
+`PhoenixFlame.unity` → `PhoenixFlameScene.unity`. Done via `AssetDatabase.RenameAsset`
+(preserves GUIDs), with Build Settings, `SceneNames` (renamed `Shell` → `App` as a
+const identifier), the `EditorSceneBootstrap` method, and every serialized
+`sceneName`/`homeSceneName` field (`MainMenuButton.prefab`'s default plus two
+per-instance overrides in `MainMenuScene.unity`, `SceneFlowController`'s field in
+`AppScene.unity`) updated to match and re-verified through Unity's own APIs, not
+just text search.
+**Why:** Developer request, specifically to rename `Shell` → `App` for
+consistency with the `Assets/App/` folder (D13) that now holds the SceneFlow/
+FpsCounter infra — but `App` alone would then mean two different things in
+conversation (the folder vs. the scene), so `AppScene` was chosen instead, and the
+same `Scene` suffix was applied to the other four scenes for consistency rather
+than leaving just one scene oddly named out of the group.
+
 ### D13 — Acted on the `unity-architect` review of the SceneFlow work (2026-08-23)
 **Choice:** Ran the `unity-architect` subagent (see current-context.md, Tooling) —
-its first confirmed-working invocation — against the Shell/SceneFlow work from
+its first confirmed-working invocation — against the AppScene/SceneFlow work from
 D12, then implemented its full findings list:
-- **P0 (build-breaking):** `Shell.unity` was never actually added to
+- **P0 (build-breaking):** `AppScene.unity` was never actually added to
   `EditorBuildSettings.scenes` despite D12/current-context.md claiming it was —
   added at index 0. A WebGL build made before this fix would have booted MainMenu
   directly with no `SceneFlowController`, NRE'd on the first button click, and
@@ -28,8 +46,8 @@ D12, then implemented its full findings list:
   `Start()` — switched to the `SceneManager.sceneLoaded` event instead, which
   Unity fires after `Awake` but before `Start`, closing a landmine for
   root-`Instantiate`d objects in Magic Words/Phoenix Flame. Unload-before-load left
-  a frame with zero cameras (Shell has none by design) — added a `FallbackCamera`
-  to Shell (Solid Color clear, culling mask `Nothing`, depth `-100`) rather than
+  a frame with zero cameras (AppScene has none by design) — added a `FallbackCamera`
+  to AppScene (Solid Color clear, culling mask `Nothing`, depth `-100`) rather than
   reordering to load-then-unload, which would have reintroduced the
   two-cameras/two-EventSystems problem D12 was designed to avoid.
 - **P2/P3 (structure and polish):** `Assets/Feature/SceneFlow` and
@@ -38,12 +56,12 @@ D12, then implemented its full findings list:
   (`MainMenu`/`AceOfShadows`/`MagicWords`/`PhoenixFlame`, still under
   `Assets/Feature/`). Added an Editor-only `EditorSceneBootstrap`
   (`RuntimeInitializeOnLoadMethod(BeforeSceneLoad)`, `#if UNITY_EDITOR`) that
-  additively loads Shell when a content scene is opened and Play is hit directly —
+  additively loads AppScene when a content scene is opened and Play is hit directly —
   removes friction that would otherwise be paid twice more building Magic Words and
   Phoenix Flame. `BackButtonController`/`BackButton.prefab` renamed to
   `HomeButtonController`/`HomeButton.prefab` (it always goes home, there's no back
   stack) via `AssetDatabase.RenameAsset` to preserve GUIDs/prefab references. Added
-  a `SceneNames` const-string class in `SceneFlow.Logic`. Gave Shell's persistent
+  a `SceneNames` const-string class in `SceneFlow.Logic`. Gave AppScene's persistent
   Canvas an explicit `sortingOrder: 100` so it's deterministically drawn above
   whatever content scene's Overlay canvas is loaded alongside it (both were at 0,
   an unstable tie). Fixed `CardView.MoveTo`'s DOTween `Sequence` not being killable
@@ -53,7 +71,7 @@ D12, then implemented its full findings list:
   `Assets/Tests/EditMode/FpsCounter/` to actually match the stated test-location
   convention instead of just claiming it.
 **Why:** The review caught a genuine build-breaking bug that manual Play Mode
-testing in the Editor couldn't have caught (opening `Shell.unity` directly bypasses
+testing in the Editor couldn't have caught (opening `AppScene.unity` directly bypasses
 Build Settings entirely), plus several real async/lifecycle bugs the new
 additive-loading design introduced. Fixing all of it now — before Magic Words and
 Phoenix Flame get built on top of this same pattern — is cheaper than fixing it
@@ -65,8 +83,8 @@ prefab/scene reference intact. 35/35 EditMode tests pass after the pass (up from
 predates this hardening and needs re-verification (left as an explicit next step,
 Play Mode testing being the developer's own call per the Tooling note above).
 
-### D12 — Persistent Shell scene + additive scene-flow, instead of MainMenu as the boot scene (2026-08-23)
-**Choice:** New `Shell.unity` is now build-index 0 and the *only* scene ever opened
+### D12 — Persistent AppScene scene + additive scene-flow, instead of MainMenu as the boot scene (2026-08-23)
+**Choice:** New `AppScene.unity` is now build-index 0 and the *only* scene ever opened
 directly — it holds the FPS counter (moved out of AceOfShadows) and a
 `SceneFlowController` singleton, and is never itself unloaded. Every other scene
 (MainMenu, AceOfShadows, MagicWords, PhoenixFlame) loads additively on top of it,
@@ -81,7 +99,7 @@ Canvas + `EventSystem` added since they were empty placeholders before this.
 **Why:** Requested directly by the developer (build a shared top nav bar holding the
 FPS counter, with every scene opening additively on top of it, plus back buttons on
 the project scenes) — an explicit ask to implement app-level code himself this time,
-not just infra (see the collaboration note below). Keeping Shell camera-less and
+not just infra (see the collaboration note below). Keeping AppScene camera-less and
 light-less (a Screen Space Overlay Canvas doesn't need a camera to render) and never
 loading more than one content scene alongside it is what keeps cameras/lights/
 EventSystems from ever duplicating, without needing any extra cleanup logic — each

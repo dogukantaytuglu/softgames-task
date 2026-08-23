@@ -8,18 +8,18 @@ namespace SceneFlow.Monobehaviour
     {
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void EnsureShellLoaded()
+        private static void EnsureAppSceneLoaded()
         {
             if (SceneFlowController.Instance != null)
                 return;
 
-            if (SceneManager.GetActiveScene().name == SceneNames.Shell)
+            if (SceneManager.GetActiveScene().name == SceneNames.App)
                 return;
 
-            if (SceneManager.GetSceneByName(SceneNames.Shell).isLoaded)
+            if (SceneManager.GetSceneByName(SceneNames.App).isLoaded)
                 return;
 
-            SceneManager.LoadScene(SceneNames.Shell, LoadSceneMode.Additive);
+            SceneManager.LoadScene(SceneNames.App, LoadSceneMode.Additive);
         }
 #endif
     }

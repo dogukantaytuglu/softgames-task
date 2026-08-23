@@ -2,10 +2,10 @@ namespace SceneFlow.Logic
 {
     public static class SceneNames
     {
-        public const string Shell = "Shell";
-        public const string MainMenu = "MainMenu";
-        public const string AceOfShadows = "AceOfShadows";
-        public const string MagicWords = "MagicWords";
-        public const string PhoenixFlame = "PhoenixFlame";
+        public const string App = "AppScene";
+        public const string MainMenu = "MainMenuScene";
+        public const string AceOfShadows = "AceOfShadowsScene";
+        public const string MagicWords = "MagicWordsScene";
+        public const string PhoenixFlame = "PhoenixFlameScene";
     }
 }

@@ -6,19 +6,19 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Shell.unity
+    path: Assets/Scenes/AppScene.unity
     guid: d79889a33c2026f4c97a6c12a0469b30
   - enabled: 1
-    path: Assets/Scenes/MainMenu.unity
+    path: Assets/Scenes/MainMenuScene.unity
     guid: 73922f7638bba994797c86882ff8b7e5
   - enabled: 1
-    path: Assets/Scenes/AceOfShadows.unity
+    path: Assets/Scenes/AceOfShadowsScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Scenes/MagicWords.unity
+    path: Assets/Scenes/MagicWordsScene.unity
     guid: af11751f83ccffb4195136c910859dc9
   - enabled: 1
-    path: Assets/Scenes/PhoenixFlame.unity
+    path: Assets/Scenes/PhoenixFlameScene.unity
     guid: e51acc72c638a51448d6847757156b50
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

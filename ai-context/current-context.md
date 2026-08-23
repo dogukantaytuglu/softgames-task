@@ -5,7 +5,7 @@
 > The assignment itself is `BRIEF.md`.
 
 Last updated: 2026-08-23 (end of the `unity-architect` review + fix pass on the
-Shell/scene-flow work).
+AppScene/scene-flow work).
 
 ## What we're building
 
@@ -21,13 +21,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Ace of Shadows: built and working.** 144-card deck drain between two stacks,
   Source→Target, one move per second, message on completion. See "Ace of Shadows
   architecture" below for detail.
-- **Magic Words: not started.** `Assets/Scenes/MagicWords.unity` exists as an empty
+- **Magic Words: not started.** `Assets/Scenes/MagicWordsScene.unity` exists as an empty
   placeholder (default camera + light only), registered in Build Settings, reachable
   from the main menu's "Magic Words" button. No script work yet.
 - **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
   wired into the menu, nothing built.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
-- **Scene-flow/navigation shell built.** `Shell.unity` is now build-index 0, the sole
+- **Scene-flow/navigation shell built.** `AppScene.unity` is now build-index 0, the sole
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
   `SceneFlowController` singleton. Every other scene (MainMenu, AceOfShadows, MagicWords,
   PhoenixFlame) loads additively on top of it, one at a time. See "Scene-flow architecture"
@@ -52,7 +52,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   self-wiring) as defaults it can push back on, not rules. Reads a repo's
   `ai-context/`/`CLAUDE.md` first and defers to already-established real
   conventions. **Confirmed working** (2026-08-23, fresh session) — ran a real
-  architecture review of the SceneFlow feature, found a build-breaking bug (Shell
+  architecture review of the SceneFlow feature, found a build-breaking bug (AppScene
   missing from Build Settings) plus several real async/lifecycle bugs; findings
   were acted on, see D13.
 - **IDE: Rider, not VS Code.** Rider is free for non-commercial use (JetBrains
@@ -169,9 +169,9 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `Assets/uVegas`'s card sprites — see decisions D10.
 
 ### Scene-flow architecture
-- **`Shell.unity` is build-index 0** and the only scene ever opened directly (in
+- **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
   Editor Play or in the WebGL build) — every other scene is loaded/unloaded
-  *additively* on top of it, one "content" scene at a time. Shell itself never
+  *additively* on top of it, one "content" scene at a time. AppScene itself never
   reloads or unloads. Lives at `Assets/App/SceneFlow/` (not `Assets/Feature/` —
   see the `Assets/App/` vs `Assets/Feature/` convention above).
 - **`SceneFlow.Logic`** (`Assets/App/SceneFlow/Scripts/Logic/`, `noEngineReferences:
@@ -182,15 +182,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   in-flight** — this is the fix for a real bug the `unity-architect` review caught
   (2026-08-23, D13): double-clicking two menu buttons quickly used to desync the
   state machine from what was actually loaded. `SceneNames` — a plain const-string
-  class (`Shell`/`MainMenu`/`AceOfShadows`/`MagicWords`/`PhoenixFlame`) — is the
-  single source of truth for scene name strings in code (per-instance prefab
-  `sceneName` fields are still hand-typed strings; a `SceneAsset`-backed wrapper
-  would be overkill at this scale). 8 EditMode tests total.
+  class (`App = "AppScene"`, `MainMenu = "MainMenuScene"`, `AceOfShadows =
+  "AceOfShadowsScene"`, `MagicWords = "MagicWordsScene"`, `PhoenixFlame =
+  "PhoenixFlameScene"` — all scene files got a `Scene` suffix 2026-08-23 when the
+  developer renamed `Shell.unity` → `AppScene.unity` and asked for the rest to
+  match) — is the single source of truth for scene name strings in code
+  (per-instance prefab `sceneName` fields are still hand-typed strings; a
+  `SceneAsset`-backed wrapper would be overkill at this scale). 8 EditMode tests
+  total.
 - **`SceneFlow.Monobehaviour`**: `SceneFlowController` — a plain static-instance
-  singleton (not `DontDestroyOnLoad`; unnecessary since it lives in Shell, which is
-  never unloaded) living on a `SceneFlowController` GameObject in `Shell.unity`.
+  singleton (not `DontDestroyOnLoad`; unnecessary since it lives in AppScene, which is
+  never unloaded) living on a `SceneFlowController` GameObject in `AppScene.unity`.
   `Start()` adopts whatever scene is already active (via `SceneFlowState`'s
-  constructor) if one other than Shell is already loaded — this is what makes the
+  constructor) if one other than AppScene is already loaded — this is what makes the
   Editor bootstrap below work — otherwise calls `Navigate(homeSceneName)` (default
   `SceneNames.MainMenu`) to boot the first content scene. `Navigate(sceneName)`
   unloads the previous content scene (`SceneManager.UnloadSceneAsync`), additively
@@ -202,28 +206,28 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `CompleteNavigation` — Unity fires `sceneLoaded` after the new scene's `Awake`
   calls but *before* its `Start` calls, which is what makes it safe for the new
   scene's own `Start()` to root-`Instantiate` things without them silently landing
-  in Shell. `HomeButtonController` (was `BackButtonController` — renamed 2026-08-23,
+  in AppScene. `HomeButtonController` (was `BackButtonController` — renamed 2026-08-23,
   D13, since there's no back-stack, it always goes home) calls
   `Instance.NavigateHome()`, guarded against a null `Instance`.
-- **Exactly one content scene is ever loaded alongside Shell**, which is what keeps
-  EventSystems from ever duplicating — Shell itself holds no Light and no
+- **Exactly one content scene is ever loaded alongside AppScene**, which is what keeps
+  EventSystems from ever duplicating — AppScene itself holds no Light and no
   EventSystem (only a Screen Space Overlay Canvas, which doesn't need a camera to
   render, at `m_SortingOrder: 100` so it's deterministically drawn above whatever
   content scene's own Overlay canvas is loaded alongside it). Each content scene
   keeps its own Main Camera, Directional Light, and `EventSystem`
   (`InputSystemUIInputModule`) exactly as before; only one is ever active at a time
-  since Shell fully unloads the previous content scene before loading the next.
-  **Shell does hold one Camera**, unlike the original design: a `FallbackCamera`
+  since AppScene fully unloads the previous content scene before loading the next.
+  **AppScene does hold one Camera**, unlike the original design: a `FallbackCamera`
   (Solid Color clear, culling mask `Nothing`, depth `-100`, no AudioListener) added
   2026-08-23 (D13) — closes a real gap where unload-then-load left a frame (worse
   on WebGL) with zero cameras rendering.
 - **Editor-only bootstrap** (`EditorSceneBootstrap`, `#if UNITY_EDITOR`,
   `RuntimeInitializeOnLoadMethod(BeforeSceneLoad)`, added 2026-08-23, D13):
-  additively loads `Shell` if it isn't already loaded and no `SceneFlowController`
-  exists, *unless* the scene about to play is Shell itself. This is what makes
-  opening `MagicWords.unity`/`PhoenixFlame.unity`/`AceOfShadows.unity` directly and
+  additively loads `AppScene` if it isn't already loaded and no `SceneFlowController`
+  exists, *unless* the scene about to play is AppScene itself. This is what makes
+  opening `MagicWordsScene.unity`/`PhoenixFlameScene.unity`/`AceOfShadowsScene.unity` directly and
   hitting Play still work (FPS counter visible, back-to-home button functional)
-  without the friction of having to open Shell first every time — important now
+  without the friction of having to open AppScene first every time — important now
   that Magic Words and Phoenix Flame are about to be built and Play will get hit
   from those scenes a lot. Compiles out entirely in real builds.
 - **`MenuButtonSceneLoader`** (MainMenu) calls `SceneFlowController.Instance.Navigate(sceneName)`
@@ -232,13 +236,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   (renamed from `BackButton.prefab`, D13) — top-right anchored, `buttons_41` sprite
   (green "home" icon from `Assets/Art/Sprites/buttons.png`, chosen since it reads
   as "return to main menu" and needs no extra label). Instanced into
-  `AceOfShadows.unity`, `MagicWords.unity`, `PhoenixFlame.unity` (not MainMenu —
+  `AceOfShadowsScene.unity`, `MagicWordsScene.unity`, `PhoenixFlameScene.unity` (not MainMenu —
   that's home, nothing to go back to). `MagicWords`/`PhoenixFlame` were empty
   placeholders with no Canvas/EventSystem before this session started — both were
-  added (Screen Space Overlay, same `CanvasScaler` settings as MainMenu/Shell,
+  added (Screen Space Overlay, same `CanvasScaler` settings as MainMenu/AppScene,
   `EventSystem` duplicated from AceOfShadows' so the Input-System action-asset
   wiring matches exactly).
-- **Full navigate/back loop verified live in Play Mode** via Unity MCP (Shell→MainMenu→
+- **Full navigate/back loop verified live in Play Mode** via Unity MCP (AppScene→MainMenu→
   each of the three feature scenes→back→MainMenu), confirming: single active
   `EventSystem` at every step, `SceneFlowController.Instance` persists, FPS counter
   stays active/visible throughout, active scene is set correctly after each transition.
@@ -249,7 +253,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   above).
 
 ### Phase 0 status
-- **Main menu** (`Assets/Scenes/MainMenu.unity`): Canvas (Scale With Screen Size,
+- **Main menu** (`Assets/Scenes/MainMenuScene.unity`): Canvas (Scale With Screen Size,
   1920×1080 reference, match 1), `EventSystem` with `InputSystemUIInputModule`
   (project's `activeInputHandler` is Input System only — the legacy
   `StandaloneInputModule` won't receive clicks). Three buttons, each a
@@ -261,8 +265,8 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
-  changes). **Lives once, centrally, in `Shell.unity`'s always-loaded canvas** (moved
-  out of `AceOfShadows.unity`'s `OverlayUI` this session) — visible top-left across
+  changes). **Lives once, centrally, in `AppScene.unity`'s always-loaded canvas** (moved
+  out of `AceOfShadowsScene.unity`'s `OverlayUI` this session) — visible top-left across
   every scene automatically, no per-scene duplication needed.
 - **WebGL build + hosting:** build settings are **Brotli compression +
   Decompression Fallback enabled** (Player Settings → Publishing Settings) — this
@@ -318,7 +322,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
-1. **Re-verify the Shell→content Play Mode nav loop live** — the D13 hardening
+1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and
    EditMode-test-passing (35/35) but only the *previous*, unhardened version of
@@ -336,7 +340,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    Same starting point as Magic Words — Canvas/EventSystem/HomeButton already there.
    If it uses a timer, no leak risk anymore (D13 fixed that in TimerUtil itself).
 4. Verify responsive layout + touch input on a real phone — now also needs to cover
-   the additive Shell→content scene transition specifically (untested on-device).
+   the additive AppScene→content scene transition specifically (untested on-device).
 5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
    not started; the Brotli+Fallback numbers from the Ace of Shadows deploy work
    are a natural starting point (~13MB vs ~60MB uncompressed, already measured

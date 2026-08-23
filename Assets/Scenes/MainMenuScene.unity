@@ -531,7 +531,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4367159669414649558, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: sceneName
-      value: MagicWords
+      value: MagicWordsScene
       objectReference: {fileID: 0}
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_text
@@ -747,7 +747,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4367159669414649558, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: sceneName
-      value: PhoenixFlame
+      value: PhoenixFlameScene
       objectReference: {fileID: 0}
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_text
