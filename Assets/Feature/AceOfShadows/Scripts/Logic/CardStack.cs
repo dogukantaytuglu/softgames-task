@@ -13,8 +13,6 @@ namespace AceOfShadows.Logic
         // initial layout pass - not a mutation surface.
         public IReadOnlyList<Card> Cards => _cards;
 
-        public event Action<CardStack> CountChanged;
-
         public CardStack()
         {
         }
@@ -36,14 +34,12 @@ namespace AceOfShadows.Logic
         {
             var card = PeekTop();
             _cards.RemoveAt(_cards.Count - 1);
-            CountChanged?.Invoke(this);
             return card;
         }
 
         public void PushTop(Card card)
         {
             _cards.Add(card);
-            CountChanged?.Invoke(this);
         }
     }
 }

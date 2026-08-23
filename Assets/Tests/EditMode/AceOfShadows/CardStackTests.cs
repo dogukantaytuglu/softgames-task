@@ -2,83 +2,73 @@ using System;
 using AceOfShadows.Logic;
 using NUnit.Framework;
 
-public class CardStackTests
+namespace AceOfShadows.Tests
 {
-    [Test]
-    public void NewStack_IsEmpty()
+    public class CardStackTests
     {
-        var stack = new CardStack();
+        [Test]
+        public void NewStack_IsEmpty()
+        {
+            var stack = new CardStack();
 
-        Assert.AreEqual(0, stack.Count);
-    }
+            Assert.AreEqual(0, stack.Count);
+        }
 
-    [Test]
-    public void Constructor_WithInitialCards_PopulatesInOrder()
-    {
-        var cards = new[] { new Card(0), new Card(1), new Card(2) };
+        [Test]
+        public void Constructor_WithInitialCards_PopulatesInOrder()
+        {
+            var cards = new[] { new Card(0), new Card(1), new Card(2) };
 
-        var stack = new CardStack(cards);
+            var stack = new CardStack(cards);
 
-        Assert.AreEqual(3, stack.Count);
-        CollectionAssert.AreEqual(cards, stack.Cards);
-    }
+            Assert.AreEqual(3, stack.Count);
+            CollectionAssert.AreEqual(cards, stack.Cards);
+        }
 
-    [Test]
-    public void PushTop_AddsCard_IncrementsCount()
-    {
-        var stack = new CardStack();
-        var card = new Card(0);
+        [Test]
+        public void PushTop_AddsCard_IncrementsCount()
+        {
+            var stack = new CardStack();
+            var card = new Card(0);
 
-        stack.PushTop(card);
+            stack.PushTop(card);
 
-        Assert.AreEqual(1, stack.Count);
-        Assert.AreSame(card, stack.PeekTop());
-    }
+            Assert.AreEqual(1, stack.Count);
+            Assert.AreSame(card, stack.PeekTop());
+        }
 
-    [Test]
-    public void PopTop_RemovesAndReturnsTopCard_DecrementsCount_LIFO()
-    {
-        var first = new Card(0);
-        var second = new Card(1);
-        var stack = new CardStack(new[] { first, second });
+        [Test]
+        public void PopTop_RemovesAndReturnsTopCard_DecrementsCount_LIFO()
+        {
+            var first = new Card(0);
+            var second = new Card(1);
+            var stack = new CardStack(new[] { first, second });
 
-        var popped = stack.PopTop();
+            var popped = stack.PopTop();
 
-        Assert.AreSame(second, popped);
-        Assert.AreEqual(1, stack.Count);
-        Assert.AreSame(first, stack.PeekTop());
-    }
+            Assert.AreSame(second, popped);
+            Assert.AreEqual(1, stack.Count);
+            Assert.AreSame(first, stack.PeekTop());
+        }
 
-    [Test]
-    public void PopTop_OnEmptyStack_Throws()
-    {
-        var stack = new CardStack();
+        [Test]
+        public void PopTop_OnEmptyStack_Throws()
+        {
+            var stack = new CardStack();
 
-        Assert.Throws<InvalidOperationException>(() => stack.PopTop());
-    }
+            Assert.Throws<InvalidOperationException>(() => stack.PopTop());
+        }
 
-    [Test]
-    public void PeekTop_DoesNotRemove()
-    {
-        var card = new Card(0);
-        var stack = new CardStack(new[] { card });
+        [Test]
+        public void PeekTop_DoesNotRemove()
+        {
+            var card = new Card(0);
+            var stack = new CardStack(new[] { card });
 
-        var peeked = stack.PeekTop();
+            var peeked = stack.PeekTop();
 
-        Assert.AreSame(card, peeked);
-        Assert.AreEqual(1, stack.Count);
-    }
-
-    [Test]
-    public void CountChanged_FiresOnPushAndPop_WithCorrectCount()
-    {
-        var stack = new CardStack();
-        var observedCounts = new System.Collections.Generic.List<int>();
-        stack.CountChanged += s => observedCounts.Add(s.Count);
-
-        stack.PushTop(new Card(0));
-        stack.PopTop();
-
-        CollectionAssert.AreEqual(new[] { 1, 0 }, observedCounts);
+            Assert.AreSame(card, peeked);
+            Assert.AreEqual(1, stack.Count);
+        }
     }
 }
