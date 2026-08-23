@@ -33,6 +33,12 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
             PlayPopAnimation();
         }
 
+        public void Hide()
+        {
+            transform.DOKill();
+            counterText.gameObject.SetActive(false);
+        }
+
         private void PlayPopAnimation()
         {
             transform.DOKill();

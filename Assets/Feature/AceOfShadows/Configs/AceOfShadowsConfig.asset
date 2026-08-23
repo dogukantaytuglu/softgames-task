@@ -124,3 +124,7 @@ MonoBehaviour:
   - {fileID: 893255585670260053, guid: a4ddf9e48c30c452187b8c3486fc12dc, type: 3}
   - {fileID: 2226745706374843247, guid: 7e1c0dcb14b8f497185bf77e33399474, type: 3}
   - {fileID: 3668286800242572923, guid: 31a2689bf5cbd47ceb9c02ef54ad7407, type: 3}
+  exitDistance: 1600
+  exitDuration: 0.5
+  exitEase: 26
+  exitStagger: 0.02

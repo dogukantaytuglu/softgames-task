@@ -47,6 +47,18 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
                 .OnComplete(() => onComplete?.Invoke());
         }
 
+        public void AnimateExitDown(float distance, float duration, Ease ease, float delay, Action onComplete)
+        {
+            transform.DOKill();
+
+            var targetPosition = RectTransform.anchoredPosition + new Vector2(0f, -distance);
+            RectTransform.DOAnchorPos(targetPosition, duration)
+                .SetTarget(transform)
+                .SetDelay(delay)
+                .SetEase(ease)
+                .OnComplete(() => onComplete?.Invoke());
+        }
+
         private void OnDestroy()
         {
             transform.DOKill();

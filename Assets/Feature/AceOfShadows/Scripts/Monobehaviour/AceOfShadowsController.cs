@@ -109,6 +109,20 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
         private void OnAllAnimationsFinished()
         {
             finishedMessageView.Show();
+            sourceCounterView.Hide();
+            targetCounterView.Hide();
+            AnimateTargetStackExit();
+        }
+
+        private void AnimateTargetStackExit()
+        {
+            var targetCards = _deck.Target.Cards;
+            for (var i = 0; i < targetCards.Count; i++)
+            {
+                var view = _cardViewsByCardId[targetCards[i].Id];
+                var delay = i * config.ExitStagger;
+                view.AnimateExitDown(config.ExitDistance, config.ExitDuration, config.ExitEase, delay, null);
+            }
         }
     }
 }
