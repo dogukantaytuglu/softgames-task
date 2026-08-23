@@ -10,7 +10,7 @@ namespace Feature.MainMenu.Scripts
         [SerializeField] private string sceneName;
         [SerializeField] private Button button;
 
-        private void Awake()
+        public void Initialize()
         {
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(LoadScene);

@@ -33,10 +33,8 @@ namespace AceOfShadows.Monobehaviour
 
             sourceCounterView.Bind(_deck.Source);
             targetCounterView.Bind(_deck.Target);
-        }
+            finishedMessageView.Initialize();
 
-        private void Start()
-        {
             _timer = TimerService.CreateCountdownTimer(moveInterval, loopCount: -1)
                 .OnTick(UpdateCountdownFill)
                 .OnLoop(TryMoveNext);

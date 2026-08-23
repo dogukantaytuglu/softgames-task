@@ -6,7 +6,7 @@ namespace AceOfShadows.Monobehaviour
     {
         [SerializeField] private GameObject root;
 
-        private void Awake()
+        public void Initialize()
         {
             root.SetActive(false);
         }

@@ -67,6 +67,25 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Repo:** `github.com/dogukantaytuglu/softgames-task` (private), `master` branch.
 
 ### Project conventions (established this session, apply going forward)
+- **Single init point per feature, no scattered Awake/Start** (2026-08-23, D15): a
+  feature's existing composition root (`AceOfShadowsController`, `SceneFlowController`
+  — each already held every reference its feature needed) collapses what used to be
+  a same-class `Awake()`+`Start()` split into one `Awake()`. Where no composition
+  root existed at all (`MainMenuScene`'s 3 independent `MenuButtonSceneLoader`
+  buttons), a small new `<Feature>Initializer` MonoBehaviour (e.g.
+  `MainMenuInitializer`, on the scene's `Canvas` root) is the *only* thing with an
+  `Awake()`, and calls a plain `public void Initialize()` on each component it owns
+  (`GetComponentsInChildren`, no reflection/interface — deliberately rejected a
+  generic `IInitializable` + new-assembly version of this as too much machinery for
+  a 3-demo take-home). Components already owned by another composition root
+  (`FinishedMessageView`, called by `AceOfShadowsController`) also get a plain
+  `Initialize()` instead of their own `Awake()` — same pattern `StackCounterView.Bind()`
+  already used successfully. **Deliberate exception:** `HomeButtonController`
+  (SceneFlow's widget, instanced into other features' scenes) and
+  `FpsCountUIController` (separate feature sharing AppScene with SceneFlowController)
+  keep their own tiny `Awake()` — pulling either into another feature's initializer
+  would need a new cross-feature asmdef reference for zero real benefit, since both
+  were already single-method/single-purpose with nothing to merge.
 - **`Assets/App/` vs `Assets/Feature/`**: app-level infrastructure that every scene
   depends on (`SceneFlow`, `FpsCounter`) lives under `Assets/App/`; independent,
   deletable content features (`MainMenu`, `AceOfShadows`, `MagicWords`,
@@ -193,20 +212,22 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **`SceneFlow.Monobehaviour`**: `SceneFlowController` — a plain static-instance
   singleton (not `DontDestroyOnLoad`; unnecessary since it lives in AppScene, which is
   never unloaded) living on a `SceneFlowController` GameObject in `AppScene.unity`.
-  `Start()` adopts whatever scene is already active (via `SceneFlowState`'s
-  constructor) if one other than AppScene is already loaded — this is what makes the
-  Editor bootstrap below work — otherwise calls `Navigate(homeSceneName)` (default
-  `SceneNames.MainMenu`) to boot the first content scene. `Navigate(sceneName)`
-  unloads the previous content scene (`SceneManager.UnloadSceneAsync`), additively
-  loads the target (`LoadSceneAsync(..., LoadSceneMode.Additive)`); if the load
-  operation comes back `null` (scene not in Build Settings — a silent Unity API
-  failure otherwise), it logs an error and releases the in-flight guard instead of
-  leaving navigation permanently bricked. On success, `SceneManager.sceneLoaded`
-  (not the load operation's `.completed`) is what triggers `SetActiveScene` +
-  `CompleteNavigation` — Unity fires `sceneLoaded` after the new scene's `Awake`
-  calls but *before* its `Start` calls, which is what makes it safe for the new
-  scene's own `Start()` to root-`Instantiate` things without them silently landing
-  in AppScene. `HomeButtonController` (was `BackButtonController` — renamed 2026-08-23,
+  Single `Awake()` (merged from a former Awake+Start split, 2026-08-23, D15 — see
+  "single init point per feature" below) sets the singleton, then adopts whatever
+  scene is already active (via `SceneFlowState`'s constructor) if one other than
+  AppScene is already loaded — this is what makes the Editor bootstrap below work
+  — otherwise calls `Navigate(homeSceneName)` (default `SceneNames.MainMenu`) to
+  boot the first content scene. `Navigate(sceneName)` unloads the previous content
+  scene (`SceneManager.UnloadSceneAsync`), additively loads the target
+  (`LoadSceneAsync(..., LoadSceneMode.Additive)`); if the load operation comes back
+  `null` (scene not in Build Settings — a silent Unity API failure otherwise), it
+  logs an error and releases the in-flight guard instead of leaving navigation
+  permanently bricked. On success, `SceneManager.sceneLoaded` (not the load
+  operation's `.completed`) is what triggers `SetActiveScene` + `CompleteNavigation`
+  — Unity fires `sceneLoaded` after the new scene's `Awake` calls, which is what
+  makes it safe for the new scene's own `Awake()`-driven init to root-`Instantiate`
+  things without them silently landing in AppScene. `HomeButtonController` (was
+  `BackButtonController` — renamed 2026-08-23,
   D13, since there's no back-stack, it always goes home) calls
   `Instance.NavigateHome()`, guarded against a null `Instance`.
 - **Exactly one content scene is ever loaded alongside AppScene**, which is what keeps

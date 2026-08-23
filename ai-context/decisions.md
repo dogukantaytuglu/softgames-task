@@ -6,6 +6,33 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D15 — Single init point per feature, no generic IInitializable/reflection (2026-08-23)
+**Choice:** `AceOfShadowsController` and `SceneFlowController` each merge a former
+`Awake()`+`Start()` split into one `Awake()` — both already held every reference their
+feature needed, so nothing was actually gated on Unity's Awake-before-Start ordering
+across objects. `MainMenuScene` (3 independent `MenuButtonSceneLoader` buttons, no
+shared owner) gets one small new `MainMenuInitializer` on its `Canvas` root, which
+`GetComponentsInChildren`s for loaders and calls a plain `public void Initialize()`
+on each. `FinishedMessageView`'s `Awake()` became the same kind of plain `Initialize()`,
+called explicitly by `AceOfShadowsController` — matching the pattern
+`StackCounterView.Bind()` already used. `HomeButtonController` and
+`FpsCountUIController` were deliberately left alone (see below).
+
+The first version of this (a shared `IInitializable` interface + a new
+`Initialization` assembly + a generic scene-wide reflection scan) was proposed, then
+explicitly rejected by the developer as too much machinery — no new assembly, no new
+interface, no reflection in the final version.
+**Why:** Requested directly by the developer: get rid of scattered Awake/Start calls,
+give each feature one initialization point. `HomeButtonController` (SceneFlow's
+back-to-home widget, instanced into `AceOfShadowsScene`/`MagicWordsScene`/
+`PhoenixFlameScene`) and `FpsCountUIController` (a separate feature sharing `AppScene`
+with `SceneFlowController`) were kept as their own tiny self-initializing `Awake()`s
+rather than folded into another feature's initializer, specifically to avoid
+reintroducing a cross-feature asmdef reference that was deliberately avoided when
+`HomeButton.prefab` was kept inside `SceneFlow`'s own folder (see D13) — both were
+already single-method/single-purpose, so there was nothing to actually gain by
+centralizing them elsewhere at the cost of that coupling.
+
 ### D14 — All scene files got a `Scene` suffix (2026-08-23)
 **Choice:** Renamed every scene: `Shell.unity` → `AppScene.unity`,
 `MainMenu.unity` → `MainMenuScene.unity`, `AceOfShadows.unity` →

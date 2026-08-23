@@ -23,10 +23,7 @@ namespace SceneFlow.Monobehaviour
 
             Instance = this;
             _state = new SceneFlowState();
-        }
 
-        private void Start()
-        {
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.IsValid() && activeScene.name != gameObject.scene.name)
             {
