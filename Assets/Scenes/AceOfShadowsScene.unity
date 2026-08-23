@@ -1225,6 +1225,10 @@ PrefabInstance:
       propertyPath: m_sharedMaterial
       value: 
       objectReference: {fileID: -6482371940517145204, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
+    - target: {fileID: 6113304863945610786, guid: 9e27a985a2e01f24dbb064bdb8e96153, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

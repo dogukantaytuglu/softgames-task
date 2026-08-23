@@ -6,6 +6,83 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D20 — StackCounterView: direct method calls, not an event/interface (2026-08-23)
+**Choice:** `AceOfShadowsController` calls `sourceCounterView.Refresh(_deck.Source.Count)`
+right after `_deck.MoveNext()` and `targetCounterView.Refresh(_deck.Target.Count)` from
+`OnCardLanded()` (the DOTween completion callback) directly. An `IStackCountChangeNotifier`
+interface (in `AceOfShadows.Logic`, since it's plain `Action`/`int`, engine-free) +
+`CardStack.Trigger` version of this was built first, worked, and was then torn out.
+**Why:** The interface/event version's signal path was controller → `CardStack.Trigger`
+→ back to the same `StackCounterView` the controller already held a direct reference to
+— a round trip that started and ended in the same place, since nothing else in the
+project observes a `CardStack`'s count changing independently of
+`AceOfShadowsController`'s own move-timing knowledge. Removing it deleted a whole file
+(`IStackCountChangeNotifier.cs`) and the subscribe/unsubscribe lifecycle in
+`Bind`/`OnDestroy`, with identical runtime behavior. Same shape of tradeoff as D15's
+`IInitializable` rejection — reused that precedent directly rather than re-litigating it.
+**Also fixed along the way:** the first working version had `CardStack.PopTop`/`PushTop`
+auto-invoking `Trigger`, which fired both counters at the same instant (`CardDeck.MoveNext()`
+pops `Source` and pushes `Target` back to back) — wrong for the target, which needs to
+pop on visual landing, not on the domain push. The final direct-call version sidesteps this
+entirely since the controller invokes each counter at its own correct moment already.
+
+### D19 — Baloo 2 as the project-wide font (2026-08-23)
+**Choice:** Downloaded Baloo 2 (Google Fonts, OFL-licensed) into `Assets/Art/Fonts/Baloo2/`,
+generated a TMP SDF Font Asset from it, and swapped it onto every existing TMP text
+component plus the TMP Settings default font asset (previously `LiberationSans SDF`,
+TMP's generic fallback).
+**Why:** Requested directly — a rounded, casual-game-appropriate typeface reads better
+for the aesthetics/UX grading criteria than TMP's default. Google Fonts only distributes
+Baloo 2 as a single variable-weight `.ttf` now (no static per-weight files), so the
+generated Font Asset resolves to the Regular named instance only; a true Bold variant
+would need extracting a separate static instance from the variable font (more tooling
+than a plain download) and wasn't done since nothing asked for it yet.
+
+### D18 — Ace of Shadows rendering cleanup: no skybox/light, mesh-type fix, atlas (2026-08-23)
+**Choice:** `AceOfShadowsScene`'s Main Camera now clears to Solid Color (was Skybox) and
+its `Directional Light` was deleted — the scene is 100% unlit sprites, neither was doing
+anything. The scene's Canvas switched from Screen Space - Overlay to Screen Space -
+Camera (needed, not cosmetic — a new full-screen `Bg` panel needs to depth-composite
+behind the cards, which Overlay mode can't do since it always draws on top regardless of
+scene depth). The 8 `PlayingCards` deck textures' Sprite Mesh Type was changed
+Tight → Full Rect (Tight was generating ~24-vert outline meshes per card instead of a
+4-vert quad). A `PlayingCards.spriteatlas` was built to pack the deck textures together.
+**Why:** Requested directly, following up on a SetPass-call investigation. The investigation's
+headline finding, worth remembering before touching this area again: **card sprite batching
+was never actually the bottleneck** — Frame Debugger showed `DrawTransparentObjects` for
+all 288 card renderers at only 2 draw calls once deck-texture variety came down to 2. The
+real cost is URP's post-processing stack, Bloom specifically (~16 of ~37 total passes),
+running off `Assets/Settings/SampleSceneProfile.asset` — the **unmodified default URP
+template Volume profile**, never a deliberate choice for this project. SSAO (4 passes) has
+zero visible effect on unlit sprites (it's an ambient-occlusion effect for lit geometry) and
+is a free win to disable; Bloom/Vignette/Tonemapping have a real visual effect and are left
+as an open call (see current-context.md next steps) rather than stripped unilaterally, since
+the brief grades on aesthetics. Also discovered along the way: `EditorSettings.spritePackerMode`
+was `Disabled` project-wide, meaning every Play Mode test up to that point (including the
+deck-count/atlas experiments) never actually exercised the atlas at all — fixed to
+`AlwaysOnAtlas` so Editor testing reflects real build behavior.
+
+### D17 — Real playing-card visuals, uVegas removed for good (2026-08-23)
+**Choice:** `CardView` now picks a random visual per card from `AceOfShadowsConfig.CardVisuals`
+(a `List<GameObject>`) instead of using the single placeholder `popups_11` sprite, backed by
+a "PlayingCards" asset pack (`Assets/Feature/AceOfShadows/Prefabs/PlayingCards/`,
+`.../Textures/`). `Assets/uVegas` (previously kept-but-unused due to a watermark on its base
+card sprites, D10) was deleted entirely.
+**Why:** Requested directly, moving Ace of Shadows from placeholder to final art. uVegas's
+rank/suit glyph system is now fully superseded and had a real, previously-documented licensing
+risk (watermarked `Front.png`/`Back.png`) — no reason to keep it in the repo once real card
+art was in.
+
+### D16 — Ace of Shadows tuning fields moved into an AceOfShadowsConfig ScriptableObject (2026-08-23)
+**Choice:** `totalCards`, `moveInterval`, `maxRotationDegrees` (previously `[SerializeField]`s
+on `AceOfShadowsController`) and `moveDuration`, `moveEase` (previously on `CardView`) all
+moved into a single shared `AceOfShadowsConfig` ScriptableObject asset, exposed via public
+getters. `CardView.Initialize(config)` follows the project's established single-init-point
+convention (D15) rather than each card re-reading serialized fields of its own.
+**Why:** Requested directly. Centralizes tuning in one inspectable asset instead of scattered
+across two component types, and sets up the natural place for the card-visual list
+(`CardVisuals`, D17) that came right after.
+
 ### D15 — Single init point per feature, no generic IInitializable/reflection (2026-08-23)
 **Choice:** `AceOfShadowsController` and `SceneService` each merge a former
 `Awake()`+`Start()` split into one `Awake()` — both already held every reference their

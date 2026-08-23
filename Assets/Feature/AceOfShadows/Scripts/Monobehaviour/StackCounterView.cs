@@ -1,4 +1,4 @@
-using AceOfShadows.Logic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -7,28 +7,38 @@ namespace AceOfShadows.Monobehaviour
     public class StackCounterView : MonoBehaviour
     {
         [SerializeField] private TMP_Text counterText;
+        [SerializeField] private float popScale = 0.25f;
+        [SerializeField] private float popDuration = 0.25f;
 
-        private CardStack _stack;
+        private Vector3 _initScale;
 
-        public void Bind(CardStack stack)
+        private void Awake()
         {
-            if (_stack != null)
-                _stack.CountChanged -= OnCountChanged;
-
-            _stack = stack;
-            _stack.CountChanged += OnCountChanged;
-            OnCountChanged(_stack);
+            _initScale = transform.localScale;
         }
 
         private void OnDestroy()
         {
-            if (_stack != null)
-                _stack.CountChanged -= OnCountChanged;
+            transform.DOKill();
         }
 
-        private void OnCountChanged(CardStack stack)
+        public void SetCount(int count)
         {
-            counterText.text = stack.Count.ToString();
+            counterText.text = count.ToString();
+        }
+
+        public void Refresh(int count)
+        {
+            SetCount(count);
+            PlayPopAnimation();
+        }
+
+        private void PlayPopAnimation()
+        {
+            transform.DOKill();
+            transform.localScale = _initScale;
+            transform.DOPunchScale(_initScale * popScale, popDuration, vibrato: 1, elasticity: 0.5f)
+                .SetTarget(transform);
         }
     }
 }

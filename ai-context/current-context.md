@@ -4,8 +4,8 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (end of the `unity-architect` review + fix pass on the
-AppScene/scene-flow work).
+Last updated: 2026-08-23 (end of an Ace of Shadows polish pass: real playing-card
+visuals, rendering/batching cleanup, Baloo 2 font, stack-counter pop animations).
 
 ## What we're building
 
@@ -18,9 +18,11 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 ## Current state
 
 ### Task progress
-- **Ace of Shadows: built and working.** 144-card deck drain between two stacks,
-  Source→Target, one move per second, message on completion. See "Ace of Shadows
-  architecture" below for detail.
+- **Ace of Shadows: built and working**, now past a polish/optimization pass.
+  144-card deck drain between two stacks, Source→Target, one move per second,
+  message on completion, real playing-card visuals (random per card), pop-animated
+  stack counters, no skybox/light (unlit sprites only), project-wide Baloo 2 font.
+  See "Ace of Shadows architecture" and "Rendering & performance" below for detail.
 - **Magic Words: not started.** `Assets/Scenes/MagicWordsScene.unity` exists as an empty
   placeholder (default camera + light only), registered in Build Settings, reachable
   from the main menu's "Magic Words" button. No script work yet.
@@ -145,6 +147,22 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `CommandScript` and again at namespace scope (illegal for a `private` type).
   Fix: declare every extra type as a separate top-level `internal class`, not
   nested inside `CommandScript`.
+- **`System.Reflection` and `UnityEditorInternal.FrameDebuggerUtility` are both
+  blocked/inaccessible from `Unity_RunCommand` scripts** (sandboxed assembly,
+  no reflection namespace, no internals-visibility) — can't set private fields
+  via reflection, and Frame Debugger data has to be read visually, not scripted.
+- **`SpriteAtlas` platform overrides need `overridden = true` explicitly set**,
+  not just the value — `platformSettings.maxTextureSize = 8192` alone silently
+  no-ops if `overridden` stays `false`. Also: the Editor's *preview* pack (what
+  Play Mode actually uses) reads the platform-specific bucket matching
+  `EditorUserBuildSettings.activeBuildTarget` (e.g. `"WebGL"`), **not**
+  `"DefaultTexturePlatform"` — setting only the Default bucket has no visible
+  effect on Play Mode testing even though it's correctly saved.
+- **`EditorSettings.spritePackerMode` defaults to `Disabled`** — with it disabled,
+  every `SpriteRenderer` renders from its raw, unpacked source texture in the
+  Editor (including Play Mode) regardless of any `SpriteAtlas` asset's own
+  settings; only a real Player build honors the atlas. Set to `AlwaysOnAtlas` to
+  make Editor Play Mode actually exercise atlas packing during iteration.
 
 ### Ace of Shadows architecture
 - **Domain** (`Assets/Feature/AceOfShadows/Scripts/Logic/`): `Card`, `CardStack`
@@ -162,18 +180,59 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   whatever stack it just joined, then never recomputed as more cards join on top),
   `AceOfShadowsController` (composition root), `StackCounterView`,
   `FinishedMessageView`.
+- **Tuning lives in `AceOfShadowsConfig`** (`Assets/Feature/AceOfShadows/Configs/AceOfShadowsConfig.asset`,
+  a `ScriptableObject` in `AceOfShadows.Monobehaviour`, needs `UnityEngine` so it
+  can't live in `Logic`): `totalCards`, `moveInterval`, `maxRotationDegrees`,
+  `moveDuration`, `moveEase`, `cardVisuals` (the random-visual list, see below) —
+  all previously scattered `[SerializeField]`s on `AceOfShadowsController`/`CardView`.
+  Public getters only (`TotalCards`, `MoveInterval`, ...). `CardView.Initialize(config)`
+  is how each card gets a reference. **Gotcha hit here:** after adding new fields to
+  an existing config asset, a stale in-memory `ScriptableObject` picked up garbage
+  values instead of the C# field initializer defaults on first reimport — always
+  verify a newly-added field's actual serialized value (Inspector or the raw
+  `.asset` YAML) rather than trusting the default expression took effect.
+- **Card visual: real playing-card prefabs, not a placeholder sprite.** `CardView.Initialize`
+  picks a random prefab from `config.CardVisuals` (`Random.Range(0, Count)` —
+  watch for the classic off-by-one, the upper bound is already exclusive) and
+  instantiates it as a child, zeroing its local position/rotation (the source
+  asset pack's prefabs have a baked-in nonzero root offset from their original
+  grid layout). Card faces come from a "PlayingCards" asset pack
+  (`Assets/Feature/AceOfShadows/Prefabs/PlayingCards/`, `Assets/Feature/AceOfShadows/Textures/`),
+  currently 2 decks kept in rotation (trimmed down from the pack's original 8 to
+  control texture/build-size cost). `Card.prefab` itself no longer has a
+  `SpriteRenderer` — it's just an empty root the picked visual gets parented under.
+  **`Assets/uVegas` (the previously-flagged watermarked pack, D10) is fully
+  removed** — superseded by the real card art.
+- **Stack counters pop-animate on their own timing, not a shared trigger.**
+  `StackCounterView.SetCount(int)` (text only, used once at startup) and
+  `.Refresh(int)` (text + a `DOPunchScale` pop, used on every move) are called
+  *directly* by `AceOfShadowsController` — deliberately not routed through an
+  event/interface on `CardStack`. The reason that matters: `CardDeck.MoveNext()`
+  pops `Source` and pushes `Target` in the same instant, so a naive
+  `CardStack.CountChanged`-driven pop would fire both counters together at move
+  *start* — wrong for the target, which should visually pop on *landing*.
+  `sourceCounterView.Refresh(...)` is called right after `_deck.MoveNext()` (card
+  leaves); `targetCounterView.Refresh(...)` is called from `OnCardLanded()`, the
+  actual DOTween completion callback for that card (card arrives). An
+  `IStackCountChangeNotifier` interface + `CardStack.Trigger` version of this was
+  built first and discarded — it added a round trip (controller → `CardStack.Trigger`
+  → back to the same `StackCounterView` the controller already had a reference to)
+  with no consumer that needed the decoupling. Same shape of call as D15's
+  `IInitializable` rejection: not worth the machinery at this project's scale.
 - **Cadence:** `Assets/Plugins/TimerUtil` (vendored, see below) drives a
-  `CountdownTimer(1s, loopCount: -1)` as the *sole* trigger for "start next move" —
-  it's fully decoupled from animation completion. The only invariant that keeps
-  this race-free: card move duration (0.35s) must stay under the 1s tick interval,
-  so a card always finishes landing before the next one starts.
+  `CountdownTimer(config.MoveInterval, loopCount: -1)` (1s) as the *sole* trigger
+  for "start next move" — it's fully decoupled from animation completion. The
+  only invariant that keeps this race-free: `config.MoveDuration` must stay
+  under `config.MoveInterval`, so a card always finishes landing before the next
+  one starts. (Values live in `AceOfShadowsConfig` now, see below — don't
+  hardcode either number here, they've already drifted once.)
 - **Draw order comes from Z position, not `SpriteRenderer.sortingOrder`.** The
   scene's camera is Perspective (not orthographic) with default transparency sort
   mode, which already sorts by camera distance — explicit sortingOrder was
   redundant. Each card gets a unique Z offset (uncapped, unlike the Y fan which
   caps at 12 cards deep for the visual) so draw order stays well-defined even among
   visually-overlapping cards.
-- **Random ±6° rotation per card**, assigned once at placement (not deterministic,
+- **Random rotation per card** (`config.MaxRotationDegrees`), assigned once at placement (not deterministic,
   not unit-tested — intentional one-off visual jitter). Target-stack cards get an
   additional 180° Y rotation as a visual "flip" distinguishing landed cards.
   Combined effect: stacks read as a messy pile of individual cards, not a smooth
@@ -183,9 +242,52 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `worldPositionStays: true` (the default) specifically so the reparent itself
   doesn't cause a visual snap; the subsequent DOTween move then animates smoothly
   from wherever the card actually is.
-- **Card visual:** `popups_11` sprite from `Assets/Art/Sprites/popups.png` (a
-  generic 2D UI asset pack, teal-bordered cream card-shaped panel). **Not**
-  `Assets/uVegas`'s card sprites — see decisions D10.
+
+### Rendering & performance (Ace of Shadows)
+- **AceOfShadowsScene has no Skybox and no Directional Light** — it's 100% unlit
+  sprites, neither was doing anything. Camera clears to Solid Color instead
+  (same tint the skybox used to render) and the `Directional Light` GameObject
+  was deleted outright.
+- **Scene Canvas is Screen Space - Camera, not Overlay** — required, not
+  cosmetic: a new full-screen `Bg` panel (first child of the Canvas) needs to
+  composite *behind* the card stacks by actual depth, and Overlay mode always
+  draws on top of everything regardless of scene depth. Screen Space - Camera
+  respects real Z against the 3D cards.
+- **Stack counters (`SourceCounter`/`TargetCounter`) are World Space canvases**
+  now (`CounterCanvas.prefab`), parented directly under `SourceStack`/`TargetStack`,
+  instead of two flat screen-corner HUD labels — the count sits physically above
+  its own pile.
+- **A real batching investigation happened here, worth knowing before touching
+  card-visual code again:**
+  - Naive assumption going in was wrong: increasing card-visual variety (8 decks)
+    tanked SetPass calls (143), and the fix looked like "texture atlas the decks."
+    A `PlayingCards.spriteatlas` was built and the 8 deck textures' `Sprite Mesh
+    Type` was switched `Tight → Full Rect` (Tight was generating ~24-vert outline
+    meshes per card instead of a 4-vert quad — a real, separate bug, worth keeping
+    fixed regardless of the atlas).
+  - **The atlas turned out to not even be exercised during any of this testing**:
+    `EditorSettings.spritePackerMode` was `Disabled` project-wide, so every Editor
+    Play Mode session was rendering cards from their raw, unpacked source
+    textures the whole time. Fixed to `AlwaysOnAtlas` — Play Mode now actually
+    packs and uses it. (A real Player *build* would have used the atlas
+    regardless of this Editor-only setting.)
+  - **Frame Debugger revealed the real story**: `DrawTransparentObjects` (all 288
+    card sprite renderers) is only **2 draw calls** — cards were never the
+    bottleneck once deck-texture variety came down. The actual cost is URP
+    post-processing: **Bloom alone is ~16 of ~37 total passes**, plus SSAO (4,
+    computes ambient occlusion for *lit* geometry — has zero visible effect on
+    unlit sprites, a free win to disable, not yet done), Skybox/LUT/CopyColor/UberPost,
+    and UI Canvas rendering. `Assets/Settings/SampleSceneProfile.asset` (Bloom +
+    Vignette + Tonemapping, all active) is the **unmodified default URP template
+    Volume profile** — never deliberately chosen for this project.
+  - **Open/undecided**: whether to disable SSAO (free, no visual cost) and
+    whether to keep Bloom/Vignette/Tonemapping (real visual effect, aesthetics
+    grading criteria cuts both ways) is still the developer's call — see
+    Immediate next steps.
+  - `UnityEditorInternal.FrameDebuggerUtility` is not accessible from a
+    `Unity_RunCommand` script (compiles into a sandboxed assembly without
+    internals-visibility) — Frame Debugger has to be read visually/by screenshot,
+    not scripted.
 
 ### Scene-flow architecture
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
@@ -255,7 +357,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   instead of `SceneManager.LoadScene` directly, guarded against a null `Instance`.
 - **Back-to-home buttons**: `Assets/App/SceneFlow/Prefabs/HomeButton.prefab`
   (renamed from `BackButton.prefab`, D13) — top-right anchored, `buttons_41` sprite
-  (green "home" icon from `Assets/Art/Sprites/buttons.png`, chosen since it reads
+  (green "home" icon from `Assets/App/Sprites/UI/buttons.png`, chosen since it reads
   as "return to main menu" and needs no extra label). Instanced into
   `AceOfShadowsScene.unity`, `MagicWordsScene.unity`, `PhoenixFlameScene.unity` (not MainMenu —
   that's home, nothing to go back to). `MagicWords`/`PhoenixFlame` were empty
@@ -281,7 +383,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `MainMenuButton.prefab` instance with a self-wiring `MenuButtonSceneLoader`
   (`OnValidate` grabs its own `Button` via `TryGetComponent`), calling
   `SceneService.Instance.Navigate` on click (see "Scene-flow architecture").
-  Button art: `Assets/Art/Sprites/buttons.png` (blue = Ace of Shadows, green = Magic
+  Button art: `Assets/App/Sprites/UI/buttons.png` (blue = Ace of Shadows, green = Magic
   Words, red/orange = Phoenix Flame).
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
@@ -311,17 +413,26 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Definition-of-Done list.
 
 ### Available asset packs
-- **`Assets/Art/Sprites`** — clean, no watermark, currently in active use (main
-  menu buttons, Ace of Shadows card). `buttons.png`, `icons.png`, `popups.png`,
-  `additional controls.png`.
-- **`Assets/uVegas`** — a real card-game framework (rank/suit glyphs for all 13
-  ranks + 4 suits, `UICard` component, 9 `CardTheme` ScriptableObjects). **Its
-  `Front.png`/`Back.png` base card sprites have a "uVegas" watermark baked directly
-  into the texture** (confirmed via in-engine close-up capture, not visible in a
-  flattened preview) — don't use those two specifically unless there's a licensed,
-  non-trial copy. The rank/suit glyphs weren't checked for watermarks.
-- `Assets/300Mind` (the original "2D Game UI Kit") was **removed** — fully
-  superseded by `Assets/Art/Sprites`.
+- **`Assets/App/Sprites`** (moved from `Assets/Art/Sprites`, GUIDs preserved) —
+  clean, no watermark, in active use (main menu buttons, home button icon).
+  `buttons.png`, `icons.png`, `popups.png`, `additional controls.png`.
+- **`Assets/Feature/AceOfShadows/Prefabs/PlayingCards` + `.../Textures`** — a real
+  playing-card asset pack (per-rank/suit prefabs across multiple decks, 2 currently
+  kept in `AceOfShadowsConfig.CardVisuals`), packed into
+  `Assets/Feature/AceOfShadows/Textures/PlayingCards.spriteatlas`. This is what
+  Ace of Shadows' cards actually render now — see "Rendering & performance" above.
+- **`Assets/Art/Fonts/Baloo2`** — Baloo 2 (Google Fonts, OFL-licensed), downloaded
+  as a single variable-weight `.ttf` (Google Fonts no longer ships separate static
+  weight files for it) resolved to the Regular named instance. `Baloo2 SDF.asset`
+  is the generated TMP Font Asset, now the TMP Settings default and assigned to
+  every existing TMP text in the project (FPS counter, finished-message, stack
+  counters). No Bold variant yet — would need extracting a separate static
+  instance from the variable font, more tooling than a straight download.
+- **`Assets/uVegas` — removed entirely** (was previously kept-but-unused due to a
+  watermark on its `Front.png`/`Back.png`, see D10 — fully superseded now that
+  real playing-card art is in use, no remaining references anywhere in `Assets/`).
+- `Assets/300Mind` (the original "2D Game UI Kit") was **removed** earlier — fully
+  superseded by the sprite packs above.
 
 ### Other packages/deps in use
 - **DOTween + DOTweenPro** (`Assets/Plugins/Demigiant`), `DOTWEEN` /
@@ -343,6 +454,15 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
+0. **Decide on SSAO/Bloom/Vignette/Tonemapping in `SampleSceneProfile.asset`**
+   (see "Rendering & performance" above) — SSAO is a free, no-visual-cost
+   disable; Bloom/Vignette/Tonemapping are the unmodified URP template defaults
+   and a real aesthetics call the developer hasn't made yet. Also worth a real
+   Play Mode look (not just Editor stats) at whether the stack-counter pop
+   animations and the new Screen Space - Camera canvas / world-space counters
+   actually read correctly, since that whole chain (`Bg` panel depth-sorting
+   against the cards, `CounterCanvas` world-space scale) has only been verified
+   by reasoning through the YAML, not by eye.
 1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and

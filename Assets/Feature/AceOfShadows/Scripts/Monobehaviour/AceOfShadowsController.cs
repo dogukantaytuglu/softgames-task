@@ -29,8 +29,8 @@ namespace AceOfShadows.Monobehaviour
 
             CreateCardViews();
 
-            sourceCounterView.Bind(_deck.Source);
-            targetCounterView.Bind(_deck.Target);
+            sourceCounterView.SetCount(_deck.Source.Count);
+            targetCounterView.SetCount(_deck.Target.Count);
             finishedMessageView.Initialize();
 
             _timer = TimerService.CreateCountdownTimer(config.MoveInterval, loopCount: -1)
@@ -69,6 +69,7 @@ namespace AceOfShadows.Monobehaviour
             if (_deck.Source.Count > 0)
             {
                 _deck.MoveNext();
+                sourceCounterView.Refresh(_deck.Source.Count);
             }
             else
             {
@@ -96,7 +97,13 @@ namespace AceOfShadows.Monobehaviour
             var localPosition = CardStackLayout.GetOffset(distanceFromBottom);
             var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees, ySeed: 180);
 
-            view.MoveTo(localPosition, localRotation, _deck.NotifyCardLanded);
+            view.MoveTo(localPosition, localRotation, OnCardLanded);
+        }
+
+        private void OnCardLanded()
+        {
+            _deck.NotifyCardLanded();
+            targetCounterView.Refresh(_deck.Target.Count);
         }
 
         private void OnAllAnimationsFinished()
