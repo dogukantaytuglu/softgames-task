@@ -1,28 +1,32 @@
+using FpsCounter.Logic;
 using TMPro;
 using UnityEngine;
 
-public class FpsCountUIController : MonoBehaviour
+namespace FpsCounter.Monobehaviour
 {
-    [SerializeField] private TMP_Text fpsText;
-    [SerializeField] private float updateInterval = 0.5f;
-
-    private FpsCalculator _fpsCalculator;
-    private int _lastDisplayedFps = -1;
-
-    private void Awake()
+    public class FpsCountUIController : MonoBehaviour
     {
-        _fpsCalculator = new FpsCalculator(updateInterval);
-    }
+        [SerializeField] private TMP_Text fpsText;
+        [SerializeField] private float updateInterval = 0.5f;
 
-    private void Update()
-    {
-        _fpsCalculator.Sample(Time.unscaledDeltaTime);
+        private FpsCalculator _fpsCalculator;
+        private int _lastDisplayedFps = -1;
 
-        var roundedFps = Mathf.RoundToInt(_fpsCalculator.CurrentFps);
-        if (roundedFps == _lastDisplayedFps)
-            return;
+        private void Awake()
+        {
+            _fpsCalculator = new FpsCalculator(updateInterval);
+        }
 
-        _lastDisplayedFps = roundedFps;
-        fpsText.text = $"{roundedFps} FPS";
+        private void Update()
+        {
+            _fpsCalculator.Sample(Time.unscaledDeltaTime);
+
+            var roundedFps = Mathf.RoundToInt(_fpsCalculator.CurrentFps);
+            if (roundedFps == _lastDisplayedFps)
+                return;
+
+            _lastDisplayedFps = roundedFps;
+            fpsText.text = $"{roundedFps} FPS";
+        }
     }
 }

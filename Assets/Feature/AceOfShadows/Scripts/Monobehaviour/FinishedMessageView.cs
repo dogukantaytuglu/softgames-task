@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Feature.AceOfShadows.Scripts.Monobehaviour
+namespace AceOfShadows.Monobehaviour
 {
     public class FinishedMessageView : MonoBehaviour
     {

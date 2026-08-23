@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Feature.AceOfShadows.Scripts.Monobehaviour
+namespace AceOfShadows.Monobehaviour
 {
     public static class CardStackLayout
     {

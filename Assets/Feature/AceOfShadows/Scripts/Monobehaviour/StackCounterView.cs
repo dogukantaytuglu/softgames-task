@@ -2,7 +2,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
-namespace Feature.AceOfShadows.Scripts.Monobehaviour
+namespace AceOfShadows.Monobehaviour
 {
     public class StackCounterView : MonoBehaviour
     {

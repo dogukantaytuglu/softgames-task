@@ -3,7 +3,7 @@ using DG.Tweening;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Feature.AceOfShadows.Scripts.Monobehaviour
+namespace AceOfShadows.Monobehaviour
 {
     [RequireComponent(typeof(RectTransform))]
     public class CardView : MonoBehaviour

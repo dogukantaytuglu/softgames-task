@@ -1,33 +1,36 @@
-using Feature.AceOfShadows.Scripts.Monobehaviour;
+using AceOfShadows.Monobehaviour;
 using NUnit.Framework;
 using UnityEngine;
 
-public class CardStackLayoutTests
+namespace AceOfShadows.Tests
 {
-    [Test]
-    public void GetOffset_AtBottom_IsZero()
+    public class CardStackLayoutTests
     {
-        var offset = CardStackLayout.GetOffset(0);
+        [Test]
+        public void GetOffset_AtBottom_IsZero()
+        {
+            var offset = CardStackLayout.GetOffset(0);
 
-        Assert.AreEqual(Vector2.zero, offset);
-    }
+            Assert.AreEqual(Vector2.zero, offset);
+        }
 
-    [Test]
-    public void GetOffset_IncreasesLinearly_BelowCapDepth()
-    {
-        var offsetAtOne = CardStackLayout.GetOffset(1);
-        var offsetAtTwo = CardStackLayout.GetOffset(2);
+        [Test]
+        public void GetOffset_IncreasesLinearly_BelowCapDepth()
+        {
+            var offsetAtOne = CardStackLayout.GetOffset(1);
+            var offsetAtTwo = CardStackLayout.GetOffset(2);
 
-        Assert.Greater(offsetAtTwo.y, offsetAtOne.y);
-        Assert.AreEqual(offsetAtOne.y * 2f, offsetAtTwo.y, 0.0001f);
-    }
+            Assert.Greater(offsetAtTwo.y, offsetAtOne.y);
+            Assert.AreEqual(offsetAtOne.y * 2f, offsetAtTwo.y, 0.0001f);
+        }
 
-    [Test]
-    public void GetOffset_IsFlat_AtAndBeyondCapDepth()
-    {
-        var atCap = CardStackLayout.GetOffset(12);
-        var wellBeyondCap = CardStackLayout.GetOffset(143);
+        [Test]
+        public void GetOffset_IsFlat_AtAndBeyondCapDepth()
+        {
+            var atCap = CardStackLayout.GetOffset(12);
+            var wellBeyondCap = CardStackLayout.GetOffset(143);
 
-        Assert.AreEqual(atCap.y, wellBeyondCap.y, 0.0001f);
+            Assert.AreEqual(atCap.y, wellBeyondCap.y, 0.0001f);
+        }
     }
 }
