@@ -17,9 +17,12 @@ namespace AceOfShadows.Monobehaviour
         [SerializeField] private FinishedMessageView finishedMessageView;
         [SerializeField] private Image countdownFill;
 
+        private const float CountdownFillStep = 0.01f;
+
         private CardDeck _deck;
         private readonly Dictionary<int, CardView> _cardViewsByCardId = new();
         private CountdownTimer _timer;
+        private float _lastCountdownFillAmount = -1f;
 
         private void Awake()
         {
@@ -74,17 +77,29 @@ namespace AceOfShadows.Monobehaviour
             else
             {
                 _timer.Stop();
-                if (countdownFill != null)
-                    countdownFill.fillAmount = 0f;
+                SetCountdownFill(0f);
             }
         }
 
+        // OnTick fires every frame - writing Image.fillAmount unconditionally would
+        // dirty this Graphic (and force a canvas batch rebuild for every sibling in
+        // the same Canvas, 144 cards' worth) every single frame for the whole run.
+        // Same "only touch it when the displayed value actually changes" pattern
+        // FpsCountUIController already uses.
         private void UpdateCountdownFill()
         {
-            if (countdownFill == null)
+            var fillAmount = 1f - _timer.CountdownPercent;
+            if (Mathf.Abs(fillAmount - _lastCountdownFillAmount) < CountdownFillStep)
                 return;
 
-            countdownFill.fillAmount = 1f - _timer.CountdownPercent;
+            SetCountdownFill(fillAmount);
+        }
+
+        private void SetCountdownFill(float fillAmount)
+        {
+            _lastCountdownFillAmount = fillAmount;
+            if (countdownFill != null)
+                countdownFill.fillAmount = fillAmount;
         }
 
         private void OnCardMoved(CardMove move)
@@ -145,9 +160,7 @@ namespace AceOfShadows.Monobehaviour
             targetCounterView.SetCount(_deck.Target.Count);
 
             finishedMessageView.Hide();
-
-            if (countdownFill != null)
-                countdownFill.fillAmount = 0f;
+            SetCountdownFill(0f);
 
             _timer.Start();
         }
