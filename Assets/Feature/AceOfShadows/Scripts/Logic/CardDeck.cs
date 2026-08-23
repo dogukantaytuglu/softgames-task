@@ -2,10 +2,6 @@ using System;
 
 namespace AceOfShadows.Logic
 {
-    // Deliberately timer-agnostic: MoveNext() is called externally, once per
-    // "it's time to move a card" tick, wherever that cadence comes from. That
-    // keeps the sequencing/completion logic testable without waiting on any
-    // real-time timer.
     public sealed class CardDeck
     {
         public CardStack Source { get; }
