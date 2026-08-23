@@ -31,7 +31,7 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
 
             sourceCounterView.SetCount(_deck.Source.Count);
             targetCounterView.SetCount(_deck.Target.Count);
-            finishedMessageView.Initialize();
+            finishedMessageView.Initialize(Restart);
 
             _timer = TimerService.CreateCountdownTimer(config.MoveInterval, loopCount: -1)
                 .OnTick(UpdateCountdownFill)
@@ -123,6 +123,33 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
                 var delay = i * config.ExitStagger;
                 view.AnimateExitDown(config.ExitDistance, config.ExitDuration, config.ExitEase, delay, null);
             }
+        }
+
+        private void Restart()
+        {
+            foreach (var view in _cardViewsByCardId.Values)
+                Destroy(view.gameObject);
+            _cardViewsByCardId.Clear();
+
+            _deck.CardMoved -= OnCardMoved;
+            _deck.AllAnimationsFinished -= OnAllAnimationsFinished;
+            _deck = new CardDeck(config.TotalCards);
+            _deck.CardMoved += OnCardMoved;
+            _deck.AllAnimationsFinished += OnAllAnimationsFinished;
+
+            CreateCardViews();
+
+            sourceCounterView.Show();
+            targetCounterView.Show();
+            sourceCounterView.SetCount(_deck.Source.Count);
+            targetCounterView.SetCount(_deck.Target.Count);
+
+            finishedMessageView.Hide();
+
+            if (countdownFill != null)
+                countdownFill.fillAmount = 0f;
+
+            _timer.Start();
         }
     }
 }

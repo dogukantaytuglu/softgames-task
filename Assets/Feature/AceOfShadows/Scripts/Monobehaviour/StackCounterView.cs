@@ -39,6 +39,11 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
             counterText.gameObject.SetActive(false);
         }
 
+        public void Show()
+        {
+            counterText.gameObject.SetActive(true);
+        }
+
         private void PlayPopAnimation()
         {
             transform.DOKill();

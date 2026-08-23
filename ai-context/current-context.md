@@ -4,10 +4,12 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (Ace of Shadows cards/stacks converted from world-space
-SpriteRenderers to UI RectTransform/Image under a Screen Space - Overlay Canvas —
-see D21 in decisions.md — following an earlier polish pass: real playing-card
-visuals, rendering/batching cleanup, Baloo 2 font, stack-counter pop animations).
+Last updated: 2026-08-23 (Ace of Shadows: world-space → UI conversion (D21,
+pushed as `73ed6c7`), then an exit-cascade animation on completion (D22, pushed
+as `db4dd75`), then a Restart button (D23, **uncommitted** — pending the
+developer's Play Mode check). ⚠️ **Working tree currently also has `totalCards`
+at `10` in `AceOfShadowsConfig.asset`, uncommitted** — a leftover test value,
+not `144` — revert before committing anything from this session.)
 
 ## What we're building
 
@@ -20,14 +22,21 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 ## Current state
 
 ### Task progress
-- **Ace of Shadows: built and working**, now past a polish/optimization pass and
-  a UI conversion (D21). 144-card deck drain between two stacks, Source→Target,
-  one move per second, message on completion, real playing-card visuals (random
-  per card), pop-animated stack counters, project-wide Baloo 2 font. Cards/stacks
-  render as UI (RectTransform/Image under a Screen Space - Overlay Canvas) as of
-  2026-08-23, not world-space SpriteRenderers — see "Ace of Shadows architecture"
-  and "Rendering & performance" below, and D21 in decisions.md. Not yet
-  Play Mode-verified since that conversion (next steps item 0b).
+- **Ace of Shadows: built and working**, now past a polish/optimization pass, a
+  UI conversion (D21), an exit-cascade animation (D22), and a Restart button
+  (D23). 144-card deck drain between two stacks, Source→Target, one move per
+  second, message on completion, real playing-card visuals (random per card),
+  pop-animated stack counters, project-wide Baloo 2 font. Cards/stacks render as
+  UI (RectTransform/Image under a Screen Space - Overlay Canvas) as of
+  2026-08-23, not world-space SpriteRenderers. Once the deck empties: both
+  counters hide and every landed card cascades off-screen (staggered), the
+  finished message shows, and a Restart button on that message rebuilds the
+  deck/cards from scratch and restarts the timer. See "Ace of Shadows
+  architecture" and "Rendering & performance" below, and D21/D22/D23 in
+  decisions.md. **Nothing past D21 has been Play Mode-verified yet** — D21 and
+  D22 are committed/pushed anyway (developer's call, per the established
+  workflow); D23 (Restart) is still sitting uncommitted pending that check (next
+  steps item 0b).
 - **Magic Words: not started.** `Assets/Scenes/MagicWordsScene.unity` exists as an empty
   placeholder (default camera + light only), registered in Build Settings, reachable
   from the main menu's "Magic Words" button. No script work yet.
@@ -264,6 +273,24 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   default) specifically so the reparent itself doesn't cause a visual snap; the
   subsequent DOTween `DOAnchorPos` move then animates smoothly from wherever the
   card actually is.
+- **On completion, the board clears itself (D22):** `AceOfShadowsController.
+  OnAllAnimationsFinished` hides both `StackCounterView`s, shows the finished
+  message, and cascades every card in `_deck.Target.Cards` (the domain stack's
+  own bottom-to-top list, mapped through `_cardViewsByCardId` — not a
+  `GetComponentsInChildren` scene query) straight down off-screen via
+  `CardView.AnimateExitDown`, each with `i * config.ExitStagger` delay so they
+  fall in sequence rather than as one block. All four numbers
+  (`ExitDistance`/`ExitDuration`/`ExitEase`/`ExitStagger`) live in
+  `AceOfShadowsConfig`. These three things (message show, counters hide, cascade
+  start) all fire in the same instant right now, not staged — worth deciding
+  whether the message should wait for the cascade to finish landing first.
+- **Restart (D23):** a `RestartButton` on the finished-message panel calls
+  `AceOfShadowsController.Restart()`, which destroys every existing `CardView`,
+  throws away the current `CardDeck` and builds a fresh one, calls the same
+  `CreateCardViews()` `Awake()` already uses, re-shows/resets both counters,
+  hides the finished message, and calls `_timer.Start()` (safe post-`Stop()` —
+  resets the countdown fully, see the D13 TimerUtil fix). Not a per-card reset —
+  a full rebuild reusing the existing first-time-setup path.
 
 ### Rendering & performance (Ace of Shadows)
 - **AceOfShadowsScene has no Skybox and no Directional Light** — it's 100% unlit
@@ -493,21 +520,30 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    (see "Rendering & performance" above) — SSAO is a free, no-visual-cost
    disable; Bloom/Vignette/Tonemapping are the unmodified URP template defaults
    and a real aesthetics call the developer hasn't made yet.
-0b. **Play Mode-verify the D21 UI conversion** (cards/stacks moved from world-space
-   SpriteRenderers to UI RectTransform/Image under a Screen Space - Overlay
-   Canvas — see "Ace of Shadows architecture" and decisions.md D21). Compiles
-   clean, 33/33 EditMode tests pass, and the resulting prefab/scene YAML was
-   read back and sanity-checked, but nothing here has been seen running yet:
-   card sizes (260px tall, eyeballed), the `PerCardOffset` fan spread (3px/card,
-   also eyeballed — likely needs retuning by eye), draw order via Canvas sibling
-   index, the stack-counter pop animations against the new anchored stack
-   positions (25%/75% width), and whether the nested `CounterCanvas` World Space
-   canvas still renders correctly parented under an Overlay canvas. Also note:
-   this conversion fixes the *underlying* rendering approach (proportional
-   anchoring under `CanvasScaler` instead of fixed world positions) but does
-   **not** yet add an actual landscape↔portrait layout switch (different anchor
-   presets per orientation) — that's still open, this was the prerequisite for
-   it, not the thing itself.
+0a. **Revert `AceOfShadowsConfig.asset`'s `totalCards` from `10` back to `144`**
+   before committing anything else — currently sitting uncommitted in the
+   working tree as a leftover test value from iterating on the restart loop.
+0b. **Play Mode-verify D21 + D22 + D23 together** (cards/stacks moved from
+   world-space SpriteRenderers to UI RectTransform/Image under a Screen Space -
+   Overlay Canvas; the exit-cascade animation on completion; the Restart button
+   — see "Ace of Shadows architecture" and decisions.md D21/D22/D23). D21 and
+   D22 are committed/pushed anyway (developer's call); D23 is not yet committed,
+   waiting on this check. Compiles clean, 33/33 EditMode tests pass, and the
+   resulting prefab/scene YAML was read back and sanity-checked, but nothing
+   here has been seen running yet: card sizes (260px tall, eyeballed), the
+   `PerCardOffset` fan spread (3px/card, also eyeballed), draw order via Canvas
+   sibling index, the stack-counter pop animations against the new anchored
+   stack positions (25%/75% width), whether the nested `CounterCanvas` World
+   Space canvas still renders correctly parented under an Overlay canvas, the
+   exit-cascade's timing/distance/stagger (see the "fires simultaneously, not
+   staged" note above), and the full Restart click → rebuild → replay loop
+   (including clicking Restart mid-exit-animation, which kills in-flight
+   DOTween tweens via `CardView.OnDestroy`). Also note: this conversion fixes
+   the *underlying* rendering approach (proportional anchoring under
+   `CanvasScaler` instead of fixed world positions) but does **not** yet add an
+   actual landscape↔portrait layout switch (different anchor presets per
+   orientation) — that's still open, this was the prerequisite for it, not the
+   thing itself.
 1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and

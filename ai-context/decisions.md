@@ -6,6 +6,39 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D23 — Ace of Shadows: Restart button, recreate the CardDeck rather than reset it in place (2026-08-23)
+**Choice:** `FinishedMessageView` gained a `restartButton` (new `RestartButton` GameObject under the `FinishedMessage`
+panel, green button + TMP "Restart" label in Baloo 2, wired to `Button.onClick`) and `Initialize(Action onRestart)`
+now takes the restart callback instead of no args. `AceOfShadowsController.Restart()`: destroys every existing
+`CardView` and clears `_cardViewsByCardId`, discards the current `CardDeck` and constructs a brand new one
+(`_deck = new CardDeck(config.TotalCards)`, unsubscribe/resubscribe `CardMoved`/`AllAnimationsFinished`), calls the
+existing `CreateCardViews()` to rebuild the fanned source pile from scratch, re-`Show()`s both counters (new
+counterpart to the existing `Hide()`), resets their text, `Hide()`s the finished message, resets the countdown
+fill, and calls `_timer.Start()`.
+**Why:** Requested directly. Recreating the deck/views from scratch rather than writing bespoke "return each card
+to its source position" reset logic reuses the exact same code path `Awake()` already exercises for first-time
+setup — one tested path instead of two. This only works cleanly because `Timer.Start()` after `Stop()` fully
+resets the countdown (`PrepareStart()` → `ResetDuration()`), which was specifically the point of the D13 TimerUtil
+fix ("`Start()` now re-registers... so `Restart()` still works" — this is that promise being cashed in). Not yet
+committed to git as of this writing — sitting in the working tree pending the developer's Play Mode check, same as
+D22 was before it got committed.
+
+### D22 — Ace of Shadows: cards cascade off-screen when the deck finishes (2026-08-23)
+**Choice:** `AceOfShadowsConfig` gained `exitDistance` (1600px), `exitDuration` (0.5s), `exitEase` (`InBack`),
+`exitStagger` (0.02s/card). `CardView.AnimateExitDown` tweens a card's `anchoredPosition` straight down by
+`exitDistance` with an optional per-card delay. `AceOfShadowsController.OnAllAnimationsFinished` now hides both
+stack counters and cascades every card in `_deck.Target.Cards` off-screen (each with `i * exitStagger` delay,
+reading from the domain `CardStack`'s own list — same pattern `CreateCardViews` already used for the source
+stack — not a `GetComponentsInChildren` scene-hierarchy query) alongside showing the finished message. Committed
+as `db4dd75` ("polish animation compelte moment") on top of D21's UI conversion, and pushed to `origin/master`.
+**Why:** This iteration happened through the developer resuming the same background agent directly (outside the
+main conversation thread) rather than through this session, so the original framing/ask isn't in this
+conversation's history — documented here from the committed code itself, which is unambiguous. One open call the
+agent flagged at the time and the developer's resolution isn't recorded: the finished message, counter-hide, and
+card cascade all fire simultaneously rather than staged (message appears while cards are still falling) — the
+shipped code still does this, so either that was accepted as-is or is worth revisiting. `exitDistance: 1600` is a
+flat canvas-unit offset, not derived from actual canvas height — not resolution-aware, flagged as fine "for now."
+
 ### D21 — Ace of Shadows cards moved from world-space SpriteRenderers to UI (RectTransform/Image) (2026-08-23)
 **Choice:** Cards, `SourceStack`/`TargetStack`, and the scene's `OverlayUI` Canvas are no longer split across
 world-space (cards) and Screen Space - Camera (HUD) — everything now lives in one Screen Space - Overlay
