@@ -17,8 +17,7 @@ namespace AceOfShadows.Monobehaviour
 
         private void PickRandomVisual(AceOfShadowsConfig config)
         {
-            // var randomIndex = Random.Range(0, config.CardVisuals.Count);
-            var randomIndex = 0;
+            var randomIndex = Random.Range(0, config.CardVisuals.Count);
             var randomVisual = config.CardVisuals[randomIndex];
             var generatedVisual = Instantiate(randomVisual, transform);
             generatedVisual.transform.localPosition = Vector3.zero;
