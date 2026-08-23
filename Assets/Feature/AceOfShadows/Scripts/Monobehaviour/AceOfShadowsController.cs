@@ -19,9 +19,6 @@ namespace AceOfShadows.Monobehaviour
         [SerializeField] private FinishedMessageView finishedMessageView;
         [SerializeField] private Image countdownFill;
 
-        private const int SourceStackSlot = 0;
-        private const int TargetStackSlot = 1;
-
         private CardDeck _deck;
         private readonly Dictionary<int, CardView> _cardViewsByCardId = new();
         private CountdownTimer _timer;
@@ -64,8 +61,7 @@ namespace AceOfShadows.Monobehaviour
 
                 var localPosition = CardStackLayout.GetOffset(i);
                 var localRotation = CardStackLayout.GetRandomZRotation(maxRotationDegrees);
-                var sortingOrder = CardStackLayout.GetSortingOrder(SourceStackSlot, i);
-                view.SetPositionImmediate(localPosition, localRotation, sortingOrder);
+                view.SetPositionImmediate(localPosition, localRotation);
 
                 _cardViewsByCardId[card.Id] = view;
             }
@@ -102,9 +98,8 @@ namespace AceOfShadows.Monobehaviour
 
             var localPosition = CardStackLayout.GetOffset(distanceFromBottom);
             var localRotation = CardStackLayout.GetRandomZRotation(maxRotationDegrees, ySeed: 180);
-            var sortingOrder = CardStackLayout.GetSortingOrder(TargetStackSlot, distanceFromBottom);
 
-            view.MoveTo(localPosition, localRotation, sortingOrder, _deck.NotifyCardLanded);
+            view.MoveTo(localPosition, localRotation, _deck.NotifyCardLanded);
         }
 
         private void OnAllAnimationsFinished()
