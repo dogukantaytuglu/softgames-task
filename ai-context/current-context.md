@@ -4,12 +4,17 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (Ace of Shadows: world-space → UI conversion (D21,
-pushed as `73ed6c7`), then an exit-cascade animation on completion (D22, pushed
-as `db4dd75`), then a Restart button (D23, **uncommitted** — pending the
-developer's Play Mode check). ⚠️ **Working tree currently also has `totalCards`
-at `10` in `AceOfShadowsConfig.asset`, uncommitted** — a leftover test value,
-not `144` — revert before committing anything from this session.)
+Last updated: 2026-08-24. Ace of Shadows is done and everything through D27 is
+committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
+(D22), Restart button (D23), a `unity-interviewer` audit (first run, see
+Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
+(D25), build-size lever outcomes (D26 — packages/modules trimmed, crunch tried
+and declined, stripping/exceptions declined outright), and a real README (D27).
+**Nothing past D21 has actually been Play Mode-verified by the developer yet**
+— still an open item, see Immediate next steps. **Magic Words: endpoint fetched
+and read, nothing built yet** — real findings logged under Immediate next steps
+item 2, meant to be picked up fresh (developer is starting a new session for
+this). Phoenix Flame: not started at all.
 
 ## What we're building
 
@@ -23,23 +28,29 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ### Task progress
 - **Ace of Shadows: built and working**, now past a polish/optimization pass, a
-  UI conversion (D21), an exit-cascade animation (D22), and a Restart button
-  (D23). 144-card deck drain between two stacks, Source→Target, one move per
-  second, message on completion, real playing-card visuals (random per card),
-  pop-animated stack counters, project-wide Baloo 2 font. Cards/stacks render as
-  UI (RectTransform/Image under a Screen Space - Overlay Canvas) as of
-  2026-08-23, not world-space SpriteRenderers. Once the deck empties: both
+  UI conversion (D21), an exit-cascade animation (D22), a Restart button (D23),
+  a `unity-interviewer` audit + mechanical fixes (D24), a landscape lock (D25),
+  and build-size lever decisions (D26). 144-card deck drain between two stacks,
+  Source→Target, one move per second, message on completion, real playing-card
+  visuals (random per card), pop-animated stack counters, project-wide Baloo 2
+  font. Cards/stacks render as UI (RectTransform/Image under a Screen Space -
+  Overlay Canvas), not world-space SpriteRenderers. Once the deck empties: both
   counters hide and every landed card cascades off-screen (staggered), the
   finished message shows, and a Restart button on that message rebuilds the
   deck/cards from scratch and restarts the timer. See "Ace of Shadows
-  architecture" and "Rendering & performance" below, and D21/D22/D23 in
-  decisions.md. **Nothing past D21 has been Play Mode-verified yet** — D21 and
-  D22 are committed/pushed anyway (developer's call, per the established
-  workflow); D23 (Restart) is still sitting uncommitted pending that check (next
-  steps item 0b).
-- **Magic Words: not started.** `Assets/Scenes/MagicWordsScene.unity` exists as an empty
-  placeholder (default camera + light only), registered in Build Settings, reachable
-  from the main menu's "Magic Words" button. No script work yet.
+  architecture" and "Rendering & performance" below, and D21-D26 in
+  decisions.md. **All of it is committed and pushed to `origin/master`**, but
+  **nothing past D21 has actually been Play Mode-verified by the developer
+  yet** — still an open item (next steps item 0b), don't assume it's been
+  clicked through just because it compiles and the tests pass.
+- **Magic Words: endpoint fetched and read (2026-08-24), nothing built yet.**
+  Real findings — schema, the emoji-are-named-tokens discovery, the duplicate/
+  broken avatar data — are logged in full under Immediate next steps item 2.
+  Read that before designing anything; it changes assumptions the brief's own
+  guidance made. `Assets/Scenes/MagicWordsScene.unity` exists as an empty
+  placeholder (Canvas/EventSystem/HomeButton only, see Scene-flow architecture),
+  registered in Build Settings, reachable from the main menu's "Magic Words"
+  button. No script work yet.
 - **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
   wired into the menu, nothing built.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
@@ -575,13 +586,62 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    unhardened version of
    this loop was ever actually clicked through in Play Mode. Do that before
    building on top of it.
-2. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about
-   this — before designing anything; the emoji-in-TextMeshPro spike from the
-   original Phase 0 plan was never actually done, so that risk is still live).
-   The scene already has a Canvas/EventSystem/HomeButton now — just needs the
-   actual dialogue content built inside it. Any root-`Instantiate` inside it should
-   go through a scene-local parent (see the `sceneLoaded`-timing note under
-   Scene-flow architecture) rather than relying on the active scene being correct.
+2. **Build Magic Words.** The endpoint (`https://private-624120-softgamesassignment.apiary-mock.com/v3/magicwords`)
+   has been fetched and read (2026-08-24), per `BRIEF.md` §5's "design nothing
+   before seeing it" instruction — nothing has been designed or built yet, this
+   is raw findings for whoever picks this up next. Real response:
+   ```json
+   {
+     "dialogue": [
+       { "name": "Sheldon", "text": "I admit {satisfied} the design of Cookie Crush is quite elegant..." },
+       { "name": "Leonard", "text": "That's practically a compliment, Sheldon. {intrigued} Are you feeling okay?" },
+       // ...17 lines total, Sheldon/Leonard/Penny/Neighbour
+     ],
+     "avatars": [
+       { "name": "Sheldon", "url": "https://api.dicebear.com/9.x/personas/png?...", "position": "left" },
+       { "name": "Penny", "url": "...", "position": "right" },
+       { "name": "Leonard", "url": "...", "position": "right" },
+       { "name": "Nobody", "url": "https://api.dicebear.com/5.x/personas/", "position": "right" },
+       { "name": "Sheldon", "url": "https://api.dicebear.com:81/blub", "position": "right" }
+     ]
+   }
+   ```
+   **Four things that change the plan the brief itself implied:**
+   - **The "emoji" are named tokens, not Unicode codepoints.** `{satisfied}`, `{intrigued}`,
+     `{neutral}`, `{affirmative}`, `{laughing}`, `{win}` — literal `{word}` substrings
+     embedded in `text`. The brief's own guidance ("map emoji *codepoints* to a
+     sprite asset") assumed real Unicode emoji chars; that's not what this data
+     does. The actual job: parse `{word}` patterns out of `text` and swap each for
+     a TextMeshPro `<sprite name="word">` tag, backed by a TMP Sprite Asset with
+     one entry per named token (not per Unicode codepoint) — no color-emoji-font
+     problem at all, but the token→sprite mapping needs an entry per name used
+     (at least those 6 from this sample; design for an unrecognized token
+     gracefully, e.g. showing the raw `{word}` or a fallback glyph, rather than
+     assuming the token set is closed).
+   - **Two "Sheldon" avatar entries, same name, conflicting data** — one working
+     Dicebear URL, one deliberately broken (`https://api.dicebear.com:81/blub`,
+     port 81). Not an accident: this is the brief's "avatar URLs may not load /
+     data may be missing" requirement built directly into the mock data itself.
+     A naive `Dictionary<string,string>` keyed by name throws on this; needs a
+     lookup that tolerates duplicates (pick first/last deterministically, document
+     which and why) rather than assuming name is a unique key.
+   - **"Nobody" has an avatar entry but never speaks** — no dialogue line uses
+     that name. Unused avatar data, likely another deliberate robustness case
+     (don't assume every avatar entry corresponds to a real speaker).
+   - **"Nobody"'s URL is also broken** (`.../5.x/personas/` — points at the API
+     root, not an actual image). So there are at least two guaranteed-to-fail
+     avatar loads to design the fallback-avatar path around, not just a
+     hypothetical "what if this fails" — it's reproducible against the real mock.
+   - Each avatar has a `position` (`left`/`right`) — implies a chat/visual-novel-
+     style layout where speakers alternate sides, not one static central portrait.
+   **Still not done:** the emoji-in-TextMeshPro spike itself (proving one token
+   renders via a TMP Sprite Asset `<sprite>` tag) — the original Phase 0 plan
+   called for this and it was never actually done, so that mechanical risk is
+   still live even though the data-shape risk above is now resolved. The scene
+   already has a Canvas/EventSystem/HomeButton — just needs the actual dialogue
+   content built inside it. Any root-`Instantiate` inside it should go through a
+   scene-local parent (see the `sceneLoaded`-timing note under Scene-flow
+   architecture) rather than relying on the active scene being correct.
 3. Build Phoenix Flame (particle system + Animator-driven color transitions —
    the brief specifically requires an Animator Controller, not a script lerp).
    Same starting point as Magic Words — Canvas/EventSystem/HomeButton already there.
