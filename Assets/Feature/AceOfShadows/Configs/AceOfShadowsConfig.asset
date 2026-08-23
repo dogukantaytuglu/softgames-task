@@ -15,7 +15,7 @@ MonoBehaviour:
   totalCards: 144
   moveInterval: 1
   maxRotationDegrees: 11.8
-  moveDuration: 0.85
+  moveDuration: 1
   moveEase: 6
   cardVisuals:
   - {fileID: 1424786150983482584, guid: 573952676a2d44ea09c3bf5087df0796, type: 3}

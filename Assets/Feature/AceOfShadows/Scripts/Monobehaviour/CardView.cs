@@ -36,8 +36,9 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
 
             DOTween.Sequence()
                 .SetTarget(transform)
-                .Join(transform.DOLocalMove(localPosition, _config.MoveDuration).SetEase(_config.MoveEase))
-                .Join(transform.DOLocalRotateQuaternion(localRotation, _config.MoveDuration).SetEase(_config.MoveEase))
+                .Join(transform.DOLocalMove(localPosition, _config.MoveDuration))
+                .Join(transform.DOLocalRotateQuaternion(localRotation, _config.MoveDuration))
+                .SetEase(_config.MoveEase)
                 .OnComplete(() => onComplete?.Invoke());
         }
 
