@@ -110,6 +110,22 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   file (e.g. under the project's `Temp/`) from the async callback, then `Read` that
   file directly in a follow-up step. Also, `TestRunnerApi` needs to be kept alive
   (a static field reference) or its callback silently never fires (GC'd mid-run).
+- **`AssetDatabase.DeleteAsset` from a `Unity_RunCommand` script fails outright**
+  ("User interactions are not supported for MCP tool calls") — this Editor isn't
+  running with `-automated`, so whatever confirmation Unity tries to show for a
+  scripted delete blocks and the MCP relay refuses the call rather than hang.
+  `AssetDatabase.MoveAsset`/`RenameAsset`/`CreateFolder` all work fine from
+  scripts; only deletion is affected. Workaround: delete the file(s) and their
+  `.meta` directly via a normal shell command instead, then call
+  `AssetDatabase.Refresh()` from a follow-up `Unity_RunCommand` — safe here only
+  because the folder was already empty (no GUIDs to lose).
+- **A `Unity_RunCommand` script with more than one top-level type, where a
+  non-`CommandScript` type is declared `private`/nested, sometimes fails to
+  compile** — the tool's own auto-formatter (visible in the error's
+  `localFixedCode`) mis-wraps it, duplicating the class both nested inside
+  `CommandScript` and again at namespace scope (illegal for a `private` type).
+  Fix: declare every extra type as a separate top-level `internal class`, not
+  nested inside `CommandScript`.
 
 ### Ace of Shadows architecture
 - **Domain** (`Assets/Feature/AceOfShadows/Scripts/Logic/`): `Card`, `CardStack`
