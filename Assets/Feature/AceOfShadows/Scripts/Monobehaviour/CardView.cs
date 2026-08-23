@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace AceOfShadows.Monobehaviour
 {
@@ -11,6 +12,17 @@ namespace AceOfShadows.Monobehaviour
         public void Initialize(AceOfShadowsConfig config)
         {
             _config = config;
+            PickRandomVisual(config);
+        }
+
+        private void PickRandomVisual(AceOfShadowsConfig config)
+        {
+            // var randomIndex = Random.Range(0, config.CardVisuals.Count);
+            var randomIndex = 0;
+            var randomVisual = config.CardVisuals[randomIndex];
+            var generatedVisual = Instantiate(randomVisual, transform);
+            generatedVisual.transform.localPosition = Vector3.zero;
+            generatedVisual.transform.localRotation = Quaternion.identity;
         }
 
         public void SetPositionImmediate(Vector3 localPosition, Quaternion localRotation)
