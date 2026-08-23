@@ -6,6 +6,34 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D25 — Lock the app to landscape, resolving the canvas reference-resolution mismatch (2026-08-24)
+**Choice:** The app is landscape-only now, not orientation-agnostic. `MainMenuScene`'s Canvas reference
+resolution was `1080×1920` (portrait) while `AceOfShadowsScene`/`AppScene` were both `1920×1080` (landscape) —
+three canvases, two contradictory design resolutions, a real bug the `unity-interviewer` audit caught (D24 covers
+the audit's *mechanical* findings; this was one of the *judgment-call* findings deliberately left out of D24).
+Fixed by changing `MainMenuScene`'s reference resolution to `1920×1080`, matching the other two — verified this
+doesn't require touching the actual button layout, since the menu's button container is sized in absolute units
+(994.5×742.6) comfortably smaller than either reference frame, and the Canvas already uses Match Height mode,
+under which only the reference *height* affects scaling at all (the width component was never actually load-
+bearing). `ProjectSettings.asset`: `allowedAutorotateToPortrait`/`PortraitUpsideDown` → `0`,
+`allowedAutorotateToLandscapeLeft`/`Right` stay `1`, `defaultScreenOrientation` left at `AutoRotation` — locks
+orientation to landscape while still autorotating between the two landscape directions (not a single fixed
+rotation, so the game still works right-side-up regardless of which way the phone is held).
+**Why:** Requested as a "which orientation strategy" decision with three options on the table: lock landscape,
+lock portrait, or build true dual-orientation support (live rotation with per-scene alternate layouts — what D21's
+proportional-anchoring conversion was explicitly a prerequisite for, not the thing itself). Landscape lock was
+chosen on real evidence, not a guess: the developer checked one of SOFTGAMES' own published games on Facebook
+Gaming and found its render canvas is a fixed `2270×1280` internal resolution inside a CSS frame that preserves
+the same ratio (`360×203`) — both ≈16:9, a fixed landscape aspect, not something that reflows to portrait. That's
+their actual shipped product, and it happens to be exactly the aspect ratio Ace of Shadows was already built at.
+Building true dual-orientation support was rejected as scope the brief's "responsive on mobile + desktop" language
+doesn't actually require (that's about scaling across screen *sizes*, not necessarily supporting live rotation
+between portrait and landscape), and locking portrait instead would have meant reworking Ace of Shadows' side-by-
+side stack layout for no evidence-backed reason.
+**Not done as part of this decision:** safe-area handling (still open, and now simpler to reason about with only
+one orientation to support), and the WebGL `index.html` template's own fixed-960×600-desktop-canvas bug (a
+separate, unrelated responsiveness issue — see the `unity-interviewer` audit's Tier 0 finding #5).
+
 ### D24 — Mechanical fixes from the first `unity-interviewer` audit (2026-08-23)
 **Choice:** Ran the new `unity-interviewer` subagent (see current-context.md, Tooling) against the whole repo for
 the first time. It came back with a long findings list, tiered by severity, plus a mock interview. The developer

@@ -451,6 +451,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   above).
 
 ### Phase 0 status
+- **App is landscape-locked (D25, 2026-08-24)** — see decisions.md for the full
+  reasoning (SOFTGAMES' own published Facebook Gaming title runs a fixed 16:9
+  landscape canvas). `MainMenuScene`'s Canvas reference resolution was actually
+  1080×1920 portrait until this decision — this doc claimed 1920×1080 before
+  that fix, which a `unity-interviewer` audit correctly caught as false. It's
+  genuinely 1920×1080 now, matching `AceOfShadowsScene`/`AppScene`, so all three
+  scenes agree. `ProjectSettings`: `allowedAutorotateToPortrait`/
+  `PortraitUpsideDown` off, both landscape flags on, `defaultScreenOrientation`
+  left at `AutoRotation` — locks to landscape while still allowing either
+  physical landscape direction, not a single fixed rotation.
 - **Main menu** (`Assets/Scenes/MainMenuScene.unity`): Canvas (Scale With Screen Size,
   1920×1080 reference, match 1), `EventSystem` with `InputSystemUIInputModule`
   (project's `activeInputHandler` is Input System only — the legacy
@@ -553,10 +563,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    (including clicking Restart mid-exit-animation, which kills in-flight
    DOTween tweens via `CardView.OnDestroy`). Also note: this conversion fixes
    the *underlying* rendering approach (proportional anchoring under
-   `CanvasScaler` instead of fixed world positions) but does **not** yet add an
-   actual landscape↔portrait layout switch (different anchor presets per
-   orientation) — that's still open, this was the prerequisite for it, not the
-   thing itself.
+   `CanvasScaler` instead of fixed world positions) — combined with D25's
+   landscape lock, there's no longer a portrait layout to switch to, so the
+   "missing orientation switch" this note used to flag is resolved by decision
+   rather than by building dual layouts.
 1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and
