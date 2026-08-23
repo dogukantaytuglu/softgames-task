@@ -4,7 +4,7 @@ using TimerUtil;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace AceOfShadows.Monobehaviour
+namespace Feature.AceOfShadows.Scripts.Monobehaviour
 {
     public class AceOfShadowsController : MonoBehaviour
     {

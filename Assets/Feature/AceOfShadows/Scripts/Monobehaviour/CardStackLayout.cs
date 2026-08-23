@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace AceOfShadows.Monobehaviour
+namespace Feature.AceOfShadows.Scripts.Monobehaviour
 {
     // Pure math, no MonoBehaviour - each card's offset is fixed once assigned
     // at placement time (based on its distance from the bottom of whichever

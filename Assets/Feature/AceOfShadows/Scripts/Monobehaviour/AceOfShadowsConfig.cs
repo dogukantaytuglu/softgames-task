@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
-namespace AceOfShadows.Monobehaviour
+namespace Feature.AceOfShadows.Scripts.Monobehaviour
 {
     [CreateAssetMenu(fileName = "AceOfShadowsConfig", menuName = "AceOfShadows/Config")]
     public class AceOfShadowsConfig : ScriptableObject
