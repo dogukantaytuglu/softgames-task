@@ -6,6 +6,50 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D27 — README rewritten from a 4-line stub into an actual front door (2026-08-24)
+**Choice:** `README.md` used to just point at `ai-context/BRIEF.md` ("start here") and state there's no deadline —
+that was it. Rewritten to actually explain what the project is, what each of the three demos does, honest current
+status (Ace of Shadows done, Magic Words/Phoenix Flame not started), how to play it (Editor + the hosted WebGL
+link, with a note that the deploy is manual so the live link can lag `git log`), and a pointer to
+`ai-context/decisions.md`/`current-context.md` for anyone who wants the real reasoning instead of a summary.
+Written in first person, deliberately plain — includes an explicit "this isn't a flex" note: the asmdef/Logic-
+Monobehaviour split, the decisions log, etc. are there because the work called for them, not to perform
+complexity for a grader.
+**Why:** Requested directly. The `unity-interviewer` audit flagged "no README" as a Tier 0 blocker tied directly
+to a named grading criterion (documentation) and the brief's own Definition of Done — the old stub didn't meet
+that bar. Deliberately does **not** lead with "read `ai-context/BRIEF.md` first" the way the old one did, since
+that file is SOFTGAMES' own assignment text — pointing a SOFTGAMES reviewer at their own brief as the front door
+is circular; the README now explains the project on its own terms instead. Also deliberately doesn't hard-depend
+on `ai-context/` staying in the submitted repo at all, since that's still an open, deferred decision (see the
+D-numbered entry on `ai-context/BRIEF.md` privacy, still undecided as of this writing).
+
+### D26 — Build-size levers: packages/modules trimmed, crunch and stripping/exceptions declined (2026-08-23/24)
+**Choice:** Of the four build-size levers the `unity-interviewer` audit named (see D24's context) as untouched
+against `BRIEF.md` §6:
+- **Unused packages/modules**: removed. `com.unity.ai.navigation`, `com.unity.collab-proxy`,
+  `com.unity.multiplayer.center`, `com.unity.timeline`, `com.unity.visualscripting`, and 19 unused built-in engine
+  modules (androidjni, assetbundle, cloth, director, physics, screencapture, terrain, terrainphysics, tilemap,
+  umbra, unityanalytics, unitywebrequestassetbundle, unitywebrequestwww, vehicles, video, vr, wind, xr — see the
+  commit for the full reasoning on what was kept and why, e.g. animation/particlesystem for Phoenix Flame,
+  jsonserialize/unitywebrequest for Magic Words). **Correction the same session**: `com.unity.modules.physics2d`
+  had to be re-added — the removal pass only checked this project's own code for Physics2D usage, not the
+  vendored `Assets/Plugins/Demigiant/DOTween` folder, which ships an optional `DOTweenModulePhysics2D.cs` that
+  references `Rigidbody2D` directly and broke the build (9x CS1069). Considered deleting the unused DOTween
+  module file instead of restoring the package, but `DOTweenAnimation.cs`/its Inspector also reference Physics2D
+  types — not worth digging into vendored third-party plugin internals for a marginal size win. Re-adding the
+  package was the correct, low-risk fix.
+- **Texture crunch compression**: tried on `PlayingCards.spriteatlas`'s WebGL override (quality 60, explicit
+  format), then reverted — the size win wasn't worth the visible quality loss on card-face art at that
+  compression level. Back to the original settings (`m_CrunchedCompression: 0`, quality 50, format Auto).
+- **Managed Stripping Level** and **WebGL Exception Support**: declined entirely, not just deferred. Both carry
+  real runtime risk (stripping can remove reflection-reached code TextMeshPro/DOTween touch; disabling exceptions
+  means a real `try/catch` stops actually catching) for a build-size win that's marginal next to what the package
+  trim already bought. Not worth the risk on a project this size — explicitly decided against, not left open.
+**Why:** Requested directly, weighing exactly this risk/reward tradeoff per lever rather than mechanically working
+down the audit's list. The package/module trim was worth doing (zero functional risk once the DOTween dependency
+was accounted for). Crunch and the two Player Settings levers were each tested/considered on their own merits and
+rejected on their own merits — a real decision, not something left undone by omission.
+
 ### D25 — Lock the app to landscape, resolving the canvas reference-resolution mismatch (2026-08-24)
 **Choice:** The app is landscape-only now, not orientation-agnostic. `MainMenuScene`'s Canvas reference
 resolution was `1080×1920` (portrait) while `AceOfShadowsScene`/`AppScene` were both `1920×1080` (landscape) —
