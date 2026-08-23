@@ -6,6 +6,31 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D12 — Persistent Shell scene + additive scene-flow, instead of MainMenu as the boot scene (2026-08-23)
+**Choice:** New `Shell.unity` is now build-index 0 and the *only* scene ever opened
+directly — it holds the FPS counter (moved out of AceOfShadows) and a
+`SceneFlowController` singleton, and is never itself unloaded. Every other scene
+(MainMenu, AceOfShadows, MagicWords, PhoenixFlame) loads additively on top of it,
+exactly one "content" scene at a time — `SceneFlowController.Navigate()` unloads the
+previous content scene before additively loading the next and calling
+`SceneManager.SetActiveScene`. `SceneFlowState` (pure, EditMode-tested) owns the
+"is this actually a different scene" guard; the Monobehaviour layer just does the
+unload/load/activate. Back buttons (`BackButton.prefab`, `buttons_41` home-icon
+sprite) were added to AceOfShadows/MagicWords/PhoenixFlame, calling
+`SceneFlowController.Instance.NavigateHome()`; MagicWords/PhoenixFlame needed a
+Canvas + `EventSystem` added since they were empty placeholders before this.
+**Why:** Requested directly by the developer (build a shared top nav bar holding the
+FPS counter, with every scene opening additively on top of it, plus back buttons on
+the project scenes) — an explicit ask to implement app-level code himself this time,
+not just infra (see the collaboration note below). Keeping Shell camera-less and
+light-less (a Screen Space Overlay Canvas doesn't need a camera to render) and never
+loading more than one content scene alongside it is what keeps cameras/lights/
+EventSystems from ever duplicating, without needing any extra cleanup logic — each
+content scene keeps owning its own Main Camera/Directional Light/EventSystem exactly
+as before, and only one set is ever live. This also naturally centralizes the FPS
+counter instead of duplicating it per scene, which was the "add FPS counter to every
+scene" next-step from the previous session.
+
 ### D11 — Ace of Shadows: 2-stack drain, TimerUtil-driven cadence, Z-depth draw order (2026-08-23)
 **Choice:** Exactly 2 stacks (Source drains into Target, one card/second, terminal
 state = Target has all 144). `CardDeck` (domain) exposes `MoveNext()` +

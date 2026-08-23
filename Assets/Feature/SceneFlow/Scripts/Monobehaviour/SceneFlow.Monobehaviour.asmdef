@@ -1,0 +1,16 @@
+{
+    "name": "SceneFlow.Monobehaviour",
+    "rootNamespace": "",
+    "references": [
+        "SceneFlow.Logic"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

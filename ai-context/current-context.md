@@ -4,7 +4,7 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (end of the Ace of Shadows build session).
+Last updated: 2026-08-23 (end of the Shell/scene-flow navigation session).
 
 ## What we're building
 
@@ -26,14 +26,32 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
   wired into the menu, nothing built.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
+- **Scene-flow/navigation shell built.** `Shell.unity` is now build-index 0, the sole
+  persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
+  `SceneFlowController` singleton. Every other scene (MainMenu, AceOfShadows, MagicWords,
+  PhoenixFlame) loads additively on top of it, one at a time. See "Scene-flow architecture"
+  below for detail.
 
 ### Tooling
-- **Unity 6000.0.82f1**, Unity MCP (`com.unity.ai.assistant`) connected and used
-  throughout this session for scene/prefab building, compile checks, EditMode test
-  runs, and Play Mode screenshots. Its tools occasionally report "Unity not
-  detected" transiently — retrying once always resolved it this session.
-  **As of this update the MCP server itself disconnected** (tools no longer
-  resolve via ToolSearch) — reconnect it in a fresh session before relying on it.
+- **Unity 6000.0.82f1**, Unity MCP (`com.unity.ai.assistant`) — reconnected and used
+  this session for scene/prefab building, compile checks, EditMode test runs, and
+  Play Mode verification (scene-flow nav loop). Its tools occasionally report "Unity
+  not detected" transiently — retrying once always resolved it. Live Play Mode
+  testing via MCP is token-expensive (each check is a full RunCommand round-trip) —
+  the developer prefers to do Play Mode testing themselves going forward; default to
+  static checks (compile, EditMode tests, reading scene YAML) and let them drive
+  Play Mode.
+- **`unity-architect` subagent** (global, `~/.claude/agents/unity-architect.md`,
+  not project-specific) — created 2026-08-23 for Unity architecture design/review:
+  readability + scalability first, sized honestly to actual project scale, encodes
+  the developer's stated preferences (feature-based foldering with asmdef
+  independence, bootstrapper/service-initializer over scattered cross-feature
+  `Awake()`/`Start()`, facade + focused-controller composition, `OnValidate()`
+  self-wiring) as defaults it can push back on, not rules. Reads a repo's
+  `ai-context/`/`CLAUDE.md` first and defers to already-established real
+  conventions. **Not yet confirmed working** — it didn't appear in this session's
+  agent roster (loaded at session start, before the file existed), so invoking it
+  was untested as of this update; try it in a fresh session.
 - **IDE: Rider, not VS Code.** Rider is free for non-commercial use (JetBrains
   changed this in 2024) — activate via the "Free non-commercial license" option in
   Rider's license dialog, no payment needed for this take-home. VS Code + C# Dev
@@ -59,14 +77,23 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   ⚠️ **Also:** exactly one asmdef per folder — Unity errors if two exist side by
   side, even with different names.
 - **Tests:** `Assets/Tests/EditMode/<Feature>/`, own `<Feature>.Tests.asmdef`
-  referencing both the feature's Logic and Monobehaviour asmdefs, `includePlatforms:
-  ["Editor"]`, `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 27 EditMode tests total right now
-  (5 FpsCounter, 22 Ace of Shadows), all passing.
+  referencing the feature's Logic asmdef (plus Monobehaviour too, if anything in
+  there is actually unit-tested — usually nothing is, since Monobehaviours in this
+  project are thin wiring), `includePlatforms: ["Editor"]`,
+  `precompiledReferences: ["nunit.framework.dll"]`,
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 33 EditMode tests total right now
+  (5 FpsCounter, 22 Ace of Shadows, 6 SceneFlow), all passing.
 - **In Unity MCP `Unity_RunCommand` scripts specifically** (not normal project
   code): bare `Image` and `CodeEditor` resolve to the wrong thing (some other
   namespace collides) — always fully-qualify as `UnityEngine.UI.Image` /
   `Unity.CodeEditor.CodeEditor` inside those scripts only.
+- **In Unity MCP `Unity_RunCommand` scripts, `Debug.Log`/`GetConsoleLogs` is
+  unreliable for anything async** (a `TestRunnerApi` callback, an `EditorApplication.update`-driven
+  coroutine) — `GetConsoleLogs` appeared to return a stale/cached snapshot that never
+  picked up new logs during this session. The reliable pattern: write results to a
+  file (e.g. under the project's `Temp/`) from the async callback, then `Read` that
+  file directly in a follow-up step. Also, `TestRunnerApi` needs to be kept alive
+  (a static field reference) or its callback silently never fires (GC'd mid-run).
 
 ### Ace of Shadows architecture
 - **Domain** (`Assets/Feature/AceOfShadows/Scripts/Logic/`): `Card`, `CardStack`
@@ -109,21 +136,62 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   generic 2D UI asset pack, teal-bordered cream card-shaped panel). **Not**
   `Assets/uVegas`'s card sprites — see decisions D10.
 
+### Scene-flow architecture
+- **`Shell.unity` is build-index 0** and the only scene ever opened directly (in
+  Editor Play or in the WebGL build) — every other scene is loaded/unloaded
+  *additively* on top of it, one "content" scene at a time. Shell itself never
+  reloads or unloads.
+- **`SceneFlow.Logic`** (`Assets/Feature/SceneFlow/Scripts/Logic/`, `noEngineReferences:
+  true`): `SceneFlowState` — pure state machine holding `CurrentScene` and
+  `TryNavigate(target, out previousScene)`, which no-ops (returns false) if
+  `target` is null/empty/already-current. Covered by 6 EditMode tests.
+- **`SceneFlow.Monobehaviour`**: `SceneFlowController` — a plain static-instance
+  singleton (not `DontDestroyOnLoad`; unnecessary since it lives in Shell, which is
+  never unloaded) living on a `SceneFlowController` GameObject in `Shell.unity`.
+  `Start()` calls `Navigate(homeSceneName)` (default `"MainMenu"`) to boot the first
+  content scene. `Navigate(sceneName)` unloads the previous content scene
+  (`SceneManager.UnloadSceneAsync`), additively loads the target
+  (`LoadSceneAsync(..., LoadSceneMode.Additive)`), then calls
+  `SceneManager.SetActiveScene` on completion so the new scene's lighting/instantiate
+  context is correct. `BackButtonController` just calls `Instance.NavigateHome()`.
+- **Exactly one content scene is ever loaded alongside Shell**, which is what keeps
+  cameras/lights/EventSystems from ever duplicating — Shell itself holds no Camera,
+  no Light, and no EventSystem (only a Screen Space Overlay Canvas, which doesn't
+  need a camera to render). Each content scene keeps its own Main Camera, Directional
+  Light, and `EventSystem` (`InputSystemUIInputModule`) exactly as before; only one is
+  ever active at a time since Shell fully unloads the previous content scene before
+  loading the next.
+- **`MenuButtonSceneLoader`** (MainMenu) now calls `SceneFlowController.Instance.Navigate(sceneName)`
+  instead of `SceneManager.LoadScene` directly.
+- **Back buttons**: `Assets/Feature/SceneFlow/Prefabs/BackButton.prefab` — top-right
+  anchored, `buttons_41` sprite (green "home" icon from `Assets/Art/Sprites/buttons.png`,
+  chosen since it reads as "return to main menu" and needs no extra label). Instanced
+  into `AceOfShadows.unity`, `MagicWords.unity`, `PhoenixFlame.unity` (not MainMenu —
+  that's home, nothing to go back to). `MagicWords`/`PhoenixFlame` were empty
+  placeholders with no Canvas/EventSystem before this — both were added (Screen Space
+  Overlay, same `CanvasScaler` settings as MainMenu/Shell, `EventSystem` duplicated
+  from AceOfShadows' so the Input-System action-asset wiring matches exactly).
+- **Full navigate/back loop verified live in Play Mode** via Unity MCP (Shell→MainMenu→
+  each of the three feature scenes→back→MainMenu), confirming: single active
+  `EventSystem` at every step, `SceneFlowController.Instance` persists, FPS counter
+  stays active/visible throughout, active scene is set correctly after each transition.
+
 ### Phase 0 status
 - **Main menu** (`Assets/Scenes/MainMenu.unity`): Canvas (Scale With Screen Size,
-  1080×1920 reference, match 0.5), `EventSystem` with `InputSystemUIInputModule`
+  1920×1080 reference, match 1), `EventSystem` with `InputSystemUIInputModule`
   (project's `activeInputHandler` is Input System only — the legacy
   `StandaloneInputModule` won't receive clicks). Three buttons, each a
   `MainMenuButton.prefab` instance with a self-wiring `MenuButtonSceneLoader`
   (`OnValidate` grabs its own `Button` via `TryGetComponent`), calling
-  `SceneManager.LoadScene` on click. Button art: `Assets/Art/Sprites/buttons.png`
-  (blue = Ace of Shadows, green = Magic Words, red/orange = Phoenix Flame).
+  `SceneFlowController.Instance.Navigate` on click (see "Scene-flow architecture").
+  Button art: `Assets/Art/Sprites/buttons.png` (blue = Ace of Shadows, green = Magic
+  Words, red/orange = Phoenix Flame).
 - **FPS counter** (`Assets/Feature/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
-  changes). Present in `AceOfShadows.unity`'s `OverlayUI` canvas; **not yet added
-  to MainMenu/MagicWords/PhoenixFlame scenes** — worth doing before final
-  submission since the brief wants it visible throughout.
+  changes). **Lives once, centrally, in `Shell.unity`'s always-loaded canvas** (moved
+  out of `AceOfShadows.unity`'s `OverlayUI` this session) — visible top-left across
+  every scene automatically, no per-scene duplication needed.
 - **WebGL build + hosting:** build settings are **Brotli compression +
   Decompression Fallback enabled** (Player Settings → Publishing Settings) — this
   combination is required because the host (GitHub Pages) can't send a
@@ -170,20 +238,21 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
-1. Reconnect Unity MCP (disconnected as of this context update).
-2. Add the FPS counter to MainMenu/MagicWords/PhoenixFlame scenes, not just
-   AceOfShadows.
-3. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about
+1. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about
    this — before designing anything; the emoji-in-TextMeshPro spike from the
    original Phase 0 plan was never actually done, so that risk is still live).
-4. Build Phoenix Flame (particle system + Animator-driven color transitions —
+   The scene already has a Canvas/EventSystem/BackButton now — just needs the
+   actual dialogue content built inside it.
+2. Build Phoenix Flame (particle system + Animator-driven color transitions —
    the brief specifically requires an Animator Controller, not a script lerp).
-5. Verify responsive layout + touch input on a real phone.
-6. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
+   Same starting point as Magic Words — Canvas/EventSystem/BackButton already there.
+3. Verify responsive layout + touch input on a real phone — now also needs to cover
+   the additive Shell→content scene transition specifically (untested on-device).
+4. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
    not started; the Brotli+Fallback numbers from the Ace of Shadows deploy work
    are a natural starting point (~13MB vs ~60MB uncompressed, already measured
    in this session's conversation history, just not written up anywhere yet).
-7. README covering architecture/decisions/trade-offs — not started.
+5. README covering architecture/decisions/trade-offs — not started.
 
 ## Conventions (binding for all three tasks, from the original brief)
 

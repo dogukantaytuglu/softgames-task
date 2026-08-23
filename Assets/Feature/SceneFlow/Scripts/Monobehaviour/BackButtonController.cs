@@ -1,19 +1,17 @@
-using SceneFlow.Monobehaviour;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Feature.MainMenu.Scripts
+namespace SceneFlow.Monobehaviour
 {
-	[RequireComponent(typeof(Button))]
-    public class MenuButtonSceneLoader : MonoBehaviour
+    [RequireComponent(typeof(Button))]
+    public class BackButtonController : MonoBehaviour
     {
-        [SerializeField] private string sceneName;
         [SerializeField] private Button button;
 
         private void Awake()
         {
             button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(LoadScene);
+            button.onClick.AddListener(GoBack);
         }
 
         private void OnValidate()
@@ -24,9 +22,9 @@ namespace Feature.MainMenu.Scripts
             }
         }
 
-        public void LoadScene()
+        public void GoBack()
         {
-            SceneFlowController.Instance.Navigate(sceneName);
+            SceneFlowController.Instance.NavigateHome();
         }
     }
 }

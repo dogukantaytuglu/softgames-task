@@ -1,3 +1,6 @@
 {
-	"name": "MainMenu"
+	"name": "MainMenu",
+	"references": [
+		"SceneFlow.Monobehaviour"
+	]
 }
