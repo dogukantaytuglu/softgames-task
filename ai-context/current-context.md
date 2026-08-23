@@ -130,11 +130,22 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   there is actually unit-tested — usually nothing is, since Monobehaviours in this
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 33 EditMode tests total right now
-  (5 FpsCounter, 20 Ace of Shadows, 8 SceneFlow), all passing — down from 35/22
-  after D21 dropped `CardStackLayoutTests`' two Z-depth-specific tests (Z no
-  longer exists once cards moved to UI, see decisions.md D21). FpsCounter's tests
-  moved here from `Assets/App/FpsCounter/Scripts/Tests/` (2026-08-23, D13) to
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **32 EditMode tests actually run**
+  right now (5 FpsCounter, 19 Ace of Shadows, 8 SceneFlow) — verified by running
+  the suite (`TestRunnerApi`, `PassCount`), not by counting attributes.
+  ⚠️ **`grep -c "\[Test\]"` undercounts by 2**: `SceneFlowStateTests.
+  TryBeginNavigation_ToNullOrEmptyScene_ReturnsFalse` uses two `[TestCase(...)]`
+  attributes with no `[Test]` attribute at all (valid NUnit — `[TestCase]` alone
+  makes a method a test), so a literal `[Test]` grep reports 30/6-SceneFlow, not
+  the real 32/8. A `unity-interviewer` audit caught this doc claiming 33 and
+  "corrected" it to 31 using exactly that flawed grep - the correction was
+  itself wrong; the pre-D24 real count was 33 (5/20/8), matching what this doc
+  originally said. **If this number ever needs verifying again, run the suite,
+  don't grep for `[Test]`.** Down to 32 after D24 removed `CardStack.
+  CountChanged` (a dead event with no real subscriber, only a test that covered
+  itself) — the CardStackLayoutTests Z-depth-test drop from D21 (35→33) already
+  happened before this. FpsCounter's tests moved here
+  from `Assets/App/FpsCounter/Scripts/Tests/` (2026-08-23, D13) to
   actually match this convention instead of just stating it.
 - **In Unity MCP `Unity_RunCommand` scripts specifically** (not normal project
   code): bare `Image` and `CodeEditor` resolve to the wrong thing (some other
@@ -182,7 +193,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ### Ace of Shadows architecture
 - **Domain** (`Assets/Feature/AceOfShadows/Scripts/Logic/`): `Card`, `CardStack`
-  (LIFO, `CountChanged` event), `CardMove`, `CardDeck`. `CardDeck` is deliberately
+  (LIFO), `CardMove`, `CardDeck`. `CardDeck` is deliberately
   **timer-agnostic** — `MoveNext()` triggers one move (called externally, once per
   "it's time" tick), `NotifyCardLanded()` is called by the presentation layer from
   each card's actual tween completion, and `AllAnimationsFinished` fires exactly
@@ -225,8 +236,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   *directly* by `AceOfShadowsController` — deliberately not routed through an
   event/interface on `CardStack`. The reason that matters: `CardDeck.MoveNext()`
   pops `Source` and pushes `Target` in the same instant, so a naive
-  `CardStack.CountChanged`-driven pop would fire both counters together at move
-  *start* — wrong for the target, which should visually pop on *landing*.
+  `CountChanged`-style event on `CardStack` would fire both counters together at
+  move *start* — wrong for the target, which should visually pop on *landing*.
+  (`CardStack` actually had exactly this event at one point — removed in D24,
+  see below, once it turned out to have zero real subscribers.)
   `sourceCounterView.Refresh(...)` is called right after `_deck.MoveNext()` (card
   leaves); `targetCounterView.Refresh(...)` is called from `OnCardLanded()`, the
   actual DOTween completion callback for that card (card arrives). An
@@ -528,7 +541,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    Overlay Canvas; the exit-cascade animation on completion; the Restart button
    — see "Ace of Shadows architecture" and decisions.md D21/D22/D23). D21 and
    D22 are committed/pushed anyway (developer's call); D23 is not yet committed,
-   waiting on this check. Compiles clean, 33/33 EditMode tests pass, and the
+   waiting on this check. Compiles clean, all 32 EditMode tests pass, and the
    resulting prefab/scene YAML was read back and sanity-checked, but nothing
    here has been seen running yet: card sizes (260px tall, eyeballed), the
    `PerCardOffset` fan spread (3px/card, also eyeballed), draw order via Canvas
@@ -547,8 +560,9 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and
-   EditMode-test-passing (33/33, see the D21 note above for why this is no
-   longer 35/35) but only the *previous*, unhardened version of
+   EditMode-test-passing (32/32 — see the Tests entry above for the real count
+   and why a naive `[Test]`-attribute grep gets it wrong) but only the *previous*,
+   unhardened version of
    this loop was ever actually clicked through in Play Mode. Do that before
    building on top of it.
 2. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about

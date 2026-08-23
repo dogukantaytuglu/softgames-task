@@ -6,6 +6,86 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D24 — Mechanical fixes from the first `unity-interviewer` audit (2026-08-23)
+**Choice:** Ran the new `unity-interviewer` subagent (see current-context.md, Tooling) against the whole repo for
+the first time. It came back with a long findings list, tiered by severity, plus a mock interview. The developer
+asked to split the list: fix everything mechanical/non-judgmental now, leave anything requiring a real design
+decision for later. This entry covers the mechanical half:
+- **Namespace cleanup**: `Feature.AceOfShadows.Scripts.Monobehaviour` (the Rider-generated, folder-path-mirroring
+  namespace) renamed to `AceOfShadows.Monobehaviour` across all 6 files in that folder plus
+  `CardStackLayoutTests.cs` — now matches `AceOfShadows.Logic` and the `SceneFlow.Logic`/`SceneFlow.Monobehaviour`
+  pattern instead of being a fourth, different scheme. `FpsCalculator`/`FpsCountUIController` (previously in the
+  global namespace, no namespace at all) got `FpsCounter.Logic`/`FpsCounter.Monobehaviour`. All 5 test classes
+  (previously all in the global namespace too) got a `<Feature>.Tests` namespace matching their folder
+  (`AceOfShadows.Tests`, `FpsCounter.Tests`, `SceneFlow.Tests`) — a new convention, since no test file had ever
+  been namespaced before this.
+- **Dead code removed**: `CardStack.CountChanged` (an `event Action<CardStack>`, fired on every push/pop) had
+  zero real subscribers — its only consumer was a test that existed purely to cover it. Removed the event and
+  that test (`CardStackTests` drops from 7 to 6 cases). This completes what D20 already decided in spirit (stop
+  routing counter updates through a `CardStack`-level event) but literally left the event itself sitting there
+  unused.
+- **`AceOfShadowsConfig.asset` reverted to sane values**: `totalCards` was sitting at `10` (uncommitted leftover
+  from testing the D23 restart loop) — back to `144`. `moveDuration` was `1`, equal to `moveInterval` (also `1`)
+  — this directly violates the documented invariant ("`MoveDuration` must stay under `MoveInterval`, so a card
+  always finishes landing before the next one starts," see "Ace of Shadows architecture" in current-context.md)
+  and risked a real race between DOTween's `OnComplete` and the timer loop. Reset to `0.35`, the coded field
+  default.
+- **`AceOfShadowsController.UpdateCountdownFill` throttled**: it was writing `Image.fillAmount` unconditionally
+  on every `OnTick` (every frame, for the whole 144-second run) into a `Canvas` that also contains all 144 card
+  `Image`s — each write dirties the Graphic and forces a batch rebuild of every sibling in that Canvas. Now only
+  writes when the value has moved by at least `0.01` (1%), reusing the same "only touch it when the displayed
+  value actually changed" pattern `FpsCountUIController` already used. The two places that force-set it to `0`
+  directly (`TryMoveNext`'s empty-source branch, `Restart()`) now go through the same tracked setter so the
+  throttle state doesn't go stale across those resets.
+- **`AceOfShadowsScene`'s Main Camera**: `UniversalAdditionalCameraData.m_RenderPostProcessing` set `1` → `0`.
+  Post-D21, the scene has zero `SpriteRenderer`s/`MeshRenderer`s (verified: cards are UI now) — the whole Canvas
+  composites after URP's camera stack, so Bloom/Vignette/Tonemapping via `SampleSceneProfile.asset`'s Global
+  Volume were provably affecting zero visible pixels. This was flagged as an open aesthetics call in the D18
+  Rendering & performance notes; post-D21 it isn't a call anymore, it's dead work being done every frame for no
+  visual effect. The Global Volume/profile itself is untouched, so re-enabling is a one-flag flip if UI-space
+  post-processing is ever wanted.
+- **All 106 card-art prefabs**: `Image.raycastTarget` `true` → `false` (batch Editor script, same
+  `LoadPrefabContents`/`SaveAsPrefabAsset` pattern as the D21 conversion). Nothing about a card is clickable;
+  every one of them was participating in every pointer-event raycast for no reason.
+- **`MainMenuButton.prefab`'s TMP font**: was `Oswald-SemiBold SDF`, not `Baloo2 SDF` — meaning the main menu,
+  the literal first screen of the app, never actually got the font swap D19 claimed ("swapped onto every
+  existing TMP text component"). No per-instance override existed in `MainMenuScene.unity`, so this one prefab
+  edit fixes all three menu buttons. `Oswald-SemiBold SDF` itself wasn't deleted — worth checking separately
+  whether anything else still legitimately needs it before removing it as dead weight.
+- **`DeployWebGL.cs`**: `BuildFolder` was a hardcoded `E:\Projects\...` absolute path — now derived from
+  `Application.dataPath` plus the documented sibling-repo naming convention (`<project>-build`), so the tool
+  isn't tied to one machine. `RunGit` called `process.WaitForExit()` before reading the redirected stdout/stderr
+  streams — the textbook deadlock risk if git ever writes enough output to fill the pipe buffer; now reads the
+  streams first. Also corrected D8's text, which claimed the tool "runs tests" — it never did; see the amended
+  D8 entry.
+- **Dead/template assets removed**: `Assets/TutorialInfo/` and `Assets/Readme.asset` (the URP template's tutorial
+  content, still committed, verified nothing else references `Readme.asset`'s GUID), `Assets/App/Sprites/UI/
+  icons.png` (2.9MB, verified zero references anywhere in the project via GUID search), and the empty leftover
+  `softgames-task/softgames-task/`-style nested folder from D3 (was never tracked by git, filesystem-only
+  cleanup).
+- **Doc corrections — including one to the audit's own finding**: `current-context.md`'s claimed test count was
+  actually correct (33, 8 SceneFlow) before this pass. The `unity-interviewer` audit flagged it as wrong (31, 6
+  SceneFlow) based on `grep -c "\[Test\]"` — that grep undercounts by 2, because `SceneFlowStateTests.
+  TryBeginNavigation_ToNullOrEmptyScene_ReturnsFalse` uses two `[TestCase(...)]` attributes with no `[Test]`
+  attribute at all (valid NUnit). Verified by actually running the suite (`TestRunnerApi`, `PassCount`) rather
+  than trusting either grep: real count is 32 now (after this pass's own `CardStack.CountChanged` test removal,
+  33 before it) — `current-context.md` now says so explicitly and warns against re-deriving this number by
+  grepping `[Test]` again. Worth remembering generally: a static-analysis finding is only as good as the method
+  behind it, even from a review specifically designed to be adversarial.
+**Why:** Requested directly, in the specific shape "fix the mechanical stuff yourself, flag what needs my
+judgment." Every item above has one unambiguous correct answer (a dead code path, a documented invariant being
+violated, a doc claim that's checkably false, a namespace that doesn't match its siblings) — none of them trade
+off against another reasonable choice, which is what made them safe to just do rather than raise as a question.
+**Deliberately not touched in this pass — real judgment calls, left for the developer:** the two missing tasks
+(Magic Words, Phoenix Flame); whether/how to sanitize `ai-context/` before submission (it currently contains
+compensation/job-search context that reads very differently to a hiring reader than to Claude); redeploying the
+now-3-commits-stale hosted build; writing the missing README; the build-size levers (managed stripping level,
+exception support, removing unused packages/modules, texture crunch compression — all real trade-offs, not
+mechanical); the `MainMenuScene`/`AceOfShadowsScene`/`AppScene` reference-resolution mismatch (1080×1920 portrait
+vs. 1920×1080 landscape) and the still-missing landscape↔portrait layout switch; safe-area handling. See the
+`unity-interviewer` report itself (not yet copied into this doc verbatim) for the full list and its interview
+questions.
+
 ### D23 — Ace of Shadows: Restart button, recreate the CardDeck rather than reset it in place (2026-08-23)
 **Choice:** `FinishedMessageView` gained a `restartButton` (new `RestartButton` GameObject under the `FinishedMessage`
 panel, green button + TMP "Restart" label in Baloo 2, wired to `Button.onClick`) and `Initialize(Action onRestart)`
@@ -354,8 +434,13 @@ interactively (not as a service) worked but requires remembering to keep a
 terminal window open, and still hit an unrelated PowerShell execution-policy
 block and a stale-ownership git error along the way. Given the actual ceiling is
 "one developer, clicks a button before submitting," the one-click manual tool
-gets the identical practical outcome (tests run, WebGL builds, deploys live) for
-a fraction of the ongoing maintenance cost.
+gets the practical outcome that actually matters (WebGL builds, deploys live) for
+a fraction of the ongoing maintenance cost. **Correction (2026-08-23, caught by
+a `unity-interviewer` audit, D24):** this originally also claimed "tests run" as
+part of that outcome — `DeployWebGL.BuildAndDeploy()` never actually runs the
+test suite, it only builds and pushes. Either add a `TestRunnerApi` pass before
+the build, or stop claiming it does one; not fixed as part of D24, flagged as a
+real gap in the deploy tool.
 **Also decided along the way:** WebGL Compression Format must be **Brotli with
 Decompression Fallback enabled**, not Compression Disabled — GitHub Pages can't
 send a `Content-Encoding: br` header, but Decompression Fallback embeds a
