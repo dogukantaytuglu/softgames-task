@@ -224,8 +224,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Ace of Shadows
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 1be9edc7439808748be1d70160996c8a, type: 2}
-  m_sharedMaterial: {fileID: 2647329364705730706, guid: 1be9edc7439808748be1d70160996c8a, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
+  m_sharedMaterial: {fileID: -6482371940517145204, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
