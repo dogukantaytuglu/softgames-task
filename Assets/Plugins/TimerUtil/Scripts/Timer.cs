@@ -43,6 +43,7 @@ namespace TimerUtil
                 return;
             }
 
+            TimerService.RegisterTimer(this);
             PrepareStart();
 
             if (delay > 0f)
@@ -73,6 +74,7 @@ namespace TimerUtil
 
             SetState(TimerState.Stopped);
             OnStopped?.Invoke();
+            TimerService.UnregisterTimer(this);
         }
 
         public void Restart(float delay = 0f)

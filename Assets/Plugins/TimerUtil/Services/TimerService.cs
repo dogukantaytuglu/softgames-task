@@ -7,9 +7,10 @@ namespace TimerUtil
     public static class TimerService
     {
         private static readonly List<Timer> Timers = new();
+        private static readonly ReadOnlyCollection<Timer> TimersReadOnly = new(Timers);
         private static TimerTicker _timerTicker;
 
-        public static ReadOnlyCollection<Timer> AllTimers => Timers.AsReadOnly();
+        public static ReadOnlyCollection<Timer> AllTimers => TimersReadOnly;
 
         public static CountdownTimer CreateCountdownTimer(float duration, int loopCount = 1)
             => CreateCountdownTimer(null, duration, loopCount);

@@ -20,9 +20,15 @@ namespace AceOfShadows.Monobehaviour
             transform.DOKill();
 
             DOTween.Sequence()
+                .SetTarget(transform)
                 .Join(transform.DOLocalMove(localPosition, moveDuration).SetEase(moveEase))
                 .Join(transform.DOLocalRotateQuaternion(localRotation, moveDuration).SetEase(moveEase))
                 .OnComplete(() => onComplete?.Invoke());
+        }
+
+        private void OnDestroy()
+        {
+            transform.DOKill();
         }
     }
 }

@@ -3,21 +3,28 @@ namespace SceneFlow.Logic
     public sealed class SceneFlowState
     {
         public string CurrentScene { get; private set; }
+        public bool IsTransitioning { get; private set; }
 
         public SceneFlowState(string initialScene = null)
         {
             CurrentScene = initialScene;
         }
 
-        public bool TryNavigate(string targetScene, out string previousScene)
+        public bool TryBeginNavigation(string targetScene, out string previousScene)
         {
             previousScene = CurrentScene;
 
-            if (string.IsNullOrEmpty(targetScene) || targetScene == CurrentScene)
+            if (IsTransitioning || string.IsNullOrEmpty(targetScene) || targetScene == CurrentScene)
                 return false;
 
             CurrentScene = targetScene;
+            IsTransitioning = true;
             return true;
+        }
+
+        public void CompleteNavigation()
+        {
+            IsTransitioning = false;
         }
     }
 }

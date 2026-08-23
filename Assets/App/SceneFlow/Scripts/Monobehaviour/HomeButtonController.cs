@@ -4,14 +4,14 @@ using UnityEngine.UI;
 namespace SceneFlow.Monobehaviour
 {
     [RequireComponent(typeof(Button))]
-    public class BackButtonController : MonoBehaviour
+    public class HomeButtonController : MonoBehaviour
     {
         [SerializeField] private Button button;
 
         private void Awake()
         {
             button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(GoBack);
+            button.onClick.AddListener(GoHome);
         }
 
         private void OnValidate()
@@ -22,8 +22,14 @@ namespace SceneFlow.Monobehaviour
             }
         }
 
-        public void GoBack()
+        public void GoHome()
         {
+            if (SceneFlowController.Instance == null)
+            {
+                Debug.LogWarning("HomeButtonController: no SceneFlowController in the scene.");
+                return;
+            }
+
             SceneFlowController.Instance.NavigateHome();
         }
     }

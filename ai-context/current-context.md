@@ -4,7 +4,8 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (end of the Shell/scene-flow navigation session).
+Last updated: 2026-08-23 (end of the `unity-architect` review + fix pass on the
+Shell/scene-flow work).
 
 ## What we're building
 
@@ -30,7 +31,8 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
   `SceneFlowController` singleton. Every other scene (MainMenu, AceOfShadows, MagicWords,
   PhoenixFlame) loads additively on top of it, one at a time. See "Scene-flow architecture"
-  below for detail.
+  below for detail. **Reviewed by the `unity-architect` subagent** (2026-08-23, first
+  confirmed-working run — see Tooling below) and hardened based on its findings: see D13.
 
 ### Tooling
 - **Unity 6000.0.82f1**, Unity MCP (`com.unity.ai.assistant`) — reconnected and used
@@ -49,9 +51,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `Awake()`/`Start()`, facade + focused-controller composition, `OnValidate()`
   self-wiring) as defaults it can push back on, not rules. Reads a repo's
   `ai-context/`/`CLAUDE.md` first and defers to already-established real
-  conventions. **Not yet confirmed working** — it didn't appear in this session's
-  agent roster (loaded at session start, before the file existed), so invoking it
-  was untested as of this update; try it in a fresh session.
+  conventions. **Confirmed working** (2026-08-23, fresh session) — ran a real
+  architecture review of the SceneFlow feature, found a build-breaking bug (Shell
+  missing from Build Settings) plus several real async/lifecycle bugs; findings
+  were acted on, see D13.
 - **IDE: Rider, not VS Code.** Rider is free for non-commercial use (JetBrains
   changed this in 2024) — activate via the "Free non-commercial license" option in
   Rider's license dialog, no payment needed for this take-home. VS Code + C# Dev
@@ -64,6 +67,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Repo:** `github.com/dogukantaytuglu/softgames-task` (private), `master` branch.
 
 ### Project conventions (established this session, apply going forward)
+- **`Assets/App/` vs `Assets/Feature/`**: app-level infrastructure that every scene
+  depends on (`SceneFlow`, `FpsCounter`) lives under `Assets/App/`; independent,
+  deletable content features (`MainMenu`, `AceOfShadows`, `MagicWords`,
+  `PhoenixFlame`) live under `Assets/Feature/`. Split out 2026-08-23 (D13) — before
+  this both kinds of thing sat in `Assets/Feature/` together, which stopped being
+  legible once SceneFlow (infra) landed alongside AceOfShadows (content). Answers
+  "which of these can I delete without breaking the app" from the tree alone.
 - **Every feature's scripts split into `Scripts/Logic/` and `Scripts/Monobehaviour/`
   subfolders**, each its own asmdef, named `<Feature>.Logic` / `<Feature>.Monobehaviour`
   (e.g. `AceOfShadows.Logic`, `FpsCounter.Monobehaviour`). `Logic` asmdefs have
@@ -76,13 +86,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   double-check new files actually land inside `Logic/` or `Monobehaviour/`.
   ⚠️ **Also:** exactly one asmdef per folder — Unity errors if two exist side by
   side, even with different names.
+  **Exception: `MainMenu`** stays flat (`MainMenu.asmdef` at the feature root, no
+  Logic/Monobehaviour split) — it's pure wiring (`MenuButtonSceneLoader`), nothing
+  to unit-test, so the split would be ceremony with no payoff. Deliberate, not
+  drift.
 - **Tests:** `Assets/Tests/EditMode/<Feature>/`, own `<Feature>.Tests.asmdef`
   referencing the feature's Logic asmdef (plus Monobehaviour too, if anything in
   there is actually unit-tested — usually nothing is, since Monobehaviours in this
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 33 EditMode tests total right now
-  (5 FpsCounter, 22 Ace of Shadows, 6 SceneFlow), all passing.
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 35 EditMode tests total right now
+  (5 FpsCounter, 22 Ace of Shadows, 8 SceneFlow), all passing. FpsCounter's tests
+  moved here from `Assets/App/FpsCounter/Scripts/Tests/` (2026-08-23, D13) to
+  actually match this convention instead of just stating it.
 - **In Unity MCP `Unity_RunCommand` scripts specifically** (not normal project
   code): bare `Image` and `CodeEditor` resolve to the wrong thing (some other
   namespace collides) — always fully-qualify as `UnityEngine.UI.Image` /
@@ -140,41 +156,81 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **`Shell.unity` is build-index 0** and the only scene ever opened directly (in
   Editor Play or in the WebGL build) — every other scene is loaded/unloaded
   *additively* on top of it, one "content" scene at a time. Shell itself never
-  reloads or unloads.
-- **`SceneFlow.Logic`** (`Assets/Feature/SceneFlow/Scripts/Logic/`, `noEngineReferences:
-  true`): `SceneFlowState` — pure state machine holding `CurrentScene` and
-  `TryNavigate(target, out previousScene)`, which no-ops (returns false) if
-  `target` is null/empty/already-current. Covered by 6 EditMode tests.
+  reloads or unloads. Lives at `Assets/App/SceneFlow/` (not `Assets/Feature/` —
+  see the `Assets/App/` vs `Assets/Feature/` convention above).
+- **`SceneFlow.Logic`** (`Assets/App/SceneFlow/Scripts/Logic/`, `noEngineReferences:
+  true`): `SceneFlowState` — pure state machine holding `CurrentScene`,
+  `IsTransitioning`, and `TryBeginNavigation(target, out previousScene)` /
+  `CompleteNavigation()`. `TryBeginNavigation` no-ops (returns false) if
+  `target` is null/empty/already-current, **or if a navigation is already
+  in-flight** — this is the fix for a real bug the `unity-architect` review caught
+  (2026-08-23, D13): double-clicking two menu buttons quickly used to desync the
+  state machine from what was actually loaded. `SceneNames` — a plain const-string
+  class (`Shell`/`MainMenu`/`AceOfShadows`/`MagicWords`/`PhoenixFlame`) — is the
+  single source of truth for scene name strings in code (per-instance prefab
+  `sceneName` fields are still hand-typed strings; a `SceneAsset`-backed wrapper
+  would be overkill at this scale). 8 EditMode tests total.
 - **`SceneFlow.Monobehaviour`**: `SceneFlowController` — a plain static-instance
   singleton (not `DontDestroyOnLoad`; unnecessary since it lives in Shell, which is
   never unloaded) living on a `SceneFlowController` GameObject in `Shell.unity`.
-  `Start()` calls `Navigate(homeSceneName)` (default `"MainMenu"`) to boot the first
-  content scene. `Navigate(sceneName)` unloads the previous content scene
-  (`SceneManager.UnloadSceneAsync`), additively loads the target
-  (`LoadSceneAsync(..., LoadSceneMode.Additive)`), then calls
-  `SceneManager.SetActiveScene` on completion so the new scene's lighting/instantiate
-  context is correct. `BackButtonController` just calls `Instance.NavigateHome()`.
+  `Start()` adopts whatever scene is already active (via `SceneFlowState`'s
+  constructor) if one other than Shell is already loaded — this is what makes the
+  Editor bootstrap below work — otherwise calls `Navigate(homeSceneName)` (default
+  `SceneNames.MainMenu`) to boot the first content scene. `Navigate(sceneName)`
+  unloads the previous content scene (`SceneManager.UnloadSceneAsync`), additively
+  loads the target (`LoadSceneAsync(..., LoadSceneMode.Additive)`); if the load
+  operation comes back `null` (scene not in Build Settings — a silent Unity API
+  failure otherwise), it logs an error and releases the in-flight guard instead of
+  leaving navigation permanently bricked. On success, `SceneManager.sceneLoaded`
+  (not the load operation's `.completed`) is what triggers `SetActiveScene` +
+  `CompleteNavigation` — Unity fires `sceneLoaded` after the new scene's `Awake`
+  calls but *before* its `Start` calls, which is what makes it safe for the new
+  scene's own `Start()` to root-`Instantiate` things without them silently landing
+  in Shell. `HomeButtonController` (was `BackButtonController` — renamed 2026-08-23,
+  D13, since there's no back-stack, it always goes home) calls
+  `Instance.NavigateHome()`, guarded against a null `Instance`.
 - **Exactly one content scene is ever loaded alongside Shell**, which is what keeps
-  cameras/lights/EventSystems from ever duplicating — Shell itself holds no Camera,
-  no Light, and no EventSystem (only a Screen Space Overlay Canvas, which doesn't
-  need a camera to render). Each content scene keeps its own Main Camera, Directional
-  Light, and `EventSystem` (`InputSystemUIInputModule`) exactly as before; only one is
-  ever active at a time since Shell fully unloads the previous content scene before
-  loading the next.
-- **`MenuButtonSceneLoader`** (MainMenu) now calls `SceneFlowController.Instance.Navigate(sceneName)`
-  instead of `SceneManager.LoadScene` directly.
-- **Back buttons**: `Assets/Feature/SceneFlow/Prefabs/BackButton.prefab` — top-right
-  anchored, `buttons_41` sprite (green "home" icon from `Assets/Art/Sprites/buttons.png`,
-  chosen since it reads as "return to main menu" and needs no extra label). Instanced
-  into `AceOfShadows.unity`, `MagicWords.unity`, `PhoenixFlame.unity` (not MainMenu —
+  EventSystems from ever duplicating — Shell itself holds no Light and no
+  EventSystem (only a Screen Space Overlay Canvas, which doesn't need a camera to
+  render, at `m_SortingOrder: 100` so it's deterministically drawn above whatever
+  content scene's own Overlay canvas is loaded alongside it). Each content scene
+  keeps its own Main Camera, Directional Light, and `EventSystem`
+  (`InputSystemUIInputModule`) exactly as before; only one is ever active at a time
+  since Shell fully unloads the previous content scene before loading the next.
+  **Shell does hold one Camera**, unlike the original design: a `FallbackCamera`
+  (Solid Color clear, culling mask `Nothing`, depth `-100`, no AudioListener) added
+  2026-08-23 (D13) — closes a real gap where unload-then-load left a frame (worse
+  on WebGL) with zero cameras rendering.
+- **Editor-only bootstrap** (`EditorSceneBootstrap`, `#if UNITY_EDITOR`,
+  `RuntimeInitializeOnLoadMethod(BeforeSceneLoad)`, added 2026-08-23, D13):
+  additively loads `Shell` if it isn't already loaded and no `SceneFlowController`
+  exists, *unless* the scene about to play is Shell itself. This is what makes
+  opening `MagicWords.unity`/`PhoenixFlame.unity`/`AceOfShadows.unity` directly and
+  hitting Play still work (FPS counter visible, back-to-home button functional)
+  without the friction of having to open Shell first every time — important now
+  that Magic Words and Phoenix Flame are about to be built and Play will get hit
+  from those scenes a lot. Compiles out entirely in real builds.
+- **`MenuButtonSceneLoader`** (MainMenu) calls `SceneFlowController.Instance.Navigate(sceneName)`
+  instead of `SceneManager.LoadScene` directly, guarded against a null `Instance`.
+- **Back-to-home buttons**: `Assets/App/SceneFlow/Prefabs/HomeButton.prefab`
+  (renamed from `BackButton.prefab`, D13) — top-right anchored, `buttons_41` sprite
+  (green "home" icon from `Assets/Art/Sprites/buttons.png`, chosen since it reads
+  as "return to main menu" and needs no extra label). Instanced into
+  `AceOfShadows.unity`, `MagicWords.unity`, `PhoenixFlame.unity` (not MainMenu —
   that's home, nothing to go back to). `MagicWords`/`PhoenixFlame` were empty
-  placeholders with no Canvas/EventSystem before this — both were added (Screen Space
-  Overlay, same `CanvasScaler` settings as MainMenu/Shell, `EventSystem` duplicated
-  from AceOfShadows' so the Input-System action-asset wiring matches exactly).
+  placeholders with no Canvas/EventSystem before this session started — both were
+  added (Screen Space Overlay, same `CanvasScaler` settings as MainMenu/Shell,
+  `EventSystem` duplicated from AceOfShadows' so the Input-System action-asset
+  wiring matches exactly).
 - **Full navigate/back loop verified live in Play Mode** via Unity MCP (Shell→MainMenu→
   each of the three feature scenes→back→MainMenu), confirming: single active
   `EventSystem` at every step, `SceneFlowController.Instance` persists, FPS counter
   stays active/visible throughout, active scene is set correctly after each transition.
+  **That verification predates the D13 hardening pass** — the in-flight guard,
+  fallback camera, `sceneLoaded`-based activation timing, and Editor bootstrap are
+  all new and only compile/EditMode-test verified so far; re-verify live in Play
+  Mode before relying on them (developer's own call per the Play Mode testing note
+  above).
 
 ### Phase 0 status
 - **Main menu** (`Assets/Scenes/MainMenu.unity`): Canvas (Scale With Screen Size,
@@ -186,7 +242,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `SceneFlowController.Instance.Navigate` on click (see "Scene-flow architecture").
   Button art: `Assets/Art/Sprites/buttons.png` (blue = Ace of Shadows, green = Magic
   Words, red/orange = Phoenix Flame).
-- **FPS counter** (`Assets/Feature/FpsCounter/`): `FpsCalculator` (Logic, plain
+- **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
   changes). **Lives once, centrally, in `Shell.unity`'s always-loaded canvas** (moved
@@ -234,25 +290,42 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   package, because that source repo has no `.meta` files committed, so Unity's
   Package Manager can't import it at all. If that repo ever gets `.meta` files
   added, it could switch to a real package dependency instead.
+  **Fixed a real leak in it 2026-08-23 (D13):** `Timer.Stop()` never called
+  `TimerService.UnregisterTimer`, so every `AceOfShadowsController` created via
+  scene navigation (MainMenu→AceOfShadows→home→...) stayed permanently rooted in
+  the service's static `Timers` list along with everything it closed over (144
+  cards' worth). `Stop()` now unregisters; `Start()` now re-registers (idempotent,
+  guarded in `RegisterTimer`) so `Restart()` still works. Worth upstreaming to the
+  `TimerUtil` source repo itself, not just this vendored copy, since any future
+  feature that uses a timer and gets navigated away from will hit the same trap.
 - Input System package only (`activeInputHandler: 1`) — no legacy Input Manager.
 
 ## Immediate next steps
 
-1. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about
+1. **Re-verify the Shell→content Play Mode nav loop live** — the D13 hardening
+   pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
+   scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and
+   EditMode-test-passing (35/35) but only the *previous*, unhardened version of
+   this loop was ever actually clicked through in Play Mode. Do that before
+   building on top of it.
+2. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about
    this — before designing anything; the emoji-in-TextMeshPro spike from the
    original Phase 0 plan was never actually done, so that risk is still live).
-   The scene already has a Canvas/EventSystem/BackButton now — just needs the
-   actual dialogue content built inside it.
-2. Build Phoenix Flame (particle system + Animator-driven color transitions —
+   The scene already has a Canvas/EventSystem/HomeButton now — just needs the
+   actual dialogue content built inside it. Any root-`Instantiate` inside it should
+   go through a scene-local parent (see the `sceneLoaded`-timing note under
+   Scene-flow architecture) rather than relying on the active scene being correct.
+3. Build Phoenix Flame (particle system + Animator-driven color transitions —
    the brief specifically requires an Animator Controller, not a script lerp).
-   Same starting point as Magic Words — Canvas/EventSystem/BackButton already there.
-3. Verify responsive layout + touch input on a real phone — now also needs to cover
+   Same starting point as Magic Words — Canvas/EventSystem/HomeButton already there.
+   If it uses a timer, no leak risk anymore (D13 fixed that in TimerUtil itself).
+4. Verify responsive layout + touch input on a real phone — now also needs to cover
    the additive Shell→content scene transition specifically (untested on-device).
-4. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
+5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
    not started; the Brotli+Fallback numbers from the Ace of Shadows deploy work
    are a natural starting point (~13MB vs ~60MB uncompressed, already measured
    in this session's conversation history, just not written up anywhere yet).
-5. README covering architecture/decisions/trade-offs — not started.
+6. README covering architecture/decisions/trade-offs — not started.
 
 ## Conventions (binding for all three tasks, from the original brief)
 

@@ -6,6 +6,65 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D13 — Acted on the `unity-architect` review of the SceneFlow work (2026-08-23)
+**Choice:** Ran the `unity-architect` subagent (see current-context.md, Tooling) —
+its first confirmed-working invocation — against the Shell/SceneFlow work from
+D12, then implemented its full findings list:
+- **P0 (build-breaking):** `Shell.unity` was never actually added to
+  `EditorBuildSettings.scenes` despite D12/current-context.md claiming it was —
+  added at index 0. A WebGL build made before this fix would have booted MainMenu
+  directly with no `SceneFlowController`, NRE'd on the first button click, and
+  never shown the FPS counter.
+- **P1 (real bugs the nav loop introduced):** `Timer.Stop()` never unregistered
+  from `TimerService`, leaking a full `AceOfShadowsController` graph (144 cards)
+  on every MainMenu→AceOfShadows→home cycle — fixed in `TimerUtil` itself (`Stop()`
+  unregisters, `Start()` re-registers) since any future timer-using feature would
+  hit the same trap. `SceneFlowController.Navigate` had no in-flight guard —
+  double-clicking two menu buttons quickly desynced `SceneFlowState` from what was
+  actually loaded — fixed by moving the guard into `SceneFlowState` itself
+  (`TryBeginNavigation`/`CompleteNavigation`, 2 new EditMode tests) rather than
+  patching the symptom in the Monobehaviour. `SceneManager.SetActiveScene` fired
+  from the load operation's `.completed`, which runs *after* the new scene's own
+  `Start()` — switched to the `SceneManager.sceneLoaded` event instead, which
+  Unity fires after `Awake` but before `Start`, closing a landmine for
+  root-`Instantiate`d objects in Magic Words/Phoenix Flame. Unload-before-load left
+  a frame with zero cameras (Shell has none by design) — added a `FallbackCamera`
+  to Shell (Solid Color clear, culling mask `Nothing`, depth `-100`) rather than
+  reordering to load-then-unload, which would have reintroduced the
+  two-cameras/two-EventSystems problem D12 was designed to avoid.
+- **P2/P3 (structure and polish):** `Assets/Feature/SceneFlow` and
+  `Assets/Feature/FpsCounter` moved to `Assets/App/` — infra every scene depends on
+  is now visually distinct from independent, deletable content features
+  (`MainMenu`/`AceOfShadows`/`MagicWords`/`PhoenixFlame`, still under
+  `Assets/Feature/`). Added an Editor-only `EditorSceneBootstrap`
+  (`RuntimeInitializeOnLoadMethod(BeforeSceneLoad)`, `#if UNITY_EDITOR`) that
+  additively loads Shell when a content scene is opened and Play is hit directly —
+  removes friction that would otherwise be paid twice more building Magic Words and
+  Phoenix Flame. `BackButtonController`/`BackButton.prefab` renamed to
+  `HomeButtonController`/`HomeButton.prefab` (it always goes home, there's no back
+  stack) via `AssetDatabase.RenameAsset` to preserve GUIDs/prefab references. Added
+  a `SceneNames` const-string class in `SceneFlow.Logic`. Gave Shell's persistent
+  Canvas an explicit `sortingOrder: 100` so it's deterministically drawn above
+  whatever content scene's Overlay canvas is loaded alongside it (both were at 0,
+  an unstable tie). Fixed `CardView.MoveTo`'s DOTween `Sequence` not being killable
+  by `transform.DOKill()` (`.SetTarget(transform)` + an `OnDestroy` kill). Cached
+  `TimerService.AllTimers` as a `ReadOnlyCollection` instead of allocating one on
+  every call. Moved FpsCounter's tests from `Scripts/Tests/` into
+  `Assets/Tests/EditMode/FpsCounter/` to actually match the stated test-location
+  convention instead of just claiming it.
+**Why:** The review caught a genuine build-breaking bug that manual Play Mode
+testing in the Editor couldn't have caught (opening `Shell.unity` directly bypasses
+Build Settings entirely), plus several real async/lifecycle bugs the new
+additive-loading design introduced. Fixing all of it now — before Magic Words and
+Phoenix Flame get built on top of this same pattern — is cheaper than fixing it
+after two more features have copied the same landmines. All moves/renames went
+through Unity's `AssetDatabase` API (via Unity MCP `Unity_RunCommand`), not raw
+filesystem operations, specifically to preserve GUIDs and keep every existing
+prefab/scene reference intact. 35/35 EditMode tests pass after the pass (up from
+33 — the new in-flight-guard tests); the previously-verified live Play Mode loop
+predates this hardening and needs re-verification (left as an explicit next step,
+Play Mode testing being the developer's own call per the Tooling note above).
+
 ### D12 — Persistent Shell scene + additive scene-flow, instead of MainMenu as the boot scene (2026-08-23)
 **Choice:** New `Shell.unity` is now build-index 0 and the *only* scene ever opened
 directly — it holds the FPS counter (moved out of AceOfShadows) and a
