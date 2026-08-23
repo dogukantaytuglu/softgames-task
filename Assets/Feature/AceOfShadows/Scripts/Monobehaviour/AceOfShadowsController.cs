@@ -10,8 +10,8 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
     {
         [SerializeField] private AceOfShadowsConfig config;
         [SerializeField] private CardView cardPrefab;
-        [SerializeField] private Transform sourceStackRoot;
-        [SerializeField] private Transform targetStackRoot;
+        [SerializeField] private RectTransform sourceStackRoot;
+        [SerializeField] private RectTransform targetStackRoot;
         [SerializeField] private StackCounterView sourceCounterView;
         [SerializeField] private StackCounterView targetCounterView;
         [SerializeField] private FinishedMessageView finishedMessageView;
@@ -95,7 +95,7 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
             view.transform.SetParent(targetStackRoot);
 
             var localPosition = CardStackLayout.GetOffset(distanceFromBottom);
-            var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees, ySeed: 180);
+            var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees);
 
             view.MoveTo(localPosition, localRotation, OnCardLanded);
         }

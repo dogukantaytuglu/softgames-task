@@ -6,6 +6,57 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D21 — Ace of Shadows cards moved from world-space SpriteRenderers to UI (RectTransform/Image) (2026-08-23)
+**Choice:** Cards, `SourceStack`/`TargetStack`, and the scene's `OverlayUI` Canvas are no longer split across
+world-space (cards) and Screen Space - Camera (HUD) — everything now lives in one Screen Space - Overlay
+Canvas. Concretely:
+- `OverlayUI` Canvas: render mode Screen Space - Camera → **Overlay** (camera reference cleared), and
+  CanvasScaler Constant Pixel Size (800x600, unscaled) → **Scale With Screen Size (1920x1080, match 1)** —
+  now identical to `MainMenuScene`'s Canvas settings.
+- `SourceStack`/`TargetStack`: plain world-space `Transform`s at scene root (world positions `-3,0,0`/`3,0,0`)
+  → `RectTransform`s reparented under the Canvas, anchored at `(0.25, 0.5)`/`(0.75, 0.5)` respectively —
+  proportional to canvas size, not a fixed world offset. Sibling order in the Canvas is `Bg → SourceStack →
+  TargetStack → FinishedMessage → CountdownFill → HomeButton`.
+- `CardView`/`Card.prefab`: root `Transform` → `RectTransform`. `CardStackLayout.GetOffset` returns `Vector2`
+  (pixels) instead of `Vector3` (world units + Z depth) — **draw order now comes from Canvas sibling index**
+  (each new card is instantiated/reparented as the last sibling = drawn on top = matches LIFO "newest card on
+  top"), not from a manually-assigned Z offset. `CardView.MoveTo`/`SetPositionImmediate` now animate
+  `RectTransform.anchoredPosition` via DOTween's `DOAnchorPos` instead of `transform.DOLocalMove`.
+- All 106 card-art prefabs (`PlayingCards/Prefabs/Deck01|Deck02/*.prefab`, referenced by
+  `AceOfShadowsConfig.CardVisuals`) were batch-converted via an Editor script (`PrefabUtility.LoadPrefabContents`
+  → strip `SpriteRenderer` → `AddComponent<Image>` with the same sprite, `SetNativeSize()` then scaled to a
+  260px-tall card, `AddComponent<RectTransform>` on the root). The second sprite each card had (`Back_D7`/
+  `Back_D8`, a card-back sibling offset `z:0.001`) was **deleted**, not converted — see below.
+- `CardStackLayout.GetRandomZRotation` dropped its `xSeed`/`ySeed` params — was `Quaternion.Euler(xSeed, ySeed,
+  angle)`, now always `Quaternion.Euler(0, 0, angle)`.
+- `AceOfShadowsController`'s `sourceStackRoot`/`targetStackRoot` fields: `Transform` → `RectTransform`.
+- `AceOfShadows.Monobehaviour.asmdef` gained a `DOTween.Modules` reference — `DOAnchorPos` (and the rest of
+  DOTween's UI shortcuts) live in `Assets/Plugins/Demigiant/DOTween/Modules/DOTweenModuleUI.cs`, which has its
+  own real asmdef (`DOTween.Modules`) unlike DOTween's core shortcuts (`DOLocalMove`, `DOPunchScale`, etc.),
+  which ship in a precompiled DLL and are auto-referenced everywhere. Missing this reference is a `CS1061`/
+  "no accessible extension method" compile error, not a namespace-import problem — `using DG.Tweening;` alone
+  isn't enough.
+**Why:** Requested directly — the developer flagged the world-space + Perspective-camera + hand-placed-Z-depth
+design as the wrong call for a game that needs to work across different resolutions/aspect ratios, and as a
+real blocker for an eventual landscape→portrait layout. UI's `RectTransform` + `CanvasScaler` (Scale With
+Screen Size) is what the rest of the project already uses for exactly this problem (main menu, HUD); Canvas
+sibling order is a free, already-correct substitute for the old manual Z-depth draw-order scheme, and removes
+an entire axis of bookkeeping (`PerCardDepth`, the 12-card visual-fan-cap-vs-uncapped-Z distinction).
+**Also decided, not requested — flagged for the developer to reconsider:** the old `Back_D7`/`Back_D8` sprite
+per card existed only to support a true 3D trick — rotating a card 180° on Y so the camera sees the "back"
+sprite face-on instead of the mirrored front. That trick has no equivalent in a flat Screen Space - Overlay
+canvas (no camera depth, and UI's default shader doesn't cull backfaces the way it would need to for this to
+work), so **landed cards no longer get a distinguishing "flip"** — they just keep the same per-card Z-rotation
+jitter as source-stack cards. If a landed-card visual cue is still wanted, it needs a genuinely different
+technique (e.g. a scale.x squash-swap-unsquash flip, or a tint/highlight), not a port of the old one.
+**Not done in this pass:** an actual landscape↔portrait layout switch (different anchor presets per
+orientation). This conversion fixes the underlying rendering approach — proportional anchoring under
+`CanvasScaler` instead of fixed world positions — which is the prerequisite for that, but doesn't yet add
+orientation-aware layout logic. The `PerCardOffset` pixel value (3px/card, scaled down from the old 0.03
+world-unit fan offset against the new 260px card height) is an eyeballed conversion, not measured — expect to
+retune it by eye in Play Mode. Play Mode re-verification of this whole conversion is still open (developer's
+call, per the established Play Mode testing workflow — see Tooling in current-context.md).
+
 ### D20 — StackCounterView: direct method calls, not an event/interface (2026-08-23)
 **Choice:** `AceOfShadowsController` calls `sourceCounterView.Refresh(_deck.Source.Count)`
 right after `_deck.MoveNext()` and `targetCounterView.Refresh(_deck.Target.Count)` from

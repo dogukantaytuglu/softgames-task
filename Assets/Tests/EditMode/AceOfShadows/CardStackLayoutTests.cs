@@ -9,7 +9,7 @@ public class CardStackLayoutTests
     {
         var offset = CardStackLayout.GetOffset(0);
 
-        Assert.AreEqual(Vector3.zero, offset);
+        Assert.AreEqual(Vector2.zero, offset);
     }
 
     [Test]
@@ -29,29 +29,5 @@ public class CardStackLayoutTests
         var wellBeyondCap = CardStackLayout.GetOffset(143);
 
         Assert.AreEqual(atCap.y, wellBeyondCap.y, 0.0001f);
-    }
-
-    [Test]
-    public void GetOffset_ZDecreases_AsDistanceFromBottomIncreases()
-    {
-        // Higher cards (closer to the top) get a smaller/more negative Z, so
-        // they render in front under the camera's distance-based transparency
-        // sorting - draw order comes from this, not SpriteRenderer.sortingOrder.
-        var bottom = CardStackLayout.GetOffset(0);
-        var top = CardStackLayout.GetOffset(143);
-
-        Assert.Less(top.z, bottom.z);
-    }
-
-    [Test]
-    public void GetOffset_ZIsNotCapped_UnlikeTheVisualFan()
-    {
-        // Y flattens out past the visual fan cap, but Z must stay unique per
-        // card past that point too, or draw order among the "hidden" cards
-        // becomes undefined.
-        var atCap = CardStackLayout.GetOffset(12);
-        var wellBeyondCap = CardStackLayout.GetOffset(143);
-
-        Assert.AreNotEqual(atCap.z, wellBeyondCap.z);
     }
 }

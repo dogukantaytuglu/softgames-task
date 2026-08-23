@@ -5,9 +5,13 @@ using Random = UnityEngine.Random;
 
 namespace Feature.AceOfShadows.Scripts.Monobehaviour
 {
+    [RequireComponent(typeof(RectTransform))]
     public class CardView : MonoBehaviour
     {
         private AceOfShadowsConfig _config;
+        private RectTransform _rectTransform;
+
+        private RectTransform RectTransform => _rectTransform ??= (RectTransform)transform;
 
         public void Initialize(AceOfShadowsConfig config)
         {
@@ -19,24 +23,25 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
         {
             var randomIndex = Random.Range(0, config.CardVisuals.Count);
             var randomVisual = config.CardVisuals[randomIndex];
-            var generatedVisual = Instantiate(randomVisual, transform);
-            generatedVisual.transform.localPosition = Vector3.zero;
-            generatedVisual.transform.localRotation = Quaternion.identity;
+            var generatedVisual = Instantiate(randomVisual, RectTransform);
+            var generatedRect = (RectTransform)generatedVisual.transform;
+            generatedRect.anchoredPosition = Vector2.zero;
+            generatedRect.localRotation = Quaternion.identity;
         }
 
-        public void SetPositionImmediate(Vector3 localPosition, Quaternion localRotation)
+        public void SetPositionImmediate(Vector2 anchoredPosition, Quaternion localRotation)
         {
-            transform.localPosition = localPosition;
-            transform.localRotation = localRotation;
+            RectTransform.anchoredPosition = anchoredPosition;
+            RectTransform.localRotation = localRotation;
         }
 
-        public void MoveTo(Vector3 localPosition, Quaternion localRotation, Action onComplete)
+        public void MoveTo(Vector2 anchoredPosition, Quaternion localRotation, Action onComplete)
         {
             transform.DOKill();
 
             DOTween.Sequence()
                 .SetTarget(transform)
-                .Join(transform.DOLocalMove(localPosition, _config.MoveDuration))
+                .Join(RectTransform.DOAnchorPos(anchoredPosition, _config.MoveDuration))
                 .Join(transform.DOLocalRotateQuaternion(localRotation, _config.MoveDuration))
                 .SetEase(_config.MoveEase)
                 .OnComplete(() => onComplete?.Invoke());

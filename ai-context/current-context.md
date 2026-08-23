@@ -4,7 +4,9 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-23 (end of an Ace of Shadows polish pass: real playing-card
+Last updated: 2026-08-23 (Ace of Shadows cards/stacks converted from world-space
+SpriteRenderers to UI RectTransform/Image under a Screen Space - Overlay Canvas —
+see D21 in decisions.md — following an earlier polish pass: real playing-card
 visuals, rendering/batching cleanup, Baloo 2 font, stack-counter pop animations).
 
 ## What we're building
@@ -18,11 +20,14 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 ## Current state
 
 ### Task progress
-- **Ace of Shadows: built and working**, now past a polish/optimization pass.
-  144-card deck drain between two stacks, Source→Target, one move per second,
-  message on completion, real playing-card visuals (random per card), pop-animated
-  stack counters, no skybox/light (unlit sprites only), project-wide Baloo 2 font.
-  See "Ace of Shadows architecture" and "Rendering & performance" below for detail.
+- **Ace of Shadows: built and working**, now past a polish/optimization pass and
+  a UI conversion (D21). 144-card deck drain between two stacks, Source→Target,
+  one move per second, message on completion, real playing-card visuals (random
+  per card), pop-animated stack counters, project-wide Baloo 2 font. Cards/stacks
+  render as UI (RectTransform/Image under a Screen Space - Overlay Canvas) as of
+  2026-08-23, not world-space SpriteRenderers — see "Ace of Shadows architecture"
+  and "Rendering & performance" below, and D21 in decisions.md. Not yet
+  Play Mode-verified since that conversion (next steps item 0b).
 - **Magic Words: not started.** `Assets/Scenes/MagicWordsScene.unity` exists as an empty
   placeholder (default camera + light only), registered in Build Settings, reachable
   from the main menu's "Magic Words" button. No script work yet.
@@ -116,8 +121,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   there is actually unit-tested — usually nothing is, since Monobehaviours in this
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 35 EditMode tests total right now
-  (5 FpsCounter, 22 Ace of Shadows, 8 SceneFlow), all passing. FpsCounter's tests
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. 33 EditMode tests total right now
+  (5 FpsCounter, 20 Ace of Shadows, 8 SceneFlow), all passing — down from 35/22
+  after D21 dropped `CardStackLayoutTests`' two Z-depth-specific tests (Z no
+  longer exists once cards moved to UI, see decisions.md D21). FpsCounter's tests
   moved here from `Assets/App/FpsCounter/Scripts/Tests/` (2026-08-23, D13) to
   actually match this convention instead of just stating it.
 - **In Unity MCP `Unity_RunCommand` scripts specifically** (not normal project
@@ -226,39 +233,67 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   under `config.MoveInterval`, so a card always finishes landing before the next
   one starts. (Values live in `AceOfShadowsConfig` now, see below — don't
   hardcode either number here, they've already drifted once.)
-- **Draw order comes from Z position, not `SpriteRenderer.sortingOrder`.** The
-  scene's camera is Perspective (not orthographic) with default transparency sort
-  mode, which already sorts by camera distance — explicit sortingOrder was
-  redundant. Each card gets a unique Z offset (uncapped, unlike the Y fan which
-  caps at 12 cards deep for the visual) so draw order stays well-defined even among
-  visually-overlapping cards.
+- **Cards are UI now, not world-space sprites — converted 2026-08-23, see D21.**
+  `CardView`'s root and every card-art prefab are `RectTransform`s living under the
+  scene's single Screen Space - Overlay Canvas, not `Transform`s with
+  `SpriteRenderer`s under a Perspective camera. **Draw order comes from Canvas
+  sibling index, not Z position or `sortingOrder`** - each card is instantiated/
+  reparented as the last sibling of its stack, so "newest card" = "last sibling" =
+  "drawn on top", for free, matching the stack's own LIFO order. `CardStackLayout.
+  GetOffset` returns a `Vector2` pixel offset (no Z component at all anymore).
+  This whole rewrite (Canvas render mode, CanvasScaler, `SourceStack`/`TargetStack`
+  reparenting, `CardView`/`CardStackLayout`/`AceOfShadowsController` signature
+  changes, all 106 card-art prefabs) is why the world-space-specific notes that
+  used to sit here are gone - see D21 in `decisions.md` for the full list of what
+  changed and why (the short version: world-space + a Perspective camera doesn't
+  scale across resolutions/aspect ratios, which was flagged as a real problem for
+  an eventual landscape-to-portrait layout; UI + `CanvasScaler` is what the rest of
+  the project already uses for exactly this).
 - **Random rotation per card** (`config.MaxRotationDegrees`), assigned once at placement (not deterministic,
-  not unit-tested — intentional one-off visual jitter). Target-stack cards get an
-  additional 180° Y rotation as a visual "flip" distinguishing landed cards.
-  Combined effect: stacks read as a messy pile of individual cards, not a smooth
-  block.
-- **Hierarchy:** `SourceStack` / `TargetStack` are real parent `Transform`s (not
-  just position anchors) — cards `SetParent` onto them on move, using
-  `worldPositionStays: true` (the default) specifically so the reparent itself
-  doesn't cause a visual snap; the subsequent DOTween move then animates smoothly
-  from wherever the card actually is.
+  not unit-tested — intentional one-off visual jitter). Combined effect: stacks
+  read as a messy pile of individual cards, not a smooth block. **No more landed-
+  card "flip"** - the old 180° Y-rotation trick (revealing a second `Back_D7`/
+  `Back_D8` sprite) only worked in true 3D world space and was dropped along with
+  the SpriteRenderer conversion (that Back sprite was deleted from all 106
+  prefabs, not ported) - see D21. If a landed-card visual cue is wanted again, it
+  needs a flat-canvas-appropriate technique (e.g. a scale.x squash-flip, or a
+  tint), not a port of the old one.
+- **Hierarchy:** `SourceStack` / `TargetStack` are `RectTransform`s under the
+  Canvas (anchored proportionally at 25%/75% width, not fixed world positions) -
+  cards `SetParent` onto them on move, using `worldPositionStays: true` (the
+  default) specifically so the reparent itself doesn't cause a visual snap; the
+  subsequent DOTween `DOAnchorPos` move then animates smoothly from wherever the
+  card actually is.
 
 ### Rendering & performance (Ace of Shadows)
 - **AceOfShadowsScene has no Skybox and no Directional Light** — it's 100% unlit
   sprites, neither was doing anything. Camera clears to Solid Color instead
   (same tint the skybox used to render) and the `Directional Light` GameObject
   was deleted outright.
-- **Scene Canvas is Screen Space - Camera, not Overlay** — required, not
-  cosmetic: a new full-screen `Bg` panel (first child of the Canvas) needs to
-  composite *behind* the card stacks by actual depth, and Overlay mode always
-  draws on top of everything regardless of scene depth. Screen Space - Camera
-  respects real Z against the 3D cards.
-- **Stack counters (`SourceCounter`/`TargetCounter`) are World Space canvases**
-  now (`CounterCanvas.prefab`), parented directly under `SourceStack`/`TargetStack`,
-  instead of two flat screen-corner HUD labels — the count sits physically above
-  its own pile.
-- **A real batching investigation happened here, worth knowing before touching
-  card-visual code again:**
+- **Scene Canvas is Screen Space - Overlay now (was Screen Space - Camera) —
+  changed 2026-08-23, see D21.** The old Screen Space - Camera setup existed
+  specifically so the `Bg` panel could depth-composite *behind* the 3D cards
+  (Overlay mode always draws on top of everything regardless of scene depth).
+  That reasoning no longer applies now that cards are UI elements in the same
+  Canvas as everything else — depth ordering is just Canvas sibling index (`Bg`
+  first, see "Ace of Shadows architecture" above), so Overlay works fine and
+  drops the camera dependency entirely.
+- **Stack counters (`SourceCounter`/`TargetCounter`) are still World Space
+  canvases** (`CounterCanvas.prefab`), parented directly under `SourceStack`/
+  `TargetStack` (now `RectTransform`s, not world Transforms) — the count sits
+  physically above its own pile. This is a nested Canvas inside the outer Overlay
+  Canvas now, which still renders correctly but is a leftover from the pre-D21
+  design (it doesn't need to be its own Canvas anymore, since the parent is
+  already inside one) — not cleaned up in the D21 pass, flagged as an easy
+  follow-up if it turns out to add a real extra draw call.
+- **The batching investigation below predates the D21 UI conversion — cards no
+  longer use `SpriteRenderer`/`SpriteAtlas`/`Sprite Mesh Type` at all (they're
+  `UnityEngine.UI.Image` now), so these specific findings (draw-call counts,
+  `spritePackerMode`) don't directly carry over and haven't been re-measured
+  under the new UI-based rendering. Worth a fresh Frame Debugger pass if
+  performance is revisited, rather than assuming these numbers still hold. Kept
+  below for the Bloom/SSAO/post-processing findings, which are still accurate
+  (that part of the pipeline didn't change):**
   - Naive assumption going in was wrong: increasing card-visual variety (8 decks)
     tanked SetPass calls (143), and the fix looked like "texture atlas the decks."
     A `PlayingCards.spriteatlas` was built and the 8 deck textures' `Sprite Mesh
@@ -457,16 +492,27 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 0. **Decide on SSAO/Bloom/Vignette/Tonemapping in `SampleSceneProfile.asset`**
    (see "Rendering & performance" above) — SSAO is a free, no-visual-cost
    disable; Bloom/Vignette/Tonemapping are the unmodified URP template defaults
-   and a real aesthetics call the developer hasn't made yet. Also worth a real
-   Play Mode look (not just Editor stats) at whether the stack-counter pop
-   animations and the new Screen Space - Camera canvas / world-space counters
-   actually read correctly, since that whole chain (`Bg` panel depth-sorting
-   against the cards, `CounterCanvas` world-space scale) has only been verified
-   by reasoning through the YAML, not by eye.
+   and a real aesthetics call the developer hasn't made yet.
+0b. **Play Mode-verify the D21 UI conversion** (cards/stacks moved from world-space
+   SpriteRenderers to UI RectTransform/Image under a Screen Space - Overlay
+   Canvas — see "Ace of Shadows architecture" and decisions.md D21). Compiles
+   clean, 33/33 EditMode tests pass, and the resulting prefab/scene YAML was
+   read back and sanity-checked, but nothing here has been seen running yet:
+   card sizes (260px tall, eyeballed), the `PerCardOffset` fan spread (3px/card,
+   also eyeballed — likely needs retuning by eye), draw order via Canvas sibling
+   index, the stack-counter pop animations against the new anchored stack
+   positions (25%/75% width), and whether the nested `CounterCanvas` World Space
+   canvas still renders correctly parented under an Overlay canvas. Also note:
+   this conversion fixes the *underlying* rendering approach (proportional
+   anchoring under `CanvasScaler` instead of fixed world positions) but does
+   **not** yet add an actual landscape↔portrait layout switch (different anchor
+   presets per orientation) — that's still open, this was the prerequisite for
+   it, not the thing itself.
 1. **Re-verify the AppScene→content Play Mode nav loop live** — the D13 hardening
    pass (in-flight navigation guard, fallback camera, `sceneLoaded`-based active-
    scene timing, Editor auto-bootstrap, `Assets/App` move) is compile-clean and
-   EditMode-test-passing (35/35) but only the *previous*, unhardened version of
+   EditMode-test-passing (33/33, see the D21 note above for why this is no
+   longer 35/35) but only the *previous*, unhardened version of
    this loop was ever actually clicked through in Play Mode. Do that before
    building on top of it.
 2. Build Magic Words (fetch the endpoint first — `BRIEF.md` §5 is explicit about

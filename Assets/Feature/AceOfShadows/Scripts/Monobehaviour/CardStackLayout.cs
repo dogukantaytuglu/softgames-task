@@ -5,21 +5,22 @@ namespace Feature.AceOfShadows.Scripts.Monobehaviour
     public static class CardStackLayout
     {
         private const int MaxVisibleDepth = 12;
-        private const float PerCardOffset = 0.03f;
-        private const float PerCardDepth = 0.002f;
 
-        public static Vector3 GetOffset(int distanceFromBottom)
+        // Eyeballed pixel equivalent of the old 0.03 world-unit fan offset,
+        // scaled to the new ~260px card height. Retune by eye in Play Mode.
+        private const float PerCardOffset = 3f;
+
+        public static Vector2 GetOffset(int distanceFromBottom)
         {
             var visualDepth = Mathf.Min(distanceFromBottom, MaxVisibleDepth);
             var y = visualDepth * PerCardOffset;
-            var z = -distanceFromBottom * PerCardDepth;
-            return new Vector3(0f, y, z);
+            return new Vector2(0f, y);
         }
 
-        public static Quaternion GetRandomZRotation(float maxDegrees, float xSeed = 0f, float ySeed = 0f)
+        public static Quaternion GetRandomZRotation(float maxDegrees)
         {
             var angle = Random.Range(-maxDegrees, maxDegrees);
-            return Quaternion.Euler(xSeed, ySeed, angle);
+            return Quaternion.Euler(0f, 0f, angle);
         }
     }
 }
