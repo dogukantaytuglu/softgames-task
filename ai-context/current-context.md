@@ -29,7 +29,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
 - **Scene-flow/navigation shell built.** `AppScene.unity` is now build-index 0, the sole
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
-  `SceneFlowController` singleton. Every other scene (MainMenu, AceOfShadows, MagicWords,
+  `SceneService` singleton. Every other scene (MainMenu, AceOfShadows, MagicWords,
   PhoenixFlame) loads additively on top of it, one at a time. See "Scene-flow architecture"
   below for detail. **Reviewed by the `unity-architect` subagent** (2026-08-23, first
   confirmed-working run — see Tooling below) and hardened based on its findings: see D13.
@@ -68,7 +68,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ### Project conventions (established this session, apply going forward)
 - **Single init point per feature, no scattered Awake/Start** (2026-08-23, D15): a
-  feature's existing composition root (`AceOfShadowsController`, `SceneFlowController`
+  feature's existing composition root (`AceOfShadowsController`, `SceneService`
   — each already held every reference its feature needed) collapses what used to be
   a same-class `Awake()`+`Start()` split into one `Awake()`. Where no composition
   root existed at all (`MainMenuScene`'s 3 independent `MenuButtonSceneLoader`
@@ -82,7 +82,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `Initialize()` instead of their own `Awake()` — same pattern `StackCounterView.Bind()`
   already used successfully. **Deliberate exception:** `HomeButtonController`
   (SceneFlow's widget, instanced into other features' scenes) and
-  `FpsCountUIController` (separate feature sharing AppScene with SceneFlowController)
+  `FpsCountUIController` (separate feature sharing AppScene with SceneService)
   keep their own tiny `Awake()` — pulling either into another feature's initializer
   would need a new cross-feature asmdef reference for zero real benefit, since both
   were already single-method/single-purpose with nothing to merge.
@@ -209,9 +209,9 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   (per-instance prefab `sceneName` fields are still hand-typed strings; a
   `SceneAsset`-backed wrapper would be overkill at this scale). 8 EditMode tests
   total.
-- **`SceneFlow.Monobehaviour`**: `SceneFlowController` — a plain static-instance
+- **`SceneFlow.Monobehaviour`**: `SceneService` — a plain static-instance
   singleton (not `DontDestroyOnLoad`; unnecessary since it lives in AppScene, which is
-  never unloaded) living on a `SceneFlowController` GameObject in `AppScene.unity`.
+  never unloaded) living on a `SceneService` GameObject in `AppScene.unity`.
   Single `Awake()` (merged from a former Awake+Start split, 2026-08-23, D15 — see
   "single init point per feature" below) sets the singleton, then adopts whatever
   scene is already active (via `SceneFlowState`'s constructor) if one other than
@@ -244,14 +244,14 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   on WebGL) with zero cameras rendering.
 - **Editor-only bootstrap** (`EditorSceneBootstrap`, `#if UNITY_EDITOR`,
   `RuntimeInitializeOnLoadMethod(BeforeSceneLoad)`, added 2026-08-23, D13):
-  additively loads `AppScene` if it isn't already loaded and no `SceneFlowController`
+  additively loads `AppScene` if it isn't already loaded and no `SceneService`
   exists, *unless* the scene about to play is AppScene itself. This is what makes
   opening `MagicWordsScene.unity`/`PhoenixFlameScene.unity`/`AceOfShadowsScene.unity` directly and
   hitting Play still work (FPS counter visible, back-to-home button functional)
   without the friction of having to open AppScene first every time — important now
   that Magic Words and Phoenix Flame are about to be built and Play will get hit
   from those scenes a lot. Compiles out entirely in real builds.
-- **`MenuButtonSceneLoader`** (MainMenu) calls `SceneFlowController.Instance.Navigate(sceneName)`
+- **`MenuButtonSceneLoader`** (MainMenu) calls `SceneService.Instance.Navigate(sceneName)`
   instead of `SceneManager.LoadScene` directly, guarded against a null `Instance`.
 - **Back-to-home buttons**: `Assets/App/SceneFlow/Prefabs/HomeButton.prefab`
   (renamed from `BackButton.prefab`, D13) — top-right anchored, `buttons_41` sprite
@@ -265,7 +265,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   wiring matches exactly).
 - **Full navigate/back loop verified live in Play Mode** via Unity MCP (AppScene→MainMenu→
   each of the three feature scenes→back→MainMenu), confirming: single active
-  `EventSystem` at every step, `SceneFlowController.Instance` persists, FPS counter
+  `EventSystem` at every step, `SceneService.Instance` persists, FPS counter
   stays active/visible throughout, active scene is set correctly after each transition.
   **That verification predates the D13 hardening pass** — the in-flight guard,
   fallback camera, `sceneLoaded`-based activation timing, and Editor bootstrap are
@@ -280,7 +280,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `StandaloneInputModule` won't receive clicks). Three buttons, each a
   `MainMenuButton.prefab` instance with a self-wiring `MenuButtonSceneLoader`
   (`OnValidate` grabs its own `Button` via `TryGetComponent`), calling
-  `SceneFlowController.Instance.Navigate` on click (see "Scene-flow architecture").
+  `SceneService.Instance.Navigate` on click (see "Scene-flow architecture").
   Button art: `Assets/Art/Sprites/buttons.png` (blue = Ace of Shadows, green = Magic
   Words, red/orange = Phoenix Flame).
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain

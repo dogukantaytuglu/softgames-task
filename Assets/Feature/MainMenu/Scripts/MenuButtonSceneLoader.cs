@@ -26,13 +26,13 @@ namespace Feature.MainMenu.Scripts
 
         public void LoadScene()
         {
-            if (SceneFlowController.Instance == null)
+            if (SceneService.Instance == null)
             {
-                Debug.LogWarning("MenuButtonSceneLoader: no SceneFlowController in the scene.");
+                Debug.LogWarning("MenuButtonSceneLoader: no SceneService in the scene.");
                 return;
             }
 
-            SceneFlowController.Instance.Navigate(sceneName);
+            SceneService.Instance.Navigate(sceneName);
         }
     }
 }

@@ -4,9 +4,9 @@ using UnityEngine.SceneManagement;
 
 namespace SceneFlow.Monobehaviour
 {
-    public class SceneFlowController : MonoBehaviour
+    public class SceneService : MonoBehaviour
     {
-        public static SceneFlowController Instance { get; private set; }
+        public static SceneService Instance { get; private set; }
 
         [SerializeField] private string homeSceneName = SceneNames.MainMenu;
 
@@ -45,7 +45,7 @@ namespace SceneFlow.Monobehaviour
             var loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             if (loadOperation == null)
             {
-                Debug.LogError($"SceneFlowController: '{sceneName}' is not registered in Build Settings.");
+                Debug.LogError($"SceneService: '{sceneName}' is not registered in Build Settings.");
                 _state.CompleteNavigation();
                 return;
             }

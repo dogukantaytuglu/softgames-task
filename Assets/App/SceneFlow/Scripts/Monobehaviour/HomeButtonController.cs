@@ -24,13 +24,13 @@ namespace SceneFlow.Monobehaviour
 
         public void GoHome()
         {
-            if (SceneFlowController.Instance == null)
+            if (SceneService.Instance == null)
             {
-                Debug.LogWarning("HomeButtonController: no SceneFlowController in the scene.");
+                Debug.LogWarning("HomeButtonController: no SceneService in the scene.");
                 return;
             }
 
-            SceneFlowController.Instance.NavigateHome();
+            SceneService.Instance.NavigateHome();
         }
     }
 }

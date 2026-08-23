@@ -10,7 +10,7 @@ namespace SceneFlow.Monobehaviour
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsureAppSceneLoaded()
         {
-            if (SceneFlowController.Instance != null)
+            if (SceneService.Instance != null)
                 return;
 
             if (SceneManager.GetActiveScene().name == SceneNames.App)

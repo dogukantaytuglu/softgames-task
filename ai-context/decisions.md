@@ -7,7 +7,7 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 ---
 
 ### D15 — Single init point per feature, no generic IInitializable/reflection (2026-08-23)
-**Choice:** `AceOfShadowsController` and `SceneFlowController` each merge a former
+**Choice:** `AceOfShadowsController` and `SceneService` each merge a former
 `Awake()`+`Start()` split into one `Awake()` — both already held every reference their
 feature needed, so nothing was actually gated on Unity's Awake-before-Start ordering
 across objects. `MainMenuScene` (3 independent `MenuButtonSceneLoader` buttons, no
@@ -26,7 +26,7 @@ interface, no reflection in the final version.
 give each feature one initialization point. `HomeButtonController` (SceneFlow's
 back-to-home widget, instanced into `AceOfShadowsScene`/`MagicWordsScene`/
 `PhoenixFlameScene`) and `FpsCountUIController` (a separate feature sharing `AppScene`
-with `SceneFlowController`) were kept as their own tiny self-initializing `Awake()`s
+with `SceneService`) were kept as their own tiny self-initializing `Awake()`s
 rather than folded into another feature's initializer, specifically to avoid
 reintroducing a cross-feature asmdef reference that was deliberately avoided when
 `HomeButton.prefab` was kept inside `SceneFlow`'s own folder (see D13) — both were
@@ -41,7 +41,7 @@ centralizing them elsewhere at the cost of that coupling.
 (preserves GUIDs), with Build Settings, `SceneNames` (renamed `Shell` → `App` as a
 const identifier), the `EditorSceneBootstrap` method, and every serialized
 `sceneName`/`homeSceneName` field (`MainMenuButton.prefab`'s default plus two
-per-instance overrides in `MainMenuScene.unity`, `SceneFlowController`'s field in
+per-instance overrides in `MainMenuScene.unity`, `SceneService`'s field in
 `AppScene.unity`) updated to match and re-verified through Unity's own APIs, not
 just text search.
 **Why:** Developer request, specifically to rename `Shell` → `App` for
@@ -58,13 +58,13 @@ D12, then implemented its full findings list:
 - **P0 (build-breaking):** `AppScene.unity` was never actually added to
   `EditorBuildSettings.scenes` despite D12/current-context.md claiming it was —
   added at index 0. A WebGL build made before this fix would have booted MainMenu
-  directly with no `SceneFlowController`, NRE'd on the first button click, and
+  directly with no `SceneService`, NRE'd on the first button click, and
   never shown the FPS counter.
 - **P1 (real bugs the nav loop introduced):** `Timer.Stop()` never unregistered
   from `TimerService`, leaking a full `AceOfShadowsController` graph (144 cards)
   on every MainMenu→AceOfShadows→home cycle — fixed in `TimerUtil` itself (`Stop()`
   unregisters, `Start()` re-registers) since any future timer-using feature would
-  hit the same trap. `SceneFlowController.Navigate` had no in-flight guard —
+  hit the same trap. `SceneService.Navigate` had no in-flight guard —
   double-clicking two menu buttons quickly desynced `SceneFlowState` from what was
   actually loaded — fixed by moving the guard into `SceneFlowState` itself
   (`TryBeginNavigation`/`CompleteNavigation`, 2 new EditMode tests) rather than
@@ -113,15 +113,15 @@ Play Mode testing being the developer's own call per the Tooling note above).
 ### D12 — Persistent AppScene scene + additive scene-flow, instead of MainMenu as the boot scene (2026-08-23)
 **Choice:** New `AppScene.unity` is now build-index 0 and the *only* scene ever opened
 directly — it holds the FPS counter (moved out of AceOfShadows) and a
-`SceneFlowController` singleton, and is never itself unloaded. Every other scene
+`SceneService` singleton, and is never itself unloaded. Every other scene
 (MainMenu, AceOfShadows, MagicWords, PhoenixFlame) loads additively on top of it,
-exactly one "content" scene at a time — `SceneFlowController.Navigate()` unloads the
+exactly one "content" scene at a time — `SceneService.Navigate()` unloads the
 previous content scene before additively loading the next and calling
 `SceneManager.SetActiveScene`. `SceneFlowState` (pure, EditMode-tested) owns the
 "is this actually a different scene" guard; the Monobehaviour layer just does the
 unload/load/activate. Back buttons (`BackButton.prefab`, `buttons_41` home-icon
 sprite) were added to AceOfShadows/MagicWords/PhoenixFlame, calling
-`SceneFlowController.Instance.NavigateHome()`; MagicWords/PhoenixFlame needed a
+`SceneService.Instance.NavigateHome()`; MagicWords/PhoenixFlame needed a
 Canvas + `EventSystem` added since they were empty placeholders before this.
 **Why:** Requested directly by the developer (build a shared top nav bar holding the
 FPS counter, with every scene opening additively on top of it, plus back buttons on
