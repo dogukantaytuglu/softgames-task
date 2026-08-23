@@ -1,9 +1,8 @@
 {
-    "name": "FpsCounter.Presentation",
+    "name": "FpsCounter.Logic",
     "rootNamespace": "",
     "references": [
-        "FpsCounter",
-        "Unity.TextMeshPro"
+        "FpsCounter"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

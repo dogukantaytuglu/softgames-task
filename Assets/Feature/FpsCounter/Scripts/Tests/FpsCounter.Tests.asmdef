@@ -2,7 +2,7 @@
     "name": "FpsCounter.Tests",
     "rootNamespace": "",
     "references": [
-        "FpsCounter"
+        "FpsCounter.Logic"
     ],
     "includePlatforms": [
         "Editor"
