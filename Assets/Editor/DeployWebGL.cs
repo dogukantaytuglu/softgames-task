@@ -11,7 +11,18 @@ namespace CI
 {
     internal static class DeployWebGL
     {
-        private const string BuildFolder = @"E:\Projects\UnityProjects\softgames-task-build";
+        // Sibling folder convention (see ai-context/current-context.md): the deploy
+        // repo sits next to this project's folder, named "<project>-build". Derived
+        // from Application.dataPath rather than hardcoded so this isn't tied to one
+        // machine's absolute path.
+        private static string BuildFolder
+        {
+            get
+            {
+                var projectRoot = Directory.GetParent(Application.dataPath)!;
+                return Path.Combine(projectRoot.Parent!.FullName, projectRoot.Name + "-build");
+            }
+        }
 
         [MenuItem("Build/Build && Deploy WebGL")]
         public static void BuildAndDeploy()
@@ -81,9 +92,14 @@ namespace CI
                 CreateNoWindow = true
             };
 
+            // Read the redirected streams before WaitForExit, not after - if git ever
+            // writes enough output to fill the OS pipe buffer, waiting first deadlocks
+            // (git blocks writing, we block waiting for exit that can't happen).
             using var process = Process.Start(psi);
+            var stdout = process.StandardOutput.ReadToEnd();
+            var stderr = process.StandardError.ReadToEnd();
             process.WaitForExit();
-            output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+            output = stdout + stderr;
             return process.ExitCode;
         }
     }
