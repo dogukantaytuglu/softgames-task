@@ -8,9 +8,7 @@ namespace AceOfShadows.Monobehaviour
 {
     public class AceOfShadowsController : MonoBehaviour
     {
-        [SerializeField] private int totalCards = 144;
-        [SerializeField] private float moveInterval = 1f;
-        [SerializeField] private float maxRotationDegrees = 6f;
+        [SerializeField] private AceOfShadowsConfig config;
         [SerializeField] private CardView cardPrefab;
         [SerializeField] private Transform sourceStackRoot;
         [SerializeField] private Transform targetStackRoot;
@@ -25,7 +23,7 @@ namespace AceOfShadows.Monobehaviour
 
         private void Awake()
         {
-            _deck = new CardDeck(totalCards);
+            _deck = new CardDeck(config.TotalCards);
             _deck.CardMoved += OnCardMoved;
             _deck.AllAnimationsFinished += OnAllAnimationsFinished;
 
@@ -35,7 +33,7 @@ namespace AceOfShadows.Monobehaviour
             targetCounterView.Bind(_deck.Target);
             finishedMessageView.Initialize();
 
-            _timer = TimerService.CreateCountdownTimer(moveInterval, loopCount: -1)
+            _timer = TimerService.CreateCountdownTimer(config.MoveInterval, loopCount: -1)
                 .OnTick(UpdateCountdownFill)
                 .OnLoop(TryMoveNext);
             _timer.Start();
@@ -56,9 +54,10 @@ namespace AceOfShadows.Monobehaviour
                 var card = sourceCards[i];
                 var view = Instantiate(cardPrefab, sourceStackRoot);
                 view.name = $"Card {card.Id}";
+                view.Initialize(config);
 
                 var localPosition = CardStackLayout.GetOffset(i);
-                var localRotation = CardStackLayout.GetRandomZRotation(maxRotationDegrees);
+                var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees);
                 view.SetPositionImmediate(localPosition, localRotation);
 
                 _cardViewsByCardId[card.Id] = view;
@@ -95,7 +94,7 @@ namespace AceOfShadows.Monobehaviour
             view.transform.SetParent(targetStackRoot);
 
             var localPosition = CardStackLayout.GetOffset(distanceFromBottom);
-            var localRotation = CardStackLayout.GetRandomZRotation(maxRotationDegrees, ySeed: 180);
+            var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees, ySeed: 180);
 
             view.MoveTo(localPosition, localRotation, _deck.NotifyCardLanded);
         }

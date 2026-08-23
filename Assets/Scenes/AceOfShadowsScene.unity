@@ -1408,9 +1408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc6f2183e3bbec443ac86b85dc9fb96c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalCards: 144
-  moveInterval: 1
-  maxRotationDegrees: 6
+  config: {fileID: 11400000, guid: 2bfc84387ac516f44ad27988d102d523, type: 2}
   cardPrefab: {fileID: 7824631828346129863, guid: 3e0b1915f448e3c47abb0aec124682a8, type: 3}
   sourceStackRoot: {fileID: 1566075766}
   targetStackRoot: {fileID: 2008651791}

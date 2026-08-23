@@ -6,8 +6,12 @@ namespace AceOfShadows.Monobehaviour
 {
     public class CardView : MonoBehaviour
     {
-        [SerializeField] private float moveDuration = 0.35f;
-        [SerializeField] private Ease moveEase = Ease.OutQuad;
+        private AceOfShadowsConfig _config;
+
+        public void Initialize(AceOfShadowsConfig config)
+        {
+            _config = config;
+        }
 
         public void SetPositionImmediate(Vector3 localPosition, Quaternion localRotation)
         {
@@ -21,8 +25,8 @@ namespace AceOfShadows.Monobehaviour
 
             DOTween.Sequence()
                 .SetTarget(transform)
-                .Join(transform.DOLocalMove(localPosition, moveDuration).SetEase(moveEase))
-                .Join(transform.DOLocalRotateQuaternion(localRotation, moveDuration).SetEase(moveEase))
+                .Join(transform.DOLocalMove(localPosition, _config.MoveDuration).SetEase(_config.MoveEase))
+                .Join(transform.DOLocalRotateQuaternion(localRotation, _config.MoveDuration).SetEase(_config.MoveEase))
                 .OnComplete(() => onComplete?.Invoke());
         }
 
