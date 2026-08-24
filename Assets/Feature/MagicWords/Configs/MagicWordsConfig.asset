@@ -16,4 +16,4 @@ MonoBehaviour:
   charactersPerSecond: 45
   autoAdvanceDelay: 2.5
   boxMoveDuration: 0.4
-  boxMoveEase: 27
+  boxMoveEase: 18

@@ -27,7 +27,7 @@ RectTransform:
   m_GameObject: {fileID: 334361213603798886}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5531384334199055663}
@@ -247,7 +247,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 15, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 170, y: 170}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1552662491883112698
@@ -322,8 +322,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 95, y: 0}
-  m_SizeDelta: {x: -230, y: -40}
+  m_AnchoredPosition: {x: 19, y: 0}
+  m_SizeDelta: {x: -327.4484, y: -71.257}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8699753482741411718
 GameObject:
@@ -456,7 +456,7 @@ MonoBehaviour:
   avatarImage: {fileID: 8713378518686270524}
   fallbackAvatarSprite: {fileID: 544408492, guid: 85703ee0d52ea0d479ea35a4259a0b41, type: 3}
   hiddenAnchoredX: -800
-  shownAnchoredX: 40
+  shownAnchoredX: 0
 --- !u!1 &9102714782458677639
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,9 +552,9 @@ MonoBehaviour:
   m_fontSize: 35
   m_fontSizeBase: 35
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 38
   m_fontStyle: 1
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
