@@ -4,7 +4,9 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-25 (Phoenix Flame first pass, D31). Ace of Shadows is done and everything through D27 is
+Last updated: 2026-08-25, end of session (Phoenix Flame first pass D31, then a
+developer-set priority list for next session — see "Immediate next steps" below,
+it now leads with that list). Ace of Shadows is done and everything through D27 is
 committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
 (D22), Restart button (D23), a `unity-interviewer` audit (first run, see
 Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
@@ -743,6 +745,41 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - Input System package only (`activeInputHandler: 1`) — no legacy Input Manager.
 
 ## Immediate next steps
+
+### Developer's own priority list for the next session (set 2026-08-25, end of day)
+
+The developer called these out directly as what's left, in this order — treat this as
+the real priority order over the numbered list below, which predates it and is now
+partly superseded/subsumed by it:
+
+1. **Phoenix Flame needs to be finished — "still very prototypy."** D31 got the
+   mechanics working (config-driven flame, Animator-driven color transitions, 3
+   buttons) but it was explicitly scoped as a first pass, not a polished demo. Needs
+   a real pass on the actual fire look/scale/placement, not just "does clicking a
+   button change the color."
+2. **Mobile support is currently broken, and this is called out as the single
+   biggest risk in the whole submission** — worse than any individual task bug.
+   **Specific, named failure: Magic Words' dialogue boxes do not scale with screen
+   size.** Root cause is very likely the combination of D25's landscape lock (which
+   assumes a ~16:9 canvas) with `CanvasScaler`'s Match Height-only scaling (see
+   "Phase 0 status" below) — Match Height scales every UI element uniformly against
+   the reference *height* only, so on a device aspect ratio that differs meaningfully
+   from 1920×1080, elements sized correctly for that reference will read as too
+   wide/narrow or overflow, and `DialogueBoxView`'s boxes are anchored to a screen
+   *edge* with a fixed `sizeDelta` (see "Magic Words architecture" above) rather than
+   stretched/proportionally sized — worth checking first, but confirm by actually
+   testing an off-16:9 resolution rather than assuming this is the whole story. **The
+   project has not been verified on mobile at all yet** — this is the real target for
+   next session, not a nice-to-have.
+3. **Tween polishing** — general pass across DOTween usage (Ace of Shadows card
+   moves/exit-cascade, Magic Words box slides/reveal) for feel, not just correctness.
+4. **Overall UI/color polish** — developer's own words: "the project looks
+   horrible." This is a real aesthetics gap, not false modesty — the brief grades
+   aesthetics explicitly (`BRIEF.md` §3), so this isn't optional polish, it's a
+   scored criterion currently unmet.
+5. **Code polishing** — a general cleanup pass, not tied to one specific finding yet.
+
+### Older next-steps list (partly superseded by the above — kept for the detail)
 
 0. **Decide on SSAO/Bloom/Vignette/Tonemapping in `SampleSceneProfile.asset`**
    (see "Rendering & performance" above) — SSAO is a free, no-visual-cost
