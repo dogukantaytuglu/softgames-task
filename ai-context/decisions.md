@@ -6,6 +6,71 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D31 — Phoenix Flame: config-driven flame + Animator Controller color system, built directly per request (2026-08-25)
+**Choice:** First real pass at Phoenix Flame, built directly per explicit developer instruction. Summary:
+- **Domain** (`PhoenixFlame.Logic`, `noEngineReferences: true`): `PhoenixFlameColorState` - the "colour state machine" the
+  brief calls out as testable domain logic. Holds `CurrentIndex`, `TrySelect(index)` (mirrors `SceneFlowState`/`CardDeck`'s
+  shape: throws on out-of-range, returns `false`/no-ops on reselecting the already-current color so the caller doesn't
+  retrigger an identical Animator transition). 6 EditMode tests.
+- **Presentation** (`PhoenixFlame.Monobehaviour`): `PhoenixFlameConfig` (ScriptableObject) exposes `FlamePrefab`,
+  `BaseMaterial`, a `List<PhoenixFlameColorOption>` (each option: display name + a plain `baseColor` and an
+  `[ColorUsage(true,true)]` HDR `emissionColor` - `LargeFlame02`'s shader takes color from two separate properties,
+  `_BaseColor` (multiplies the base map) and `_EmissionColor` (HDR, drives the glow/bloom), so one `Color` field per
+  option wasn't enough), `AnimatorController`, and `ColorTransitionDuration`. `PhoenixFlameController` (composition
+  root): on `Awake()`, instantiates `config.FlamePrefab` at a spawn point, **instances `config.BaseMaterial`
+  (`Instantiate(...)`, not `sharedMaterial`) and assigns it directly to that instance's `ParticleSystemRenderer`** -
+  the literal ask ("create an instance of the material and assign it to that flames renderer") - then adds an
+  `Animator` pointed at `config.AnimatorController`. `SetColor(index)` (called by 3 `PhoenixFlameColorButton`s, one
+  per screen color, same self-wiring-`Initialize(Action)` shape as `MenuButtonSceneLoader`) checks
+  `PhoenixFlameColorState.TrySelect` and, if it actually changed, sets an Animator Int parameter (`ColorIndex`) -
+  nothing else touches the material directly at runtime.
+- **The actual color transition is 100% Animator Controller, no tween/script lerp anywhere** - this was almost not
+  the case. Mid-build the developer asked to switch the transition mechanism to DOTween's `Material.DOColor` (a real,
+  working alternative - confirmed `ShortcutExtensions.DOColor(Material, Color, string/int propertyID, float)` exists
+  in DOTween's core precompiled DLL, no extra asmdef reference needed). Flagged before building it: `BRIEF.md` §5
+  states outright for this exact task "⚠️ They specified an animator controller for the colour transitions. Not a
+  tween, not a script lerp... this is a follow-the-spec check as much as a visual one" - a named grading risk, not a
+  style nitpick. Put to the developer directly via a two-option-then-reconsidered question; the developer reversed
+  back to Animator-only immediately after. Recorded here because a request that contradicts an explicitly-flagged
+  brief requirement is exactly the kind of thing that needs to survive in the decisions log, even though (especially
+  because) it didn't end up being what got built.
+- **How "smooth transition between arbitrary states" works with zero lerp code:** each of the 3 states (Orange/
+  Green/Blue) has its own tiny `AnimationClip` holding a *single* keyframe (at t=0) per animated channel - 8 curves
+  total per clip (`material._BaseColor.{r,g,b,a}` + `material._EmissionColor.{r,g,b,a}`, bound via
+  `AnimationClip.SetCurve("", typeof(ParticleSystemRenderer), propertyName, curve)`) - so each clip is really just
+  "hold this exact color." The actual smoothing comes entirely from the **Animator transition's own crossfade**: all
+  3 states connect via "Any State" transitions gated on the `ColorIndex` int (`AnimatorConditionMode.Equals`),
+  `hasExitTime: false`, `hasFixedDuration: true`, `duration: 1.5s` (from `config.ColorTransitionDuration`) - Mecanim
+  blends the previously-active state's values into the new state's values over that duration natively. This is the
+  standard Mecanim technique for driving a simple property target through an Animator Controller without hand-authored
+  multi-keyframe curves per transition pair.
+- **Built via Unity MCP scripting** (`AnimatorController.CreateAnimatorControllerAtPath`, `SerializedObject` field
+  wiring, scene GameObject construction), same tooling approach as D28/D21, for the same reason - reliable,
+  GUID-preserving, read-back-verified construction instead of hand-edited YAML. Hit the already-documented `Image`-
+  resolves-to-the-wrong-namespace and multi-top-level-type gotchas immediately, fixed the same documented ways.
+- **A real bug caught before it shipped, not after:** the config's `FlamePrefab` was first pointed at the asset
+  pack's own `LargeFlames.prefab` directly. That prefab turned out to have a child `FireEmbers` particle system with
+  its *own* separate `Embers` material (and its root uses `LargeFlame01`, not `LargeFlame02`) - neither of which the
+  Animator-driven recolor touches, since `PhoenixFlameController` only reassigns the root `ParticleSystemRenderer`'s
+  material. The developer's original scene object (dragged in before this session) was already a stripped-down
+  single-system copy with no embers child, using `LargeFlame02` - i.e. someone had already manually solved this
+  exact problem once by deleting the embers child, and pointing the new config straight at the raw pack prefab would
+  have silently reintroduced un-tinted orange embers under a "blue" flame. Fixed by building the project's own
+  `Assets/Feature/PhoenixFlame/Prefabs/PhoenixFlame.prefab` - `LargeFlames.prefab` instantiated, `FireEmbers` child
+  deleted, `LargeFlame02` reassigned as the root's material - and repointing `PhoenixFlameConfig.FlamePrefab` at
+  that instead. Caught by reading the actual prefab structure back before wiring the scene, not assumed.
+**Why:** Requested directly, in detail (config shape, material-instancing mechanics, per-color base+HDR color pair,
+Animator Controller as the transition mechanism) - implemented per the same "genuine delegation → build it fully"
+precedent as D28.
+**Not done in this pass:** Play Mode verification (compiles clean, 6/6 new EditMode tests pass via `TestRunnerApi`,
+the built assets and scene were read back and checked field-by-field, but nothing here has actually been clicked
+through yet - developer's own call, per the established Play Mode testing workflow). The button layout (bottom-
+center row, 150px, spaced 200px apart) is a first-pass placement, not verified against the 1920x1080 canvas by eye.
+`Assets/UnityTechnologies/ParticlePack/` (192MB, dropped in by the developer before this session as raw sample
+material) still has ~145MB of unused effect categories (Goop/Magic/Misc/Smoke/Water/Weapon/Legacy Particles) beyond
+the `Fire & Explosion Effects` folder our new prefab still depends on (`LargeFlame02.mat` and its source textures) -
+flagged, not trimmed, same "decide the levers deliberately" treatment build-size got in D26.
+
 ### D30 — Magic Words emoji tokens render as real sprites via Twemoji + a hand-built TMP Sprite Asset (2026-08-24)
 **Choice:** Revisited D28's deliberate deferral. Fetched the 6 known `{word}` tokens actually used by the live
 endpoint (`affirmative`, `intrigued`, `laughing`, `neutral`, `satisfied`, `win` - confirmed by scanning the full

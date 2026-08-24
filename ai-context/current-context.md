@@ -4,7 +4,7 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-24. Ace of Shadows is done and everything through D27 is
+Last updated: 2026-08-25 (Phoenix Flame first pass, D31). Ace of Shadows is done and everything through D27 is
 committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
 (D22), Restart button (D23), a `unity-interviewer` audit (first run, see
 Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
@@ -12,14 +12,23 @@ Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
 and declined, stripping/exceptions declined outright), and a real README (D27).
 **Nothing past D21 has actually been Play Mode-verified by the developer yet**
 — still an open item, see Immediate next steps. **Magic Words: built, Play
-Mode-verified, and committed/pushed (D28, commit `798b720`).** Two
-edge-anchored dialogue boxes, DOTween Pro TMP typewriter reveal, a
-fast-forward/skip/auto-advance input system, and a step-by-step dialogue
-sequencer, all wired against the real endpoint data. `{word}` tokens now
-render as real emoji via a TMP Sprite Asset built from Twemoji art (D30) —
-see "Magic Words architecture" below and D28/D30 in decisions.md for the full
-design. Also added: Baloo 2 Bold and Rubik as a chosen body-text font pairing
-(D29). Phoenix Flame: not started at all.
+Mode-verified, and committed/pushed** — dialogue sequencer/boxes/reveal/
+fast-forward (D28, commit `798b720`), Baloo 2 Bold + Rubik font pairing (D29,
+commit `6a07367`), and real emoji rendering via a Twemoji-backed TMP Sprite
+Asset (D30, commit `7a7fbaf`). The developer then polished the scene directly
+(commit `15f2030`, not built by Claude): `LeftDialogueBox` became a proper
+prefab, `RightDialogueBox` is now a mirrored instance of it (`m_LocalScale.x:
+-1` plus right-edge anchor/pivot overrides) instead of a separately hand-built
+symmetric box, the box-tween ease was retuned from `OutBack` (27) to ease
+value `18`, `shownAnchoredX` moved from `40`/`-40` to `0`/`0` (boxes now slide
+fully to center), and the name text got auto-sizing enabled. Docs below
+reflect the pre-polish values in a few spots — see "Magic Words architecture"
+for what's confirmed current. Also still open: Rubik isn't wired onto any TMP
+component yet (D29), and Magic Words hasn't been verified in a WebGL build
+(CORS). **Phoenix Flame: first pass built (D31, 2026-08-25), not yet Play
+Mode-verified.** Config-driven flame prefab + instanced material, a 3-color
+Animator Controller (Orange/Green/Blue, crossfading over 1.5s), 3 UI buttons.
+See "Phoenix Flame architecture" below and D31.
 
 ## What we're building
 
@@ -61,8 +70,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `laughing`, `win`) render as real emoji via a TMP Sprite Asset built from
   Twemoji art (D30); unrecognized tokens still strip cleanly. See "Magic Words
   architecture" below and D28/D30 in decisions.md for the full design.
-- **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
-  wired into the menu, nothing built.
+- **Phoenix Flame: first pass built, not yet Play Mode-verified (D31, 2026-08-25).**
+  A config-driven flame (own prefab + a runtime-instanced material) recolors via a
+  3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. See
+  "Phoenix Flame architecture" below and D31 in decisions.md.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
 - **Scene-flow/navigation shell built.** `AppScene.unity` is now build-index 0, the sole
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
@@ -443,12 +454,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   (`DialogueBoxView.SlideIn`), matching the brief-literal ask. Each box is
   anchored to its own screen edge (`anchorMin/Max = (0,0)` pivot `(0, 0.5)` for
   the left box, mirrored for the right) with a `hiddenAnchoredX` well off-canvas
-  and a `shownAnchoredX` just inside the edge - only the constructor-set fields
-  differ between the two instances, the component itself has no "which side am
-  I" branching. `MagicWordsController.ShowLine` snaps the *other* box back to
-  hidden and deactivates it before activating and sliding in the speaking one,
-  so only one box is ever visible at a time and the slide-in replays on every
-  line (even consecutive same-side lines).
+  and a `shownAnchoredX` - only the constructor-set fields differ between the
+  two instances, the component itself has no "which side am I" branching.
+  `MagicWordsController.ShowLine` snaps the *other* box back to hidden and
+  deactivates it before activating and sliding in the speaking one, so only one
+  box is ever visible at a time and the slide-in replays on every line (even
+  consecutive same-side lines). **Post-session developer polish (commit
+  `15f2030`, not built by Claude):** `shownAnchoredX` now `0`/`0` (boxes slide
+  fully to center, not to `±40`), the ease was retuned from the originally-set
+  `Ease.OutBack` to ease value `18` (not independently confirmed which named
+  curve that is), and `RightDialogueBox` was converted from a separately
+  hand-built symmetric box into a prefab instance of `LeftDialogueBox.prefab`
+  (`Assets/Feature/MagicWords/Prefab/`), mirrored via `m_LocalScale.x: -1` plus
+  right-edge anchor/pivot overrides.
 - **Emoji tokens render as real emoji via a TMP Sprite Asset (D30).** The
   endpoint embeds named tokens like `{satisfied}`, not real Unicode emoji
   codepoints, so `DialogueTextFormatter.FormatTokens` maps a fixed table of the
@@ -480,6 +498,63 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Dicebear (should work - both are plain public HTTP APIs - but genuinely
   untested from this session), and the whole thing has not been clicked through
   in Play Mode at all yet. See Immediate next steps.
+
+### Phoenix Flame architecture
+- **Domain** (`Assets/Feature/PhoenixFlame/Scripts/Logic/`, `noEngineReferences: true`):
+  `PhoenixFlameColorState` — the brief's "colour state machine," made testable the same
+  way `SceneFlowState`/`CardDeck` are: `CurrentIndex` + `TrySelect(index)` (throws on
+  out-of-range, returns `false`/no-ops if `index` is already current so the caller
+  doesn't retrigger an identical Animator transition). 6 EditMode tests.
+- **Presentation** (`Scripts/Monobehaviour/`): `PhoenixFlameConfig`
+  (`Assets/Feature/PhoenixFlame/Configs/PhoenixFlameConfig.asset`, a `ScriptableObject`)
+  holds `FlamePrefab`, `BaseMaterial`, `ColorOptions` (a `List<PhoenixFlameColorOption>` —
+  each option is a display name plus **two** colors, a plain `BaseColor` and an
+  `[ColorUsage(true,true)]` HDR `EmissionColor`, since `LargeFlame02`'s shader takes
+  color from two separate properties, `_BaseColor` and `_EmissionColor`), and
+  `AnimatorController` + `ColorTransitionDuration`. `PhoenixFlameController`
+  (composition root): `Awake()` instantiates `config.FlamePrefab` at a spawn point,
+  **instances `config.BaseMaterial` and assigns it directly to that instance's
+  `ParticleSystemRenderer`** (not the shared asset), adds an `Animator` pointed at
+  `config.AnimatorController`, and calls `Initialize` on each `PhoenixFlameColorButton`
+  it owns (same single-init-point pattern as `MainMenuInitializer`, D15).
+  `SetColor(index)` (one call per button, wired via the same self-wiring
+  `Initialize(Action<int>)` shape as `MenuButtonSceneLoader`) checks
+  `PhoenixFlameColorState.TrySelect` and, if it changed, sets an Animator Int
+  parameter (`ColorIndex`) — nothing else touches the material at runtime.
+- **The color transition is 100% Animator Controller — no tween, no script lerp**,
+  per the brief's explicit requirement for this task. `PhoenixFlameColors.controller`
+  (`Assets/Feature/PhoenixFlame/Animations/`) has 3 states (Orange/Green/Blue), each
+  backed by a tiny `AnimationClip` holding a single keyframe per animated channel
+  (`material._BaseColor.{r,g,b,a}` + `material._EmissionColor.{r,g,b,a}` on the
+  `ParticleSystemRenderer`) — i.e. each clip is just "hold this exact color." All 3
+  states connect via "Any State" transitions gated on the `ColorIndex` int
+  (`hasExitTime: false`, `hasFixedDuration: true`, `duration: 1.5s` from
+  `config.ColorTransitionDuration`) — Mecanim's own crossfade blends the previous
+  state's values into the new state's values over that duration; there's no
+  hand-authored multi-keyframe curve per transition pair.
+- **The flame prefab is our own, not the raw asset-pack one — see D31.**
+  `Assets/Feature/PhoenixFlame/Prefabs/PhoenixFlame.prefab` was built by
+  instantiating `Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire &
+  Explosion Effects/Prefabs/LargeFlames.prefab`, deleting its `FireEmbers` child
+  (a second `ParticleSystemRenderer` with its own separate `Embers` material — the
+  controller only recolors the *root* renderer, so this child would have stayed a
+  fixed color under any Animator state), reassigning the root's material to
+  `LargeFlame02` (matching what was actually in the scene before this pass, which
+  had already been manually stripped down the same way), and saving that as a new
+  prefab asset. `config.FlamePrefab` points at this, not the pack's own prefab.
+- **3 UI buttons** (`OrangeButton`/`GreenButton`/`BlueButton`, bottom-center row
+  under `PhoenixFlameScene`'s Canvas, 150px, spaced 200px apart) reuse the same
+  sprites already used for the main menu's own colored buttons
+  (`buttons_38`/`buttons_12`/`buttons_29` from `Assets/App/Sprites/UI/buttons.png`)
+  rather than sourcing new art — same-color coincidence made this free.
+- **Not done in this pass**: Play Mode verification (compiles clean, 6/6 new
+  EditMode tests pass, every built asset/scene reference was read back and checked
+  field-by-field, but nothing here has been clicked through yet); the button
+  layout hasn't been eyeballed against the real 1920×1080 canvas; ~145MB of unused
+  `Assets/UnityTechnologies/ParticlePack/` effect categories (Goop/Magic/Misc/
+  Smoke/Water/Weapon/Legacy Particles) beyond `Fire & Explosion Effects` are still
+  sitting in the repo, same "decide the build-size levers deliberately" treatment
+  as D26, not yet acted on.
 
 ### Scene-flow architecture
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
@@ -673,9 +748,6 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    (see "Rendering & performance" above) — SSAO is a free, no-visual-cost
    disable; Bloom/Vignette/Tonemapping are the unmodified URP template defaults
    and a real aesthetics call the developer hasn't made yet.
-0a. **Revert `AceOfShadowsConfig.asset`'s `totalCards` from `10` back to `144`**
-   before committing anything else — currently sitting uncommitted in the
-   working tree as a leftover test value from iterating on the restart loop.
 0b. **Play Mode-verify D21 + D22 + D23 together** (cards/stacks moved from
    world-space SpriteRenderers to UI RectTransform/Image under a Screen Space -
    Overlay Canvas; the exit-cascade animation on completion; the Restart button
@@ -705,24 +777,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    unhardened version of
    this loop was ever actually clicked through in Play Mode. Do that before
    building on top of it.
-2. **Play Mode-verify Magic Words (D28)** — built this session (see "Magic
-   Words architecture" above), compiles clean, 22 new EditMode tests pass
-   (Logic layer only), and the scene YAML was read back and sanity-checked
-   (hierarchy, sibling order, every `SerializedObject`-wired field), but nothing
-   has actually been clicked through yet: the real network fetch against the
-   live endpoint from a running Player (WebGL/CORS specifically, not just the
-   Editor), the two guaranteed-broken avatar URLs actually falling back to the
-   placeholder sprite instead of erroring, the box slide-in distances/timing
-   (all eyeballed, same "retune by eye in Play Mode" spirit as Ace of Shadows'
-   `PerCardOffset`), the fast-forward button's two-click behavior (complete
-   then skip) and the auto-advance timer actually firing, and the "conversation
-   finished" panel. Not yet committed either. Once verified: also revisit
-   whether real emoji-icon sprites are worth building (see D28's deferred-scope
-   note) before considering Magic Words fully done.
-3. Build Phoenix Flame (particle system + Animator-driven color transitions —
-   the brief specifically requires an Animator Controller, not a script lerp).
-   Same starting point as Magic Words — Canvas/EventSystem/HomeButton already there.
-   If it uses a timer, no leak risk anymore (D13 fixed that in TimerUtil itself).
+2. **Magic Words: mostly done.** Play Mode-verified and committed (D28-D30),
+   real emoji rendering confirmed via a TMP parse check (not just a visual
+   eyeball — see D30). Two things still open: verify the fetch/avatar-fallback
+   path from an actual **WebGL build** (CORS specifically — only the Editor
+   has been exercised), and decide whether to wire **Rubik** onto the dialogue
+   text (D29 — chosen but not yet applied anywhere).
+3. **Phoenix Flame: first pass built (D31), needs a Play Mode click-through.**
+   Config-driven flame + instanced material + Animator-driven color transitions are
+   in; nobody has actually clicked the 3 color buttons in Play Mode yet. Check: the
+   flame renders as expected at its spawn point, each button crossfades to its
+   color smoothly over ~1.5s, re-clicking the currently-active color is a no-op,
+   and the button layout (bottom-center, 150px, spaced 200px) actually reads well
+   against the real 1920×1080 canvas.
 4. Verify responsive layout + touch input on a real phone — now also needs to cover
    the additive AppScene→content scene transition specifically (untested on-device).
 5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
