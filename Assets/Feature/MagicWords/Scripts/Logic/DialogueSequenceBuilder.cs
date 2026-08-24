@@ -18,7 +18,7 @@ namespace MagicWords.Logic
 
                     var avatar = SpeakerAvatarLookup.FindBySpeakerName(response.avatars, dtoLine.name);
                     var position = ParsePosition(avatar?.position);
-                    var displayText = DialogueTextFormatter.StripTokens(dtoLine.text);
+                    var displayText = DialogueTextFormatter.FormatTokens(dtoLine.text);
 
                     lines.Add(new DialogueLine(dtoLine.name, displayText, avatar?.url, position));
                 }

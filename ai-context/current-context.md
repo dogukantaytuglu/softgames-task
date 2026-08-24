@@ -11,13 +11,15 @@ Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
 (D25), build-size lever outcomes (D26 — packages/modules trimmed, crunch tried
 and declined, stripping/exceptions declined outright), and a real README (D27).
 **Nothing past D21 has actually been Play Mode-verified by the developer yet**
-— still an open item, see Immediate next steps. **Magic Words: built (D28),
-not yet Play Mode-verified or committed.** Two edge-anchored dialogue boxes,
-DOTween Pro TMP typewriter reveal, a fast-forward/skip/auto-advance input
-system, and a step-by-step dialogue sequencer, all wired against the real
-endpoint data — see "Magic Words architecture" below and D28 in decisions.md
-for what's built and what's deliberately deferred (emoji-token sprite art).
-Phoenix Flame: not started at all.
+— still an open item, see Immediate next steps. **Magic Words: built, Play
+Mode-verified, and committed/pushed (D28, commit `798b720`).** Two
+edge-anchored dialogue boxes, DOTween Pro TMP typewriter reveal, a
+fast-forward/skip/auto-advance input system, and a step-by-step dialogue
+sequencer, all wired against the real endpoint data. `{word}` tokens now
+render as real emoji via a TMP Sprite Asset built from Twemoji art (D30) —
+see "Magic Words architecture" below and D28/D30 in decisions.md for the full
+design. Also added: Baloo 2 Bold and Rubik as a chosen body-text font pairing
+(D29). Phoenix Flame: not started at all.
 
 ## What we're building
 
@@ -46,16 +48,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   **nothing past D21 has actually been Play Mode-verified by the developer
   yet** — still an open item (next steps item 0b), don't assume it's been
   clicked through just because it compiles and the tests pass.
-- **Magic Words: built (D28, 2026-08-24)**, not yet Play Mode-verified or
-  committed. Two dialogue boxes edge-anchored left/right slide toward center on
-  their turn to speak, TMP text reveals via DOTween Pro's `DOMaxVisibleCharacters`
-  typewriter technique, a full-screen invisible button fast-forwards (first
-  click completes the reveal, second click advances) with an auto-advance timer
-  if the player never clicks, and the whole thing runs on real data fetched from
-  the endpoint at runtime (`MagicWordsRepository`, coroutine-based) with a
-  graceful fallback avatar sprite for the endpoint's two guaranteed-broken avatar
-  URLs. See "Magic Words architecture" below and D28 in decisions.md for the
-  full design and what's deliberately deferred (emoji-token sprite art).
+- **Magic Words: built, Play Mode-verified, committed/pushed (D28, D30,
+  2026-08-24)**. Two dialogue boxes edge-anchored left/right slide toward
+  center on their turn to speak, TMP text reveals via DOTween Pro's
+  `DOMaxVisibleCharacters` typewriter technique, a full-screen invisible
+  button fast-forwards (first click completes the reveal, second click
+  advances) with an auto-advance timer if the player never clicks, and the
+  whole thing runs on real data fetched from the endpoint at runtime
+  (`MagicWordsRepository`, coroutine-based) with a graceful fallback avatar
+  sprite for the endpoint's two guaranteed-broken avatar URLs. The endpoint's
+  `{word}` tokens (`satisfied`, `intrigued`, `neutral`, `affirmative`,
+  `laughing`, `win`) render as real emoji via a TMP Sprite Asset built from
+  Twemoji art (D30); unrecognized tokens still strip cleanly. See "Magic Words
+  architecture" below and D28/D30 in decisions.md for the full design.
 - **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
   wired into the menu, nothing built.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
@@ -390,7 +395,8 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `[Serializable]` DTOs, field names matching the endpoint's JSON keys exactly
   for `JsonUtility`), `SpeakerAvatarLookup` (first-match-wins name lookup,
   tolerates the endpoint's duplicate "Sheldon" entries), `DialogueTextFormatter`
-  (strips `{word}` emoji tokens - see below), `DialogueLine` (domain model:
+  (converts `{word}` emoji tokens to TMP `<sprite>` tags - see below),
+  `DialogueLine` (domain model:
   speaker, formatted text, avatar URL, `DialoguePosition`), `DialogueSequence`
   (armed with every line up front via its constructor, then stepped through
   strictly via `MoveNext()` - same shape as `CardDeck`: `IsFinished` only flips
@@ -443,16 +449,20 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   hidden and deactivates it before activating and sliding in the speaking one,
   so only one box is ever visible at a time and the slide-in replays on every
   line (even consecutive same-side lines).
-- **Emoji tokens are stripped, not yet rendered as sprites (deliberately
-  deferred - see D28).** The endpoint embeds named tokens like `{satisfied}`,
-  not real Unicode emoji codepoints - `DialogueTextFormatter.StripTokens`
-  removes `{word}` substrings cleanly (collapsing the resulting double space)
-  rather than leaving literal `{word}` text or rendering broken/missing TMP
-  `<sprite>` glyphs against a Sprite Asset that doesn't exist yet. Swapping in
-  real icons later is a two-part follow-up: source or generate art for the
-  known tokens (`satisfied`, `intrigued`, `neutral`, `affirmative`, `laughing`,
-  `win`), build a TMP Sprite Asset from it, then change `StripTokens` to emit
-  `<sprite name="word">` for recognized tokens only.
+- **Emoji tokens render as real emoji via a TMP Sprite Asset (D30).** The
+  endpoint embeds named tokens like `{satisfied}`, not real Unicode emoji
+  codepoints, so `DialogueTextFormatter.FormatTokens` maps a fixed table of the
+  6 known tokens (`affirmative`, `intrigued`, `laughing`, `neutral`,
+  `satisfied`, `win`) to `<sprite name="word">` tags; any other token is
+  stripped cleanly (collapsing the resulting double space) rather than left as
+  literal `{word}` text or rendered as a broken/missing glyph. The backing art
+  is Twemoji (CC-BY 4.0, `Assets/Feature/MagicWords/Sprites/Emoji/*.png`,
+  source PNGs plus a hand-built single-row atlas), packed into `MagicWords
+  Emoji Sprite Asset.asset` (`Assets/Feature/MagicWords/Sprites/Emoji/`) and
+  assigned directly to both `DialogueBoxView`'s `dialogueText` component
+  (scoped per-component rather than overriding TMP Settings' project-wide
+  default sprite asset, which already points at TMP's built-in `EmojiOne`
+  sample and isn't Magic Words' to reassign).
 - **Avatars load from the real endpoint URLs at runtime**, with a fallback
   sprite (`additional controls_13`, a plain cream circle from the existing UI
   sprite pack) shown immediately and swapped for the real image if/when it

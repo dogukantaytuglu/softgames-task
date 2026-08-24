@@ -6,6 +6,39 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D30 — Magic Words emoji tokens render as real sprites via Twemoji + a hand-built TMP Sprite Asset (2026-08-24)
+**Choice:** Revisited D28's deliberate deferral. Fetched the 6 known `{word}` tokens actually used by the live
+endpoint (`affirmative`, `intrigued`, `laughing`, `neutral`, `satisfied`, `win` - confirmed by scanning the full
+dialogue array, not guessed) as 72x72 Twemoji PNGs (CC-BY 4.0), composited them into a single-row atlas texture
+with Pillow (`Assets/Feature/MagicWords/Sprites/Emoji/MagicWordsEmojiAtlas.png`), sliced it into 6 named sub-sprites
+via `TextureImporter.spritesheet`, and built a `TMP_SpriteAsset` from it via editor scripting (TMP's own "Create
+Sprite Asset" menu command is selection-driven and not scriptable directly, so `TMP_SpriteAssetMenu`'s internal
+logic - glyph/character table construction, default material creation - was replicated by hand against the public
+API). `DialogueTextFormatter.StripTokens` became `FormatTokens`: a fixed token→sprite-name table now emits
+`<sprite name="word">` for the 6 known tokens, falling back to the old strip-and-collapse behavior for anything
+else (defensive - avoids a broken glyph if the endpoint ever adds a 7th token). Verified two ways: 12 manual
+assertions against the exact same expected strings the EditMode tests encode (covering known/unknown/mixed/empty/
+null cases at both the formatter and `DialogueSequenceBuilder` integration level), plus a direct TMP parse check
+(`TMP_Text.textInfo.characterInfo`) confirming `<sprite name="satisfied">` actually resolves to a visible sprite
+element against the real asset, not just that the string looks right. The sprite asset is assigned directly to
+both `DialogueBoxView`'s `dialogueText` component rather than overriding TMP Settings' project-wide default sprite
+asset (which already points at TMP's built-in `EmojiOne` sample) - narrower blast radius, and nothing else in the
+project uses `<sprite>` tags.
+**Why:** `BRIEF.md` itself flags inline emoji as "the biggest time risk" and prescribes exactly this route (a TMP
+Sprite Asset mapping tokens to a sprite atlas) - D28's deferral was about not shipping it half-built inside an
+already-large session, not a decision that it wasn't worth doing. Twemoji was chosen over generating custom art
+(discussed with the developer directly) for the same reason OFL fonts were used: an established, zero-risk open
+license, "nice enough" per the developer's own call, and the fastest path to a working, testable result. Scoping
+the sprite asset to the two dialogue `TMP_Text` components instead of the shared TMP Settings default follows the
+same reasoning as D29's per-object Baloo Bold wiring: touch shared project state only when a change genuinely
+needs to be global.
+**Not done:** EditMode-test-runner confirmation via `TestRunnerApi` was attempted but blocked by the Unity MCP
+tool itself ("User interactions are not supported for MCP tool calls") - a new restriction not seen earlier in this
+same session (D28's Play Mode pass used this exact technique successfully). Worked around with the manual
+assertion + TMP-parse verification described above rather than leaving the change unverified; the EditMode test
+files themselves were still updated and compile clean, so a future session with the runner available should get
+the same "all green" result trivially.
+
 ### D29 — Baloo 2 Bold via variable-font instancing; Rubik added as the body-text pair (2026-08-24)
 **Choice:** Used `fonttools` (`pip install fonttools`, not previously a project dependency) to instance
 `Baloo2-Variable.ttf` at its named `wght=700` instance, producing a static `Baloo2-Bold.ttf`, then generated

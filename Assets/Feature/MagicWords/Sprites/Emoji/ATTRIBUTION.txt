@@ -1,0 +1,8 @@
+Twemoji
+Copyright 2020 Twitter, Inc and other contributors
+Graphics licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Source: https://github.com/jdecked/twemoji
+
+Files in this folder (affirmative.png, intrigued.png, laughing.png, neutral.png,
+satisfied.png, win.png) are unmodified 72x72 PNG exports from the Twemoji asset set,
+selected to represent the Magic Words endpoint's {word} dialogue tokens.

@@ -72,11 +72,25 @@ namespace MagicWords.Tests
         }
 
         [Test]
-        public void Build_StripsEmojiTokensFromDisplayText()
+        public void Build_KnownEmojiToken_ReplacesWithSpriteTagInDisplayText()
         {
             var response = new MagicWordsResponseDto
             {
                 dialogue = new[] { new DialogueLineDto { name = "Sheldon", text = "I admit {satisfied} it works." } },
+                avatars = new AvatarDto[0]
+            };
+
+            var line = DialogueSequenceBuilder.Build(response).MoveNext();
+
+            Assert.AreEqual("I admit <sprite name=\"satisfied\"> it works.", line.DisplayText);
+        }
+
+        [Test]
+        public void Build_UnknownEmojiToken_StripsFromDisplayText()
+        {
+            var response = new MagicWordsResponseDto
+            {
+                dialogue = new[] { new DialogueLineDto { name = "Sheldon", text = "I admit {surprised} it works." } },
                 avatars = new AvatarDto[0]
             };
 

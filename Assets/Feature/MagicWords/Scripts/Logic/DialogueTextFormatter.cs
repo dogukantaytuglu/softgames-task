@@ -1,21 +1,33 @@
+using System.Collections.Generic;
 using System.Text;
 
 namespace MagicWords.Logic
 {
-    // Strips {word} emoji tokens embedded in the endpoint's dialogue text (e.g.
-    // "{satisfied}") - the endpoint uses named tokens, not real Unicode emoji
-    // codepoints. The natural next step is mapping known tokens to a
-    // TextMeshPro <sprite> tag backed by a matching TMP Sprite Asset; no such
-    // asset exists yet, so tokens are stripped cleanly rather than left as
-    // literal "{word}" text or rendered as broken/empty glyphs.
+    // Converts {word} emoji tokens embedded in the endpoint's dialogue text (e.g.
+    // "{satisfied}") into TextMeshPro <sprite> tags backed by the Magic Words emoji
+    // TMP Sprite Asset. The endpoint uses named tokens, not real Unicode emoji
+    // codepoints, so the mapping is an explicit known-token table rather than a
+    // codepoint lookup. Any token not in the table is stripped instead of left as
+    // literal "{word}" text or rendered as a broken/missing sprite.
     public static class DialogueTextFormatter
     {
-        public static string StripTokens(string rawText)
+        private static readonly Dictionary<string, string> KnownTokenSprites = new Dictionary<string, string>
+        {
+            { "affirmative", "affirmative" },
+            { "intrigued", "intrigued" },
+            { "laughing", "laughing" },
+            { "neutral", "neutral" },
+            { "satisfied", "satisfied" },
+            { "win", "win" },
+        };
+
+        public static string FormatTokens(string rawText)
         {
             if (string.IsNullOrEmpty(rawText))
                 return rawText;
 
             var builder = new StringBuilder(rawText.Length);
+            var tokenBuilder = new StringBuilder();
             var insideToken = false;
 
             foreach (var c in rawText)
@@ -23,16 +35,21 @@ namespace MagicWords.Logic
                 if (c == '{')
                 {
                     insideToken = true;
+                    tokenBuilder.Clear();
                     continue;
                 }
 
                 if (c == '}')
                 {
                     insideToken = false;
+                    if (KnownTokenSprites.TryGetValue(tokenBuilder.ToString(), out var spriteName))
+                        builder.Append("<sprite name=\"").Append(spriteName).Append("\">");
                     continue;
                 }
 
-                if (!insideToken)
+                if (insideToken)
+                    tokenBuilder.Append(c);
+                else
                     builder.Append(c);
             }
 
