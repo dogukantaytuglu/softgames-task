@@ -6,6 +6,81 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D29 — Baloo 2 Bold via variable-font instancing; Rubik added as the body-text pair (2026-08-24)
+**Choice:** Used `fonttools` (`pip install fonttools`, not previously a project dependency) to instance
+`Baloo2-Variable.ttf` at its named `wght=700` instance, producing a static `Baloo2-Bold.ttf`, then generated
+`Baloo2 Bold SDF.asset` the same way `Baloo2 SDF.asset` was originally made (`TMP_FontAsset.CreateFontAsset`,
+dynamic atlas, same material/texture sub-asset wiring) and wired it into `Baloo2 SDF.asset`'s
+`fontWeightTable[6]` (Bold) slot, so `<b>`/`FontStyles.Bold` on any existing Baloo 2 text now render true bold
+glyphs instead of TMP's synthetic faux-bold. Also downloaded three body-text candidates (Nunito Sans, Mulish,
+Rubik) to pair with Baloo 2 for longer text (Magic Words dialogue lines) since Baloo 2 is a heavy display face
+better suited to titles/buttons; the developer trialed all three and picked **Rubik**, so Nunito Sans and Mulish
+were removed and only `Rubik SDF.asset` remains.
+**Why:** D19 already flagged that Google Fonts only distributes Baloo 2 as a single variable-weight `.ttf`, so a
+true Bold needed extracting a static instance rather than a plain download — `fonttools`' `varLib.instancer`
+does exactly that from the `wght` axis already embedded in the file. The three body-text candidates (and Rubik,
+the survivor) are in the same boat: Google Fonts ships them variable-only too, and their variable *default*
+instance is ExtraLight/Light rather than Regular, so each was instanced at `wght=400` before generating its SDF
+asset — using it as downloaded would have looked visibly thin, not a deliberate weight choice.
+**Not done:** Rubik isn't wired onto any TMP component yet (e.g. the Magic Words dialogue boxes) — the developer
+picked the font but hasn't asked for the swap.
+
+---
+
+### D28 — Magic Words built: dialogue sequencer, edge-anchored boxes, TMP typewriter reveal, fast-forward/skip (2026-08-24)
+**Choice:** Full first pass at Magic Words, built directly per explicit developer instruction (not a plan-then-ask
+pass — see the collaboration note at the bottom of this file). Summary; see "Magic Words architecture" in
+current-context.md for the complete design:
+- **Domain** (`MagicWords.Logic`, `noEngineReferences: true`): `DialogueSequence` mirrors `CardDeck`'s shape (armed
+  with every line up front, stepped strictly via `MoveNext()`, `IsFinished` only true once the last line has
+  actually been shown). `DialogueSequenceBuilder` joins the endpoint's `dialogue`/`avatars` arrays by speaker name
+  via `SpeakerAvatarLookup` (first-match-wins, tolerating the endpoint's duplicate "Sheldon" entries rather than
+  throwing), defaulting to `DialoguePosition.Right` when a speaker has no avatar entry at all.
+- **Presentation** (`MagicWords.Monobehaviour`): two `DialogueBoxView`s, one edge-anchored per screen side, that
+  slide toward center via a plain `DOAnchorPosX` when it's their speaker's turn (the literal ask: "tween the
+  dialogue boxes... by making them a DoMove on x axis towards the center of the screen"). Text reveal uses DOTween
+  Pro's `TMP_Text.DOMaxVisibleCharacters` typewriter technique - the "dotween pro's tmp animation to reveal text"
+  ask - duration derived per-line from character count so short and long lines read at the same pace. Fast-forward
+  is a single full-screen invisible `Button` (transparent `raycastTarget` `Image`) driving a 2-state click handler
+  exactly as specified: first click while revealing completes the tween immediately; a click once already fully
+  revealed advances/skips; a `TimerUtil.CountdownTimer` auto-advances if the player never clicks at all.
+  `MagicWordsRepository`/`AvatarSpriteLoader` fetch the real endpoint + avatar images at runtime via coroutines.
+- **New asmdef dependency discovered**: `DOMaxVisibleCharacters` and `DOTweenTMPAnimator` live in
+  `DOTweenPro.Scripts` (`Assets/Plugins/Demigiant/DOTweenPro/DOTweenTextMeshPro.cs`), a *different* asmdef from
+  `DOTween.Modules` (which only covers `DOAnchorPos`/`DOLocalRotateQuaternion`/etc. - what Ace of Shadows already
+  referenced). `MagicWords.Monobehaviour.asmdef` needed both. Caught immediately via a real compile error through
+  Unity MCP, not discovered later.
+- **Deliberately deferred, not half-built: real emoji-icon sprites.** The endpoint embeds named tokens
+  (`{satisfied}`, `{intrigued}`, etc.), not Unicode emoji codepoints - `BRIEF.md`'s own guidance about mapping
+  *codepoints* to a sprite asset doesn't match this data (a finding from the previous session, still true).
+  Rendering these as real TMP `<sprite name="word">` tags needs a TMP Sprite Asset built from actual icon art for
+  each of the ~6 known tokens, which is a real asset-sourcing task on its own and wasn't part of this session's
+  ask (the developer's instruction covered box layout/tweening/reveal/skip, not emoji specifically).
+  `DialogueTextFormatter.StripTokens` removes `{word}` substrings cleanly instead - a working, finished piece of
+  text handling on its own - rather than shipping `<sprite>` tags with no matching asset (which would render as
+  broken/missing glyphs) or leaving literal `{word}` text in the dialogue. Swapping in real icons later only needs
+  the art plus a small change to `StripTokens`; nothing else in the domain layer changes.
+- **Avatar images load for real** (`AvatarSpriteLoader`, `UnityWebRequestTexture`), with a fallback sprite shown
+  immediately and swapped in on success - directly answers the brief's "handle cases where avatar URLs may not
+  load" requirement against the endpoint's two guaranteed-broken URLs (Sheldon's port-81 URL, "Nobody"'s API-root
+  URL), not just a hypothetical.
+- **Scene changes mirror D18**: `MagicWordsScene`'s Directional Light deleted, Main Camera switched to Solid Color
+  clear - same reasoning as Ace of Shadows' all-UI-scene cleanup, applied here directly for consistency (the
+  developer explicitly asked to "check how we implemented ace of shadows and stay consistent with it").
+- **Built via Unity MCP scripting, not hand-written scene YAML** - `AssetDatabase`/`SerializedObject` calls
+  constructing the GameObject hierarchy and wiring every serialized field, same tooling approach as the D21
+  card-prefab conversion and D13's scene moves/renames, chosen for the same reason: reliable GUID-preserving,
+  verifiable-by-reading-back-the-result construction instead of error-prone manual YAML edits. Hit the
+  already-documented `Image` bare-name ambiguity gotcha (resolves to the wrong namespace inside `Unity_RunCommand`
+  scripts specifically) immediately and fixed it the same way the Tooling notes already prescribe: fully qualify
+  as `UnityEngine.UI.Image`.
+**Why:** Requested directly, in detail (box layout, TMP reveal technique, fast-forward/skip state machine, box
+tween direction) - a genuine delegation, not a "let's discuss" - so implemented per the "when a request reads as
+genuine delegation... implement it fully" precedent from D12's collaboration note, without a plan-first detour.
+**Not done in this pass, explicitly flagged rather than silently skipped:** emoji-icon sprite art (see above);
+Play Mode verification (nothing here has been clicked through yet - compiles clean, 54/54 EditMode tests pass, the
+saved scene YAML was read back and checked field-by-field, but that's it); committing the work to git.
+
 ### D27 — README rewritten from a 4-line stub into an actual front door (2026-08-24)
 **Choice:** `README.md` used to just point at `ai-context/BRIEF.md` ("start here") and state there's no deadline —
 that was it. Rewritten to actually explain what the project is, what each of the three demos does, honest current

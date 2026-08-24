@@ -11,10 +11,13 @@ Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
 (D25), build-size lever outcomes (D26 — packages/modules trimmed, crunch tried
 and declined, stripping/exceptions declined outright), and a real README (D27).
 **Nothing past D21 has actually been Play Mode-verified by the developer yet**
-— still an open item, see Immediate next steps. **Magic Words: endpoint fetched
-and read, nothing built yet** — real findings logged under Immediate next steps
-item 2, meant to be picked up fresh (developer is starting a new session for
-this). Phoenix Flame: not started at all.
+— still an open item, see Immediate next steps. **Magic Words: built (D28),
+not yet Play Mode-verified or committed.** Two edge-anchored dialogue boxes,
+DOTween Pro TMP typewriter reveal, a fast-forward/skip/auto-advance input
+system, and a step-by-step dialogue sequencer, all wired against the real
+endpoint data — see "Magic Words architecture" below and D28 in decisions.md
+for what's built and what's deliberately deferred (emoji-token sprite art).
+Phoenix Flame: not started at all.
 
 ## What we're building
 
@@ -43,14 +46,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   **nothing past D21 has actually been Play Mode-verified by the developer
   yet** — still an open item (next steps item 0b), don't assume it's been
   clicked through just because it compiles and the tests pass.
-- **Magic Words: endpoint fetched and read (2026-08-24), nothing built yet.**
-  Real findings — schema, the emoji-are-named-tokens discovery, the duplicate/
-  broken avatar data — are logged in full under Immediate next steps item 2.
-  Read that before designing anything; it changes assumptions the brief's own
-  guidance made. `Assets/Scenes/MagicWordsScene.unity` exists as an empty
-  placeholder (Canvas/EventSystem/HomeButton only, see Scene-flow architecture),
-  registered in Build Settings, reachable from the main menu's "Magic Words"
-  button. No script work yet.
+- **Magic Words: built (D28, 2026-08-24)**, not yet Play Mode-verified or
+  committed. Two dialogue boxes edge-anchored left/right slide toward center on
+  their turn to speak, TMP text reveals via DOTween Pro's `DOMaxVisibleCharacters`
+  typewriter technique, a full-screen invisible button fast-forwards (first
+  click completes the reveal, second click advances) with an auto-advance timer
+  if the player never clicks, and the whole thing runs on real data fetched from
+  the endpoint at runtime (`MagicWordsRepository`, coroutine-based) with a
+  graceful fallback avatar sprite for the endpoint's two guaranteed-broken avatar
+  URLs. See "Magic Words architecture" below and D28 in decisions.md for the
+  full design and what's deliberately deferred (emoji-token sprite art).
 - **Phoenix Flame: not started.** Same as Magic Words — empty placeholder scene,
   wired into the menu, nothing built.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
@@ -141,9 +146,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   there is actually unit-tested — usually nothing is, since Monobehaviours in this
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **32 EditMode tests actually run**
-  right now (5 FpsCounter, 19 Ace of Shadows, 8 SceneFlow) — verified by running
-  the suite (`TestRunnerApi`, `PassCount`), not by counting attributes.
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **54 EditMode tests actually run**
+  right now (5 FpsCounter, 19 Ace of Shadows, 8 SceneFlow, 22 MagicWords) —
+  verified by running the suite (`TestRunnerApi`, `PassCount`), not by counting
+  attributes. MagicWords' 22 only cover its `Logic` layer (`DialogueSequence`,
+  `DialogueSequenceBuilder`, `DialogueTextFormatter`, `SpeakerAvatarLookup`) —
+  same "Monobehaviours are thin wiring, not unit-tested" pattern as everywhere
+  else in this project.
   ⚠️ **`grep -c "\[Test\]"` undercounts by 2**: `SceneFlowStateTests.
   TryBeginNavigation_ToNullOrEmptyScene_ReturnsFalse` uses two `[TestCase(...)]`
   attributes with no `[Test]` attribute at all (valid NUnit — `[TestCase]` alone
@@ -375,6 +384,93 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
     internals-visibility) — Frame Debugger has to be read visually/by screenshot,
     not scripted.
 
+### Magic Words architecture
+- **Domain** (`Assets/Feature/MagicWords/Scripts/Logic/`, `noEngineReferences:
+  true`): `DialogueLineDto`/`AvatarDto`/`MagicWordsResponseDto` (plain
+  `[Serializable]` DTOs, field names matching the endpoint's JSON keys exactly
+  for `JsonUtility`), `SpeakerAvatarLookup` (first-match-wins name lookup,
+  tolerates the endpoint's duplicate "Sheldon" entries), `DialogueTextFormatter`
+  (strips `{word}` emoji tokens - see below), `DialogueLine` (domain model:
+  speaker, formatted text, avatar URL, `DialoguePosition`), `DialogueSequence`
+  (armed with every line up front via its constructor, then stepped through
+  strictly via `MoveNext()` - same shape as `CardDeck`: `IsFinished` only flips
+  true once the *last* line has actually been shown, not when data finishes
+  loading), `DialogueSequenceBuilder.Build(dto)` (joins dialogue lines to
+  avatars by name, defaults to `DialoguePosition.Right` when a speaker has no
+  avatar entry or an unrecognized position string - the brief explicitly calls
+  out that avatar data may be missing).
+- **Presentation** (`Scripts/Monobehaviour/`): `MagicWordsRepository` (coroutine-
+  based `UnityWebRequest.Get` + `JsonUtility.FromJson` - coroutines, not async/
+  await, deliberately matching the project's existing callback/event style:
+  TimerUtil's `Action` events, DOTween's `OnComplete`), `AvatarSpriteLoader`
+  (coroutine `UnityWebRequestTexture.GetTexture`, resolves to `null` - never
+  throws - on any failure so the caller falls back to a placeholder sprite),
+  `DialogueBoxView` (one per screen side; `SlideIn`/`SnapHidden` tween
+  `RectTransform.anchoredPosition.x` only, `PlayReveal` is the DOTween Pro TMP
+  typewriter technique - lock in the full string first via `ForceMeshUpdate()`
+  so wrapping is correct from frame one, then `DOMaxVisibleCharacters(0 →
+  textInfo.characterCount)`), `DialogueFinishedView` (same
+  Initialize/Show/Hide shape as Ace of Shadows' `FinishedMessageView`, no
+  Restart button - not asked for, `HomeButtonController` already covers
+  leaving the scene), `MagicWordsController` (composition root).
+- **Tuning lives in `MagicWordsConfig`**
+  (`Assets/Feature/MagicWords/Configs/MagicWordsConfig.asset`): `endpointUrl`,
+  `charactersPerSecond` (reveal speed - duration is derived per line from its
+  actual character count, not a fixed duration, so short and long lines read at
+  the same pace), `autoAdvanceDelay`, `boxMoveDuration`, `boxMoveEase`. Same
+  ScriptableObject-with-public-getters pattern as `AceOfShadowsConfig`.
+- **Fast-forward is one full-screen invisible `Button`** (`AdvanceButton`,
+  transparent `Image` with `raycastTarget: true`, last-but-one Canvas sibling so
+  `HomeButton` - the actual last sibling - still gets raycast priority over it).
+  `MagicWordsController.OnAdvanceClicked` is a 2-state machine: while
+  `_isRevealing`, a click calls `DialogueBoxView.CompleteRevealImmediately()`
+  (kills the DOTween text tween, snaps `maxVisibleCharacters` to the full count)
+  and treats that as "reveal finished" (starts the auto-advance timer); once not
+  revealing, a click stops that timer and calls `Advance()` (next line, or ends
+  the sequence if `DialogueSequence.IsFinished`). The auto-advance timer itself
+  is a `TimerUtil.CountdownTimer(config.AutoAdvanceDelay, loopCount: 1)` created
+  once in `Awake()` and restarted (`Stop()` then `Start()`) every time a line's
+  reveal completes - safe to restart repeatedly because of the same
+  `Stop()`-unregisters/`Start()`-re-registers `TimerUtil` fix from D13 that
+  makes Ace of Shadows' `Restart()` safe.
+- **Box entrance is a plain `DOAnchorPosX` toward the center of the screen**
+  (`DialogueBoxView.SlideIn`), matching the brief-literal ask. Each box is
+  anchored to its own screen edge (`anchorMin/Max = (0,0)` pivot `(0, 0.5)` for
+  the left box, mirrored for the right) with a `hiddenAnchoredX` well off-canvas
+  and a `shownAnchoredX` just inside the edge - only the constructor-set fields
+  differ between the two instances, the component itself has no "which side am
+  I" branching. `MagicWordsController.ShowLine` snaps the *other* box back to
+  hidden and deactivates it before activating and sliding in the speaking one,
+  so only one box is ever visible at a time and the slide-in replays on every
+  line (even consecutive same-side lines).
+- **Emoji tokens are stripped, not yet rendered as sprites (deliberately
+  deferred - see D28).** The endpoint embeds named tokens like `{satisfied}`,
+  not real Unicode emoji codepoints - `DialogueTextFormatter.StripTokens`
+  removes `{word}` substrings cleanly (collapsing the resulting double space)
+  rather than leaving literal `{word}` text or rendering broken/missing TMP
+  `<sprite>` glyphs against a Sprite Asset that doesn't exist yet. Swapping in
+  real icons later is a two-part follow-up: source or generate art for the
+  known tokens (`satisfied`, `intrigued`, `neutral`, `affirmative`, `laughing`,
+  `win`), build a TMP Sprite Asset from it, then change `StripTokens` to emit
+  `<sprite name="word">` for recognized tokens only.
+- **Avatars load from the real endpoint URLs at runtime**, with a fallback
+  sprite (`additional controls_13`, a plain cream circle from the existing UI
+  sprite pack) shown immediately and swapped for the real image if/when it
+  loads successfully - never blocks or delays showing the line's text. The
+  endpoint's mock data guarantees at least two unloadable avatars on purpose
+  (a "Sheldon" entry on port 81, and "Nobody"'s URL pointing at the Dicebear API
+  root instead of an image) - `AvatarSpriteLoader` treats every failure mode
+  (missing URL, broken port, 404, malformed response) identically: resolve to
+  `null`, no exception, no special-casing per failure type.
+- **Scene changes mirror Ace of Shadows' D18 cleanup**: `MagicWordsScene`'s
+  Directional Light was deleted and its Main Camera switched to Solid Color
+  clear - same reasoning, an all-UI scene has nothing for a light or skybox to
+  actually affect.
+- **Not yet verified**: real WebGL/CORS behavior against the mock endpoint and
+  Dicebear (should work - both are plain public HTTP APIs - but genuinely
+  untested from this session), and the whole thing has not been clicked through
+  in Play Mode at all yet. See Immediate next steps.
+
 ### Scene-flow architecture
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
   Editor Play or in the WebGL build) — every other scene is loaded/unloaded
@@ -510,8 +606,12 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ### Available asset packs
 - **`Assets/App/Sprites`** (moved from `Assets/Art/Sprites`, GUIDs preserved) —
-  clean, no watermark, in active use (main menu buttons, home button icon).
-  `buttons.png`, `icons.png`, `popups.png`, `additional controls.png`.
+  clean, no watermark, in active use (main menu buttons, home button icon,
+  Magic Words' dialogue box/avatar-frame chrome). `buttons.png`, `popups.png`
+  (`popups_17` = dialogue box background, `popups_4` = the "conversation
+  finished" panel), `additional controls.png` (`additional controls_13`/`_12` =
+  avatar frame / fallback avatar sprite). `icons.png` was removed in D24 (dead
+  weight, zero references at the time).
 - **`Assets/Feature/AceOfShadows/Prefabs/PlayingCards` + `.../Textures`** — a real
   playing-card asset pack (per-rank/suit prefabs across multiple decks, 2 currently
   kept in `AceOfShadowsConfig.CardVisuals`), packed into
@@ -522,8 +622,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   weight files for it) resolved to the Regular named instance. `Baloo2 SDF.asset`
   is the generated TMP Font Asset, now the TMP Settings default and assigned to
   every existing TMP text in the project (FPS counter, finished-message, stack
-  counters). No Bold variant yet — would need extracting a separate static
-  instance from the variable font, more tooling than a straight download.
+  counters). `Baloo2-Bold.ttf`/`Baloo2 Bold SDF.asset` were added by instancing
+  the variable font at its `wght=700` named instance via `fonttools`, and wired
+  into `Baloo2 SDF.asset`'s Bold weight slot — see D29.
+- **`Assets/Art/Fonts/Rubik`** — Rubik (Google Fonts, OFL-licensed), chosen as
+  the body-text font to pair with Baloo 2 (Baloo 2 is a heavy display face,
+  better suited to titles/buttons than paragraph text — e.g. the Magic Words
+  dialogue lines). Two other candidates (Nunito Sans, Mulish) were trialed
+  alongside it and removed once Rubik was picked. Same variable-font-only
+  situation as Baloo 2; instanced to a static Regular weight before generating
+  `Rubik SDF.asset` (its variable default resolves to Light, not Regular). Not
+  wired onto any TMP component yet — see D29.
 - **`Assets/uVegas` — removed entirely** (was previously kept-but-unused due to a
   watermark on its `Front.png`/`Back.png`, see D10 — fully superseded now that
   real playing-card art is in use, no remaining references anywhere in `Assets/`).
@@ -586,62 +695,20 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
    unhardened version of
    this loop was ever actually clicked through in Play Mode. Do that before
    building on top of it.
-2. **Build Magic Words.** The endpoint (`https://private-624120-softgamesassignment.apiary-mock.com/v3/magicwords`)
-   has been fetched and read (2026-08-24), per `BRIEF.md` §5's "design nothing
-   before seeing it" instruction — nothing has been designed or built yet, this
-   is raw findings for whoever picks this up next. Real response:
-   ```json
-   {
-     "dialogue": [
-       { "name": "Sheldon", "text": "I admit {satisfied} the design of Cookie Crush is quite elegant..." },
-       { "name": "Leonard", "text": "That's practically a compliment, Sheldon. {intrigued} Are you feeling okay?" },
-       // ...17 lines total, Sheldon/Leonard/Penny/Neighbour
-     ],
-     "avatars": [
-       { "name": "Sheldon", "url": "https://api.dicebear.com/9.x/personas/png?...", "position": "left" },
-       { "name": "Penny", "url": "...", "position": "right" },
-       { "name": "Leonard", "url": "...", "position": "right" },
-       { "name": "Nobody", "url": "https://api.dicebear.com/5.x/personas/", "position": "right" },
-       { "name": "Sheldon", "url": "https://api.dicebear.com:81/blub", "position": "right" }
-     ]
-   }
-   ```
-   **Four things that change the plan the brief itself implied:**
-   - **The "emoji" are named tokens, not Unicode codepoints.** `{satisfied}`, `{intrigued}`,
-     `{neutral}`, `{affirmative}`, `{laughing}`, `{win}` — literal `{word}` substrings
-     embedded in `text`. The brief's own guidance ("map emoji *codepoints* to a
-     sprite asset") assumed real Unicode emoji chars; that's not what this data
-     does. The actual job: parse `{word}` patterns out of `text` and swap each for
-     a TextMeshPro `<sprite name="word">` tag, backed by a TMP Sprite Asset with
-     one entry per named token (not per Unicode codepoint) — no color-emoji-font
-     problem at all, but the token→sprite mapping needs an entry per name used
-     (at least those 6 from this sample; design for an unrecognized token
-     gracefully, e.g. showing the raw `{word}` or a fallback glyph, rather than
-     assuming the token set is closed).
-   - **Two "Sheldon" avatar entries, same name, conflicting data** — one working
-     Dicebear URL, one deliberately broken (`https://api.dicebear.com:81/blub`,
-     port 81). Not an accident: this is the brief's "avatar URLs may not load /
-     data may be missing" requirement built directly into the mock data itself.
-     A naive `Dictionary<string,string>` keyed by name throws on this; needs a
-     lookup that tolerates duplicates (pick first/last deterministically, document
-     which and why) rather than assuming name is a unique key.
-   - **"Nobody" has an avatar entry but never speaks** — no dialogue line uses
-     that name. Unused avatar data, likely another deliberate robustness case
-     (don't assume every avatar entry corresponds to a real speaker).
-   - **"Nobody"'s URL is also broken** (`.../5.x/personas/` — points at the API
-     root, not an actual image). So there are at least two guaranteed-to-fail
-     avatar loads to design the fallback-avatar path around, not just a
-     hypothetical "what if this fails" — it's reproducible against the real mock.
-   - Each avatar has a `position` (`left`/`right`) — implies a chat/visual-novel-
-     style layout where speakers alternate sides, not one static central portrait.
-   **Still not done:** the emoji-in-TextMeshPro spike itself (proving one token
-   renders via a TMP Sprite Asset `<sprite>` tag) — the original Phase 0 plan
-   called for this and it was never actually done, so that mechanical risk is
-   still live even though the data-shape risk above is now resolved. The scene
-   already has a Canvas/EventSystem/HomeButton — just needs the actual dialogue
-   content built inside it. Any root-`Instantiate` inside it should go through a
-   scene-local parent (see the `sceneLoaded`-timing note under Scene-flow
-   architecture) rather than relying on the active scene being correct.
+2. **Play Mode-verify Magic Words (D28)** — built this session (see "Magic
+   Words architecture" above), compiles clean, 22 new EditMode tests pass
+   (Logic layer only), and the scene YAML was read back and sanity-checked
+   (hierarchy, sibling order, every `SerializedObject`-wired field), but nothing
+   has actually been clicked through yet: the real network fetch against the
+   live endpoint from a running Player (WebGL/CORS specifically, not just the
+   Editor), the two guaranteed-broken avatar URLs actually falling back to the
+   placeholder sprite instead of erroring, the box slide-in distances/timing
+   (all eyeballed, same "retune by eye in Play Mode" spirit as Ace of Shadows'
+   `PerCardOffset`), the fast-forward button's two-click behavior (complete
+   then skip) and the auto-advance timer actually firing, and the "conversation
+   finished" panel. Not yet committed either. Once verified: also revisit
+   whether real emoji-icon sprites are worth building (see D28's deferred-scope
+   note) before considering Magic Words fully done.
 3. Build Phoenix Flame (particle system + Animator-driven color transitions —
    the brief specifically requires an Animator Controller, not a script lerp).
    Same starting point as Magic Words — Canvas/EventSystem/HomeButton already there.
