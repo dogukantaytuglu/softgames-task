@@ -6,6 +6,37 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D32 — Phoenix Flame's color list is now derived from the Animator Controller, not hand-typed (2026-08-26)
+**Choice:** `PhoenixFlameConfig` gained an `AnimatorController` (`RuntimeAnimatorController`) field — the actual
+runtime source now, applied via `animator.runtimeAnimatorController = config.AnimatorController` in
+`FlameParticle.Initialize` — replacing the prefab's own separately hand-wired `Animator.controller` (which is now
+dead/overridden). `colorOptions` (the per-button name + base/emission color list) stays serialized, so runtime code
+is unchanged, but it's no longer hand-typed: a new `PhoenixFlameConfigEditor` custom inspector
+(`Assets/Feature/PhoenixFlame/Editor/`) reads it back from the assigned controller and writes it in, only when it
+actually differs. The extraction (`PhoenixFlameAnimatorColorReader`) walks each "Any State" transition's
+`ColorIndex == N` condition to its destination state, then reads that state's `AnimationClip`'s baked
+`material._BaseColor`/`material._EmissionColor` curves at t=0 via `AnimationUtility` — keyed off the transition
+condition specifically, not state array order, since the condition is the only place a state's real index is
+actually defined. Verified via Unity MCP: project compiles clean, and the extraction was run directly against the
+real asset, correctly resolving `0→Orange`, `1→Green`, `2→Blue` with colors matching what had been hand-typed.
+While testing this in the Inspector, the developer duplicated the Blue state into a 4th ("Pink", same colors as
+Blue, not yet retinted) to confirm the custom editor picks up a new state automatically — it did, and that state/
+color entry is included in this commit as a working proof, not finished content.
+**Also swept**: comments across the project's own code (Ace of Shadows, Magic Words, Phoenix Flame — vendored
+`Assets/Plugins` left untouched) — removed everything that was restating WHAT the code does or naming a specific
+caller, keeping only comments documenting a real hidden constraint, invariant, or gotcha (e.g. `DialogueLineDto`'s
+field-name-must-match-JSON-key constraint, `AceOfShadowsController`'s fillAmount-write throttle rationale,
+`DeployWebGL`'s stream-read-before-`WaitForExit` deadlock note).
+**Why:** Requested directly — the developer flagged that a hand-typed `colorOptions` list and the Animator
+Controller's actual states were two independently-maintained sources of the same data with nothing enforcing they
+stay in sync (wrong count/order between them would silently desync buttons from states). Deriving the list from the
+controller instead removes that duplication at its root, at the cost of the custom editor only being able to read
+it at edit time (`AnimationUtility` is `UnityEditor`-only) — acceptable since `colorOptions` still gets written into
+a normal serialized field the runtime reads, so no editor-only API is ever touched outside the Inspector.
+**Not done:** the flame look/scale/placement pass and the button layout eyeball-check the developer's own priority
+list (see current-context.md) already calls out as the real next Phoenix Flame work — this change only touches the
+config/color-authoring path.
+
 ### D31 — Phoenix Flame: config-driven flame + Animator Controller color system, built directly per request (2026-08-25)
 **Choice:** First real pass at Phoenix Flame, built directly per explicit developer instruction. Summary:
 - **Domain** (`PhoenixFlame.Logic`, `noEngineReferences: true`): `PhoenixFlameColorState` - the "colour state machine" the

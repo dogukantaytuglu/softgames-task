@@ -4,9 +4,11 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-25, end of session (Phoenix Flame first pass D31, then a
-developer-set priority list for next session — see "Immediate next steps" below,
-it now leads with that list). Ace of Shadows is done and everything through D27 is
+Last updated: 2026-08-26 (Phoenix Flame's color list moved to being derived from its
+Animator Controller instead of hand-typed, D32, plus a project-wide comment cleanup —
+see "Immediate next steps" below, the developer's priority list from 2026-08-25 still
+leads it and D32 doesn't change that list). Ace of Shadows is done and everything
+through D27 is
 committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
 (D22), Restart button (D23), a `unity-interviewer` audit (first run, see
 Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
@@ -30,7 +32,8 @@ component yet (D29), and Magic Words hasn't been verified in a WebGL build
 (CORS). **Phoenix Flame: first pass built (D31, 2026-08-25), not yet Play
 Mode-verified.** Config-driven flame prefab + instanced material, a 3-color
 Animator Controller (Orange/Green/Blue, crossfading over 1.5s), 3 UI buttons.
-See "Phoenix Flame architecture" below and D31.
+Its color list is now derived from the Animator Controller instead of hand-typed
+(D32, 2026-08-26) — see "Phoenix Flame architecture" below and D31/D32.
 
 ## What we're building
 
@@ -509,20 +512,40 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   doesn't retrigger an identical Animator transition). 6 EditMode tests.
 - **Presentation** (`Scripts/Monobehaviour/`): `PhoenixFlameConfig`
   (`Assets/Feature/PhoenixFlame/Configs/PhoenixFlameConfig.asset`, a `ScriptableObject`)
-  holds `FlamePrefab`, `BaseMaterial`, `ColorOptions` (a `List<PhoenixFlameColorOption>` —
+  holds `FlamePrefab`, `BaseMaterial`, `AnimatorController` (`RuntimeAnimatorController` —
+  **the actual runtime source now, see D32**), `ColorOptions` (a `List<PhoenixFlameColorOption>` —
   each option is a display name plus **two** colors, a plain `BaseColor` and an
   `[ColorUsage(true,true)]` HDR `EmissionColor`, since `LargeFlame02`'s shader takes
   color from two separate properties, `_BaseColor` and `_EmissionColor`), and
-  `AnimatorController` + `ColorTransitionDuration`. `PhoenixFlameController`
+  `ColorTransitionDuration`. `PhoenixFlameController`
   (composition root): `Awake()` instantiates `config.FlamePrefab` at a spawn point,
   **instances `config.BaseMaterial` and assigns it directly to that instance's
-  `ParticleSystemRenderer`** (not the shared asset), adds an `Animator` pointed at
-  `config.AnimatorController`, and calls `Initialize` on each `PhoenixFlameColorButton`
-  it owns (same single-init-point pattern as `MainMenuInitializer`, D15).
+  `ParticleSystemRenderer`** (not the shared asset), adds an `Animator`, and calls
+  `Initialize` on each `PhoenixFlameColorButton` it owns (same single-init-point pattern
+  as `MainMenuInitializer`, D15). `FlameParticle.Initialize` sets
+  `animator.runtimeAnimatorController = config.AnimatorController` — the prefab's own
+  `Animator` component still has a Controller hand-wired on it too, but that's now dead
+  weight, overridden every time at runtime; config is the single source of truth.
   `SetColor(index)` (one call per button, wired via the same self-wiring
   `Initialize(Action<int>)` shape as `MenuButtonSceneLoader`) checks
   `PhoenixFlameColorState.TrySelect` and, if it changed, sets an Animator Int
   parameter (`ColorIndex`) — nothing else touches the material at runtime.
+- **`ColorOptions` is no longer hand-typed — it's derived from the Animator Controller
+  itself (D32, 2026-08-26).** A custom inspector (`PhoenixFlameConfigEditor`,
+  `Assets/Feature/PhoenixFlame/Editor/`) reads `AnimatorController` back via
+  `PhoenixFlameAnimatorColorReader`: walks each "Any State" transition's
+  `ColorIndex == N` condition to its destination state (the condition, not state array
+  order, is what actually defines a state's index), then reads that state's baked
+  `AnimationClip` colors via `UnityEditor.AnimationUtility` (editor-only — this is why
+  `ColorOptions` still needs to be a normal serialized field the runtime reads, rather
+  than computed live) and writes the result into `colorOptions`, only when it actually
+  differs from what's already saved. This removes the old failure mode where the
+  hand-typed list and the controller's real states could silently drift out of sync
+  (wrong count/order desyncing buttons from states) — now there's one authored place
+  (the Animator Controller) and one derived place. **While testing this in the
+  Inspector, a 4th state ("Pink", same colors as Blue, not yet retinted) was added to
+  the controller to confirm auto-pickup** — it worked, and that test state/color entry
+  is currently in the project as a working proof, not finished content.
 - **The color transition is 100% Animator Controller — no tween, no script lerp**,
   per the brief's explicit requirement for this task. `PhoenixFlameColors.controller`
   (`Assets/Feature/PhoenixFlame/Animations/`) has 3 states (Orange/Green/Blue), each
