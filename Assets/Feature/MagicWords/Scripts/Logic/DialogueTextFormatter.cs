@@ -3,12 +3,10 @@ using System.Text;
 
 namespace MagicWords.Logic
 {
-    // Converts {word} emoji tokens embedded in the endpoint's dialogue text (e.g.
-    // "{satisfied}") into TextMeshPro <sprite> tags backed by the Magic Words emoji
-    // TMP Sprite Asset. The endpoint uses named tokens, not real Unicode emoji
-    // codepoints, so the mapping is an explicit known-token table rather than a
-    // codepoint lookup. Any token not in the table is stripped instead of left as
-    // literal "{word}" text or rendered as a broken/missing sprite.
+    // The endpoint's {word} tokens are names, not Unicode emoji codepoints, so
+    // this maps against an explicit known-token table rather than a codepoint
+    // lookup; any unrecognized token is stripped rather than left as literal
+    // text or rendered as a broken sprite.
     public static class DialogueTextFormatter
     {
         private static readonly Dictionary<string, string> KnownTokenSprites = new Dictionary<string, string>

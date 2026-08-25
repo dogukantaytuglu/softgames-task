@@ -4,10 +4,8 @@ namespace MagicWords.Logic
 {
     public static class SpeakerAvatarLookup
     {
-        // First match wins when a speaker name appears more than once in the
-        // avatars list - the real endpoint data does this deliberately (two
-        // "Sheldon" entries, one with a broken URL). A plain Dictionary keyed by
-        // name would throw on that; this tolerates it instead.
+        // First match wins - the real endpoint has duplicate speaker names, which
+        // would throw if this were a Dictionary keyed by name instead.
         public static AvatarDto FindBySpeakerName(IReadOnlyList<AvatarDto> avatars, string speakerName)
         {
             if (avatars == null)

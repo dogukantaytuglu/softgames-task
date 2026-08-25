@@ -5,11 +5,9 @@ using UnityEngine.Networking;
 
 namespace MagicWords.Monobehaviour
 {
-    // Failure (missing URL, broken port, 404, timeout) always resolves via
-    // onLoaded(null) rather than throwing - the endpoint's mock data guarantees
-    // at least two unloadable avatars on purpose (see decisions.md), so the
-    // caller is expected to fall back to a placeholder sprite, not treat this
-    // as exceptional.
+    // Any failure (missing URL, broken port, 404, timeout) resolves via
+    // onLoaded(null) rather than throwing - callers are expected to fall back
+    // to a placeholder sprite, not treat this as exceptional.
     public static class AvatarSpriteLoader
     {
         public static IEnumerator Load(string url, Action<Sprite> onLoaded)

@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 namespace MagicWords.Logic
 {
-    // Armed with every line up front (built by DialogueSequenceBuilder), then
-    // stepped through strictly in order via MoveNext - same shape as
-    // AceOfShadows' CardDeck: the domain only knows "what's next", the
-    // presentation layer decides when that's allowed to happen.
     public sealed class DialogueSequence
     {
         private readonly List<DialogueLine> _lines;

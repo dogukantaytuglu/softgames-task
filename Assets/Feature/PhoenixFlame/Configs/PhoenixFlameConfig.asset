@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flamePrefab: {fileID: 7159588831214624518, guid: b841b592450f3a94b95f3cc7bcb0df83, type: 3}
   baseMaterial: {fileID: 2100000, guid: b25dd701bdc692249907c8b4e4b784b2, type: 2}
+  animatorController: {fileID: 9100000, guid: 4eac7dd2088f64149b5caaf93e238e12, type: 2}
   colorOptions:
   - displayName: Orange
     baseColor: {r: 1, g: 0.55, b: 0.15, a: 1}
@@ -22,6 +23,9 @@ MonoBehaviour:
     baseColor: {r: 0.3, g: 1, b: 0.35, a: 1}
     emissionColor: {r: 0.35, g: 2.6, b: 0.45, a: 1}
   - displayName: Blue
+    baseColor: {r: 0.3, g: 0.55, b: 1, a: 1}
+    emissionColor: {r: 0.35, g: 0.85, b: 2.8, a: 1}
+  - displayName: Pink
     baseColor: {r: 0.3, g: 0.55, b: 1, a: 1}
     emissionColor: {r: 0.35, g: 0.85, b: 2.8, a: 1}
   colorTransitionDuration: 1.5

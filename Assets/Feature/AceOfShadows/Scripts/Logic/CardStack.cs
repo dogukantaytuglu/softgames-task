@@ -9,8 +9,7 @@ namespace AceOfShadows.Logic
 
         public int Count => _cards.Count;
 
-        // Bottom-to-top order, exposed read-only for the presentation layer's
-        // initial layout pass - not a mutation surface.
+        // Bottom-to-top order - callers rely on this for layout/cascade ordering.
         public IReadOnlyList<Card> Cards => _cards;
 
         public CardStack()

@@ -27,9 +27,8 @@ namespace MagicWords.Logic
             return new DialogueSequence(lines);
         }
 
-        // No avatar entry for a speaker, or an unrecognized position string,
-        // both default to Right rather than throwing - the brief explicitly
-        // calls out that avatar data may be missing.
+        // Missing avatar or unrecognized position string both default to Right
+        // rather than throwing - avatar data is allowed to be incomplete.
         private static DialoguePosition ParsePosition(string rawPosition)
         {
             return rawPosition == "left" ? DialoguePosition.Left : DialoguePosition.Right;

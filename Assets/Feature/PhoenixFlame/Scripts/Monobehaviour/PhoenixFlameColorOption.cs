@@ -17,5 +17,12 @@ namespace PhoenixFlame.Monobehaviour
         public string DisplayName => displayName;
         public Color BaseColor => baseColor;
         public Color EmissionColor => emissionColor;
+
+        public PhoenixFlameColorOption(string displayName, Color baseColor, Color emissionColor)
+        {
+            this.displayName = displayName;
+            this.baseColor = baseColor;
+            this.emissionColor = emissionColor;
+        }
     }
 }

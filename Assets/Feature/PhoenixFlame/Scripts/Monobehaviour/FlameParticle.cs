@@ -18,6 +18,7 @@ namespace PhoenixFlame.Monobehaviour
         {
             var particleSystemRenderer = particle.GetComponent<ParticleSystemRenderer>();
             particleSystemRenderer.material = Instantiate(config.BaseMaterial);
+            animator.runtimeAnimatorController = config.AnimatorController;
             _colorState = new PhoenixFlameColorState(config.ColorOptions.Count);
             animator.SetInteger(ColorIndex, _colorState.CurrentIndex);
         }
