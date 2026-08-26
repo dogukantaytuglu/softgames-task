@@ -158,8 +158,10 @@ SpriteAtlas:
     - 156ec492e516ccb4099add479601d65e: -664639068
     - 156ec492e516ccb4099add479601d65e: -834331401
     - 156ec492e516ccb4099add479601d65e: -1462993164
+    - 91c40929640af4699974dfa330714896: 21300000
     - df39956b24f9b0f44a47fce811711b32: 21300000
     - da72f80c80bf0f5429e6efb7179ac76d: 21300000
+    - 1087a2ce846ef4bc1827f265f27d95fe: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 638108468, guid: 6d1a2570067e3ae4cb5c72a2bca3b8d5, type: 3}
@@ -257,8 +259,10 @@ SpriteAtlas:
   - {fileID: -664639068, guid: 156ec492e516ccb4099add479601d65e, type: 3}
   - {fileID: -834331401, guid: 156ec492e516ccb4099add479601d65e, type: 3}
   - {fileID: -1462993164, guid: 156ec492e516ccb4099add479601d65e, type: 3}
+  - {fileID: 21300000, guid: 91c40929640af4699974dfa330714896, type: 3}
   - {fileID: 21300000, guid: df39956b24f9b0f44a47fce811711b32, type: 3}
   - {fileID: 21300000, guid: da72f80c80bf0f5429e6efb7179ac76d, type: 3}
+  - {fileID: 21300000, guid: 1087a2ce846ef4bc1827f265f27d95fe, type: 3}
   m_PackedSpriteNamesToIndex:
   - popups_22
   - popups_18
@@ -355,8 +359,10 @@ SpriteAtlas:
   - buttons_6
   - buttons_5
   - buttons_4
+  - ui_home_glyph
   - ui_dot
   - ui_soft_shadow
+  - ui_replay_arrow
   m_RenderDataMap: {}
   m_Tag: UI
   m_IsVariant: 0

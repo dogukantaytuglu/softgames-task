@@ -59,7 +59,7 @@ namespace AceOfShadows.Monobehaviour
                 view.name = $"Card {card.Id}";
                 view.Initialize(config);
 
-                var localPosition = CardStackLayout.GetOffset(i);
+                var localPosition = CardStackLayout.GetOffset(i, config.PerCardOffset, config.MaxPileRise);
                 var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees);
                 view.SetPositionImmediate(localPosition, localRotation);
 
@@ -109,7 +109,7 @@ namespace AceOfShadows.Monobehaviour
 
             view.transform.SetParent(targetStackRoot);
 
-            var localPosition = CardStackLayout.GetOffset(distanceFromBottom);
+            var localPosition = CardStackLayout.GetOffset(distanceFromBottom, config.PerCardOffset, config.MaxPileRise);
             var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees);
 
             view.MoveTo(localPosition, localRotation, OnCardLanded);
@@ -123,7 +123,7 @@ namespace AceOfShadows.Monobehaviour
 
         private void OnAllAnimationsFinished()
         {
-            finishedMessageView.Show();
+            finishedMessageView.Show(_deck.Target.Count, config.TotalCards);
             sourceCounterView.Hide();
             targetCounterView.Hide();
             AnimateTargetStackExit();

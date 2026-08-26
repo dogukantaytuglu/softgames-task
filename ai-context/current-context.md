@@ -931,6 +931,57 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
+### ROUND 2 IS SCOPED AND APPROVED — Ace of Shadows (set 2026-08-26, see D38)
+
+The developer has given the green light for Round 2 of the item-4 UI/UX pass, on
+**Ace of Shadows**. Full reasoning, the agreed scope, the three things dropped from
+the original proposal, and the agent's recorded dissent (it would have shipped the
+stock `index.html` fix first) are in **D38**. Short version of what to build:
+
+- **Safe polish:** completion panel to ink `#2A2438`, copy to "Deck cleared! / Every
+  card made it across", `144 / 144` in reward gold as text, a real "Play again"
+  label on the Restart button; counters become cream pills with `SOURCE`/`TARGET`
+  caps labels; the `Knob` countdown sprite becomes a ring around the target slot
+  (single Image, `fillAmount`, no code change).
+- **Approved bigger swings:** the **felt table** (`#2A5F55` → `#153C36`, dashed card
+  slots) replacing the flat gold `Bg`; and **`MaxVisibleDepth` 12 → ~26,
+  `PerCardOffset` 3 → 4** in `CardStackLayout.cs:7,11`.
+- **Watch out:** the felt table inverts the screen to dark, so everything on it gets
+  re-checked against a dark ground — including the FPS pill, whose dark-chrome
+  variant D37 explicitly deferred. And BRIEF §5 wants the chosen stack cap explained
+  in the README; `README.md` currently has no stack-cap paragraph at all.
+
+🔴 **BLOCKED ON TOOLING, not on a decision.** Two things are missing and both are
+resolved the same way:
+
+1. **Unity MCP is not connected for this project.** The Unity Editor *is* running on
+   `softgames-task` (6000.0.82f1) with `Unity.AI.MCP.Editor.dll` loaded from
+   `com.unity.ai.assistant@2.18.0-pre.2`, listening on `127.0.0.1:38000` — but
+   `~/.claude.json` has `mcpServers: {}` for this project and there is no `.mcp.json`
+   in the repo, so no `mcp__unity-mcp__*` tools exist in-session. ⚠️ The `UnityMCP`
+   entry that *does* exist in `~/.claude.json` is the **wrong one** — it is registered
+   under `/Users/dogukan/Whatwapp` and `backgammon-unity`, points at
+   `http://127.0.0.1:8080/mcp`, and that endpoint is a separate `mcp-for-unity` Python
+   bridge launched `--project-scoped-tools` with a `--unity-instance-token` and a
+   pidfile under `backgammon-unity/Backgammon/Library/MCPForUnity/RunState/`. It is
+   pinned to Backgammon. Do not point this project at it. Register the softgames
+   endpoint from the Unity Editor's own AI Assistant MCP client setup instead.
+2. **The four project agents don't load.** `unity-architect`, `unity-interviewer`,
+   `unity-ui-ux-expert` and `unity-animation-expert` now live in `.claude/agents/`
+   (committed, `0f6147d`) — but agent definitions and MCP servers are both resolved
+   at session start, so a session that began before they existed cannot see them.
+
+**One Claude Code restart picks up both.** Until then only the safe-polish items are
+actually doable (text/colour/rect edits via the direct-YAML route from D34); the ring,
+gradient and dashed-slot sprites are procedurally generated C#, and nothing can be
+rendered for visual verification at all. The UI agent declined to call a round done on
+unverified visuals in a graded submission, and specifically declined the
+PIL-PNG-plus-hand-written-`.meta` workaround as making importer settings *and*
+appearance unverified instead of one of them. Note also that
+`Unity_AssetGeneration_GenerateAsset` was already a dead end in D37 — no model is
+configured on this install — so MCP buys the scene-capture/verification workflow and
+editor automation, **not** asset generation.
+
 ### Developer's own priority list for the next session (set 2026-08-25, end of day)
 
 The developer called these out directly as what's left, in this order — treat this as

@@ -4,16 +4,12 @@ namespace AceOfShadows.Monobehaviour
 {
     public static class CardStackLayout
     {
-        private const int MaxVisibleDepth = 12;
-
-        // Eyeballed pixel equivalent of the old 0.03 world-unit fan offset,
-        // scaled to the new ~260px card height. Retune by eye in Play Mode.
-        private const float PerCardOffset = 3f;
-
-        public static Vector2 GetOffset(int distanceFromBottom)
+        // Both values come from AceOfShadowsConfig - see the tooltips there for what
+        // they mean and why they are tuned the way they are. Passed in rather than
+        // read here so this stays a pure function that tests can drive directly.
+        public static Vector2 GetOffset(int distanceFromBottom, float perCardOffset, float maxPileRise)
         {
-            var visualDepth = Mathf.Min(distanceFromBottom, MaxVisibleDepth);
-            var y = visualDepth * PerCardOffset;
+            var y = Mathf.Min(distanceFromBottom * perCardOffset, maxPileRise);
             return new Vector2(0f, y);
         }
 

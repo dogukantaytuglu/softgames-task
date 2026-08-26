@@ -33,15 +33,18 @@ namespace AceOfShadows.Monobehaviour
             PlayPopAnimation();
         }
 
+        // Toggles the whole counter, not just its label: the counter is a pill
+        // (background + number + caps label) now, so hiding only the number would
+        // leave an empty pill floating over the cleared table.
         public void Hide()
         {
             transform.DOKill();
-            counterText.gameObject.SetActive(false);
+            gameObject.SetActive(false);
         }
 
         public void Show()
         {
-            counterText.gameObject.SetActive(true);
+            gameObject.SetActive(true);
         }
 
         private void PlayPopAnimation()
