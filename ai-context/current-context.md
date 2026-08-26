@@ -4,16 +4,21 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-26 (Phoenix Flame's color list moved to being derived from its
-Animator Controller instead of hand-typed, D32, plus a project-wide comment cleanup —
-see "Immediate next steps" below, the developer's priority list from 2026-08-25 still
-leads it and D32 doesn't change that list). Ace of Shadows is done and everything
-through D27 is
+Last updated: 2026-08-26 (the app was flipped from landscape-locked to
+portrait-first, D33, reversing D25 — see "Immediate next steps" below; this also
+fixed the fixed-pixel-anchor bugs behind the named "mobile support is broken" risk,
+in Magic Words' dialogue boxes and the Main Menu button container. Also this
+session: Phoenix Flame's color list moved to being derived from its Animator
+Controller instead of hand-typed (D32), a project-wide comment cleanup, and a
+"Casual Arcade Direction" design mockup — now in portrait to match D33 — at
+https://claude.ai/code/artifact/06510f2d-e5eb-4cc1-b121-6deb4c596c18). Ace of
+Shadows is done and everything through D27 is
 committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
 (D22), Restart button (D23), a `unity-interviewer` audit (first run, see
-Tooling) and its mechanical fixes (D24), landscape-lock + canvas-resolution fix
-(D25), build-size lever outcomes (D26 — packages/modules trimmed, crunch tried
-and declined, stripping/exceptions declined outright), and a real README (D27).
+Tooling) and its mechanical fixes (D24), the original landscape-lock decision
+(D25, since reversed by D33), build-size lever outcomes (D26 — packages/modules
+trimmed, crunch tried and declined, stripping/exceptions declined outright), and a
+real README (D27).
 **Nothing past D21 has actually been Play Mode-verified by the developer yet**
 — still an open item, see Immediate next steps. **Magic Words: built, Play
 Mode-verified, and committed/pushed** — dialogue sequencer/boxes/reveal/
@@ -322,8 +327,12 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   needs a flat-canvas-appropriate technique (e.g. a scale.x squash-flip, or a
   tint), not a port of the old one.
 - **Hierarchy:** `SourceStack` / `TargetStack` are `RectTransform`s under the
-  Canvas (anchored proportionally at 25%/75% width, not fixed world positions) -
-  cards `SetParent` onto them on move, using `worldPositionStays: true` (the
+  Canvas, center-anchored (`anchorMin/Max: {0.5,0.5}`) with a fixed `±175px` X
+  offset from center (not the `25%/75%` this doc previously claimed - corrected
+  2026-08-26 while investigating D33; the fixed-offset math was checked against
+  real card size and found already safe across the realistic portrait aspect
+  range, see D33) - cards `SetParent` onto them on move, using
+  `worldPositionStays: true` (the
   default) specifically so the reparent itself doesn't cause a visual snap; the
   subsequent DOTween `DOAnchorPos` move then animates smoothly from wherever the
   card actually is.
@@ -472,6 +481,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   hand-built symmetric box into a prefab instance of `LeftDialogueBox.prefab`
   (`Assets/Feature/MagicWords/Prefab/`), mirrored via `m_LocalScale.x: -1` plus
   right-edge anchor/pivot overrides.
+  **Box width/offscreen-clearance re-tuned for portrait (D33, 2026-08-26):** this
+  literal-corner-anchor setup was fine in wide landscape but left almost no
+  margin on a narrow portrait canvas — `sizeDelta.x` shrunk `750 → 620`,
+  `hiddenAnchoredX` rescaled `-800 → -670` (mirrored `800 → 670` on
+  `RightDialogueBox`, whose sizing is a separate `PrefabInstance` override in
+  `MagicWordsScene.unity`, not inherited from the prefab — both had to be edited).
+  `shownAnchoredX` stayed `0` (a zero offset needs no mirroring). Still glued
+  flush to the literal screen edge when shown, not OS-safe-area-aware
+  (`Screen.safeArea` isn't read anywhere in this project) — a real device with a
+  notch/gesture-bar inset could still clip this; flagged, not fixed.
 - **Emoji tokens render as real emoji via a TMP Sprite Asset (D30).** The
   endpoint embeds named tokens like `{satisfied}`, not real Unicode emoji
   codepoints, so `DialogueTextFormatter.FormatTokens` maps a fixed table of the
@@ -575,7 +594,8 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **Not done in this pass**: Play Mode verification (compiles clean, 6/6 new
   EditMode tests pass, every built asset/scene reference was read back and checked
   field-by-field, but nothing here has been clicked through yet); the button
-  layout hasn't been eyeballed against the real 1920×1080 canvas; ~145MB of unused
+  layout hasn't been eyeballed against the real canvas (now 1080×1920 portrait,
+  D33 — checked numerically safe, not yet seen rendering); ~145MB of unused
   `Assets/UnityTechnologies/ParticlePack/` effect categories (Goop/Magic/Misc/
   Smoke/Water/Weapon/Legacy Particles) beyond `Fire & Explosion Effects` are still
   sitting in the repo, same "decide the build-size levers deliberately" treatment
@@ -668,25 +688,29 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   above).
 
 ### Phase 0 status
-- **App is landscape-locked (D25, 2026-08-24)** — see decisions.md for the full
-  reasoning (SOFTGAMES' own published Facebook Gaming title runs a fixed 16:9
-  landscape canvas). `MainMenuScene`'s Canvas reference resolution was actually
-  1080×1920 portrait until this decision — this doc claimed 1920×1080 before
-  that fix, which a `unity-interviewer` audit correctly caught as false. It's
-  genuinely 1920×1080 now, matching `AceOfShadowsScene`/`AppScene`, so all three
-  scenes agree. `ProjectSettings`: `allowedAutorotateToPortrait`/
-  `PortraitUpsideDown` off, both landscape flags on, `defaultScreenOrientation`
-  left at `AutoRotation` — locks to landscape while still allowing either
-  physical landscape direction, not a single fixed rotation.
+- **App is portrait-locked now, not landscape (D33, 2026-08-26, reverses D25)** —
+  see decisions.md for the full reasoning (portrait-first is the more standard
+  casual-mobile convention; D25's landscape lock is superseded, not just amended).
+  All 5 scenes' Canvas reference resolution is `1080×1920` (was `1920×1080`),
+  Match Height. `ProjectSettings`: `allowedAutorotateToPortrait`/
+  `PortraitUpsideDown` on, both landscape flags off, `defaultScreenOrientation`
+  left at `AutoRotation` — locks to portrait while still allowing either physical
+  portrait direction, not a single fixed rotation. D33 also fixed the real
+  fixed-pixel-anchor bugs this surfaced (Magic Words dialogue boxes, Main Menu
+  button container) — see "Magic Words architecture" and the Main Menu bullet
+  below.
 - **Main menu** (`Assets/Scenes/MainMenuScene.unity`): Canvas (Scale With Screen Size,
-  1920×1080 reference, match 1), `EventSystem` with `InputSystemUIInputModule`
+  1080×1920 reference, match 1), `EventSystem` with `InputSystemUIInputModule`
   (project's `activeInputHandler` is Input System only — the legacy
   `StandaloneInputModule` won't receive clicks). Three buttons, each a
   `MainMenuButton.prefab` instance with a self-wiring `MenuButtonSceneLoader`
   (`OnValidate` grabs its own `Button` via `TryGetComponent`), calling
   `SceneService.Instance.Navigate` on click (see "Scene-flow architecture").
   Button art: `Assets/App/Sprites/UI/buttons.png` (blue = Ace of Shadows, green = Magic
-  Words, red/orange = Phoenix Flame).
+  Words, red/orange = Phoenix Flame). **The button container's width is now a
+  stretch anchor (D33)** — `anchorMin.x/anchorMax.x: 0.1/0.9`, `sizeDelta.x: 0`
+  (was a fixed `994.5px`, which was wider than the worst-case portrait canvas
+  width and would have clipped on real tall phones).
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
@@ -780,20 +804,20 @@ partly superseded/subsumed by it:
    buttons) but it was explicitly scoped as a first pass, not a polished demo. Needs
    a real pass on the actual fire look/scale/placement, not just "does clicking a
    button change the color."
-2. **Mobile support is currently broken, and this is called out as the single
-   biggest risk in the whole submission** — worse than any individual task bug.
-   **Specific, named failure: Magic Words' dialogue boxes do not scale with screen
-   size.** Root cause is very likely the combination of D25's landscape lock (which
-   assumes a ~16:9 canvas) with `CanvasScaler`'s Match Height-only scaling (see
-   "Phase 0 status" below) — Match Height scales every UI element uniformly against
-   the reference *height* only, so on a device aspect ratio that differs meaningfully
-   from 1920×1080, elements sized correctly for that reference will read as too
-   wide/narrow or overflow, and `DialogueBoxView`'s boxes are anchored to a screen
-   *edge* with a fixed `sizeDelta` (see "Magic Words architecture" above) rather than
-   stretched/proportionally sized — worth checking first, but confirm by actually
-   testing an off-16:9 resolution rather than assuming this is the whole story. **The
-   project has not been verified on mobile at all yet** — this is the real target for
-   next session, not a nice-to-have.
+2. **Mobile support was the single biggest named risk — partially addressed by
+   D33 (2026-08-26), still needs real device/Play Mode verification.** The
+   specific named failure (Magic Words' dialogue boxes not scaling with screen
+   size) was real: the boxes were anchored to a literal screen corner with a
+   fixed `sizeDelta`, not proportionally/safe-area sized. D33 fixed that (box
+   shrunk and rescaled, see "Magic Words architecture") as part of a larger
+   change — the app is now portrait-first, not landscape-locked (D33 reverses
+   D25) — and the same fixed-pixel-anchor audit also caught and fixed the Main
+   Menu button container being wider than the worst-case portrait canvas. **None
+   of this has been seen running yet** — compiles clean and every changed value
+   was read back through Unity's own API, but real Play Mode verification across
+   multiple simulated portrait aspect ratios (and ideally a real device) is still
+   the actual next step, not a nice-to-have. Also still open: `Screen.safeArea`
+   (notch/gesture-bar-aware insets) isn't read anywhere in this project.
 3. **Tween polishing** — general pass across DOTween usage (Ace of Shadows card
    moves/exit-cascade, Magic Words box slides/reveal) for feel, not just correctness.
 4. **Overall UI/color polish** — developer's own words: "the project looks
@@ -849,7 +873,7 @@ partly superseded/subsumed by it:
    flame renders as expected at its spawn point, each button crossfades to its
    color smoothly over ~1.5s, re-clicking the currently-active color is a no-op,
    and the button layout (bottom-center, 150px, spaced 200px) actually reads well
-   against the real 1920×1080 canvas.
+   against the real canvas (now 1080×1920 portrait, D33).
 4. Verify responsive layout + touch input on a real phone — now also needs to cover
    the additive AppScene→content scene transition specifically (untested on-device).
 5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —

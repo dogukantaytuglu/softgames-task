@@ -6,6 +6,91 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D33 — Reversed D25: the app is portrait-first now, not landscape-locked (2026-08-26)
+**Choice:** `ProjectSettings.asset` orientation flags flipped —
+`allowedAutorotateToPortrait`/`PortraitUpsideDown` → `1`,
+`allowedAutorotateToLandscapeLeft`/`Right` → `0` (still `defaultScreenOrientation:
+AutoRotation`, so it autorotates between the two portrait directions the same way
+D25's landscape lock autorotated between its two directions — not a single fixed
+rotation). All 5 scenes' `CanvasScaler` (`AppScene`, `MainMenuScene`,
+`AceOfShadowsScene`, `MagicWordsScene`, `PhoenixFlameScene`) flipped reference
+resolution `1920x1080` → `1080x1920`, keeping Match Height
+(`m_MatchWidthOrHeight: 1`) — same scaling philosophy as D21/D25, axis swapped.
+Canvas height is now always exactly `1920` units regardless of device (vs. always
+`1080` before); canvas width now varies with device aspect instead of height.
+
+Investigating the flip surfaced that most of the real mobile-adaptability risk was
+never the orientation itself — it was **fixed pixel offsets from a single anchor
+point** instead of proportional/safe-area-relative sizing, in three places:
+
+- **Magic Words dialogue boxes** (`Assets/Feature/MagicWords/Prefab/LeftDialogueBox.prefab`,
+  and its `RightDialogueBox` mirrored `PrefabInstance` overrides in
+  `MagicWordsScene.unity`) — anchored to the literal screen corner
+  (`anchorMin/Max: {0,0}`/mirrored `{1,0}`), a fixed `sizeDelta.x: 750`, and
+  `DialogueBoxView`'s `hiddenAnchoredX`/`shownAnchoredX` hardcoded in raw pixels
+  (`-800`/`0`). This is the real, previously-flagged mobile bug (developer's own
+  priority list item #2) — a 750px-wide box glued flush to the screen edge left
+  only ~114px of margin against a worst-case portrait canvas width (a tall ~20:9
+  phone works out to `1920 * (1080/2340) ≈ 886` units wide with the new reference
+  height). Fixed by shrinking to `sizeDelta.x: 620` and rescaling
+  `hiddenAnchoredX`/its mirrored counterpart proportionally (`-670`/`670`, keeping
+  the same ~50px off-screen clearance the old `-800` had relative to `750`) —
+  `shownAnchoredX` stays `0` since a zero offset is scale-invariant and needs no
+  mirroring. **Kept unchanged, deliberately:** the `DOAnchorPosX` slide mechanic
+  and the per-speaker left/right box convention — only the box's own
+  sizing/anchoring changed, preserving the brief's literal "DoMove on x axis
+  toward center" requirement from D28.
+- **Main Menu button container** (`MainMenuScene.unity`, the
+  `VerticalLayoutGroup` container): was a fixed `sizeDelta: {994.5, 742.6}` —
+  already a portrait-friendly vertical stack, but 994.5px wide is *wider* than
+  the worst-case portrait canvas width, so it would have clipped on real tall
+  phones. Fixed by switching its X anchors from a center point to a stretch
+  (`anchorMin.x/anchorMax.x: 0.1/0.9`, `sizeDelta.x: 0`) — now always 80% of
+  whatever the canvas width actually is. Height stays a fixed point-anchor
+  (`742.6`), unaffected.
+- **Ace of Shadows stacks** (`SourceStack`/`TargetStack`): center-anchored point
+  with fixed `±175px` offsets. Checked against real card size
+  (`208x260`, e.g. `Deck07_Club_10.prefab`): the two piles need
+  `2 * (175 + 104) = 558px`, comfortably under the ~886px worst case — **this one
+  was already safe**, no structural change. Only the Y offset was re-tuned (from
+  `-111.9375` to `0`, i.e. vertical center) since the canvas is now 1920 units
+  tall instead of 1080 — the old offset was tuned for a much shorter canvas and
+  would've read as barely-off-center against the new height. Exact vertical
+  placement is a starting point, not a final tune — left for the developer's own
+  Play Mode eye-tuning, same as `CardStackLayout.PerCardOffset`'s existing
+  "retune by eye" precedent.
+- **Phoenix Flame's 3-button row** was checked too (fixed `150px` buttons, `200px`
+  spacing, actual edge-to-edge span `550px` — not `~850px` as first estimated,
+  since the spacing values are between-button-center offsets, not gaps) — already
+  comfortably safe against the ~886px worst case with room to spare. **Left
+  as fixed positions, not converted to a layout group** — there's no actual bug
+  here to fix, and adding a `HorizontalLayoutGroup` would be a change with no real
+  payoff.
+
+**Why:** Requested directly — portrait-first is the more standard convention for
+this genre (casual mobile), and the developer wants the project's "Casual Arcade
+Direction" mockup (see below) redone in portrait too. Planned via `EnterPlanMode`/
+`ExitPlanMode` given the scope (5 scenes, `ProjectSettings`, three features'
+layouts) and presented with the concrete pixel-math findings above before any
+edits were made, per the plan-mode workflow.
+
+**Also happening in parallel:** the "Casual Arcade Direction" mockup
+(`https://claude.ai/code/artifact/06510f2d-e5eb-4cc1-b121-6deb4c596c18`, see D32's
+neighboring context) is being updated in place to portrait artboards (9:16 and a
+taller ~9:19.5) reflecting these same layout decisions — same visual direction,
+recomposed for the vertical axis instead of horizontal.
+
+**Not done in this pass:** real `Screen.safeArea` integration (notch/home-indicator-
+aware insets) — the fixes above make things proportionally safe against a range of
+aspect ratios, but don't read the OS-reported safe area at runtime; worth a look if
+a real device shows content under a notch/gesture bar. Play Mode / on-device
+verification across multiple simulated portrait aspect ratios (Game view's custom
+resolution presets) — compiles clean and every changed value was read back through
+Unity's own API (`RectTransform`/`CanvasScaler` properties, not just re-reading the
+YAML), but nothing here has actually been seen rendering yet. Committing this to
+git — sitting in the working tree pending the developer's go-ahead, consistent with
+the "only commit when asked" rule.
+
 ### D32 — Phoenix Flame's color list is now derived from the Animator Controller, not hand-typed (2026-08-26)
 **Choice:** `PhoenixFlameConfig` gained an `AnimatorController` (`RuntimeAnimatorController`) field — the actual
 runtime source now, applied via `animator.runtimeAnimatorController = config.AnimatorController` in

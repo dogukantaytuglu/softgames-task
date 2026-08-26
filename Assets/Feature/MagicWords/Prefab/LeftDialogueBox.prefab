@@ -436,8 +436,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -800, y: 220}
-  m_SizeDelta: {x: 750, y: 260}
+  m_AnchoredPosition: {x: -670, y: 220}
+  m_SizeDelta: {x: 620, y: 260}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &4147749729898517400
 MonoBehaviour:
@@ -455,7 +455,7 @@ MonoBehaviour:
   dialogueText: {fileID: 3091214760859095079}
   avatarImage: {fileID: 8713378518686270524}
   fallbackAvatarSprite: {fileID: 544408492, guid: 85703ee0d52ea0d479ea35a4259a0b41, type: 3}
-  hiddenAnchoredX: -800
+  hiddenAnchoredX: -670
   shownAnchoredX: 0
 --- !u!1 &9102714782458677639
 GameObject:

@@ -25,7 +25,4 @@ MonoBehaviour:
   - displayName: Blue
     baseColor: {r: 0.3, g: 0.55, b: 1, a: 1}
     emissionColor: {r: 0.35, g: 0.85, b: 2.8, a: 1}
-  - displayName: Pink
-    baseColor: {r: 0.3, g: 0.55, b: 1, a: 1}
-    emissionColor: {r: 0.35, g: 0.85, b: 2.8, a: 1}
   colorTransitionDuration: 1.5
