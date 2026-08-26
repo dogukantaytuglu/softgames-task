@@ -6,6 +6,118 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D37 — New `unity-ui-ux-expert` subagent; audited all 4 scenes with real renders; built Round 1 (MainMenuScene + AppScene) of the item-4 UI/UX polish pass (2026-08-26)
+**Choice:** Created a new global subagent, `~/.claude/agents/unity-ui-ux-expert.md`, per direct request for a casual/hypercasual game UI/UX expert — briefed on concrete genre standards (color-role systems, typography pairing, thumb-reachable layout, "juice" as feedback density, FTUE discipline) and explicitly instructed to be **creative but non-disruptive** (push past the reflexive "rounded rect + shadow" default, but prefer additive ideas over restructuring an already-working screen, and label how big a swing each suggestion is) and to **prototype non-trivial ideas as a visual mockup** before implementing, handing off exact tween timing/easing to `unity-animation-expert` rather than duplicating it. See the sibling entries in the personal memory system (`reference_unity_ui_ux_expert_agent`) for the full brief.
+
+First run, same session: audited all 4 scenes not by reading scene YAML but by actually cloning each scene's roots into a preview scene, populating real runtime content (real card prefabs, a real fetched Magic Words line, the flame prefab simulated), and rendering at the true 1080×1920 reference — catching several things (a near-invisible completion-panel text contrast, a blank Restart button, the stock skybox on 2 scenes) that don't show up in serialized data alone. Produced a new artifact, **not** an update to the existing "Casual Arcade Direction" canvas (that one is a cited-by-URL direction reference per D33 and stays intact) — "Mini Arcade Second Pass" (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`), with ranked findings, before/after captures, and one distinct creative direction per screen (Main Menu: buttons that let a fragment of their own game "peek" past the rounded edge; Ace of Shadows: a felt playing-table background; Magic Words: large dimmed/highlighted speaker portraits; Phoenix Flame: give the fire a physical source — a brazier + background glow — instead of floating on a skybox).
+
+Given the go-ahead to implement, did **Round 1 only** (MainMenuScene + AppScene, explicitly staged/scoped by the developer — the other 3 scenes are separate future rounds):
+- **MainMenuScene**: stock default skybox replaced with Solid Color `#FFC27C` clear + a new full-bleed `Bg` Image (baked warm radial gradient); the `Directional Light` deleted (same reasoning as every other all-UI scene, D18/D28); the `Phoenix Flame Button` placeholder label fixed to `Phoenix Flame`; a "MINI ARCADE" title lockup added (Baloo 2 Bold @108px, rotated −2.4°, hard offset shadow layer); each button given a decorative "peeking preview" breaking past its own rounded-rect edge (fanned King/Ace playing cards on Ace of Shadows, a speech bubble with two real Twemoji sprites on Magic Words, a flame-lick sprite on Phoenix Flame), all `raycastTarget: false` so taps still land on the button; the cream button-container card removed, buttons now stretch to full container width and sit in the bottom thumb zone, Ace of Shadows called out with a "START HERE" chip.
+- **AppScene**: the FPS counter — flagged as visually louder than the actual game content on 3 of 4 screens (328×125 at 78px type) — resized to a 236×66 pill at 34px on the shared `ui_rounded_base` chrome with a small status dot.
+- New sprites (`Assets/Feature/MainMenu/Sprites/{bg_menu_warm,deco_flame_flat,deco_bubble_tail}.png`, `Assets/App/Sprites/UI/Chrome/ui_dot.png`) generated procedurally in C#, same route as D34 (the AI asset-generation tool still has no model configured on this install).
+- Verified by reopening both scenes from disk before capturing (confirms it's what's actually saved, not in-memory state) and by checking `MenuButtonSceneLoader`'s 3 scene targets, `MainMenuInitializer`, and `FpsCountUIController.fpsText` are all still correctly wired post-edit. Also confirmed the D34 prefab-instance-edits-not-persisting gotcha is now avoidable by using `PrefabUtility.RecordPrefabInstancePropertyModifications` instead of a bare field assignment — worth remembering as the fix, not just the symptom, next time that gotcha comes up.
+
+**Deliberately scoped out of this round, on direct instruction:** the flame-lick preview sprite has **zero reference to the real `PhoenixFlame` prefab/material/Animator Controller** — it's a plain static `Image`, specifically so it doesn't entangle with a future dedicated particle-effects pass on the actual fire look (the developer flagged that the mockup's flame redesign doesn't match the real particle system and a `unity-particle-expert`-style agent may be needed for that later, not yet created). The card-fan preview reuses the current Ace of Shadows card prefabs as-is with no fine-detail polish, since that art is being replaced by the developer separately. Also deferred: the title lockup's white-outline/hard-underlay upgrade (would need a per-component `TMP_Text.fontMaterial` instance — judged a real decision, not a tweak), any actual motion/animation (buttons are still flat `ColorTint`, no idle or entrance animation — `unity-animation-expert`'s job, priority item 3), and a dark-chrome variant of the FPS pill (fine on every current background, will need inversion once Phoenix Flame's own round moves it to a dark background).
+**Why:** Requested directly — item 4 on the developer's own priority list ("the project needs visual polish," a scored aesthetics criterion per `BRIEF.md` §3), explicitly asked to be tackled scene-by-scene rather than all at once, starting with Main Menu + AppScene as the entry point.
+**Not done:** Ace of Shadows, Magic Words, and Phoenix Flame's own UI/UX rounds (direction already proposed in the mockup, not yet built); committing/pushing (see D38 if a separate entry covers that, or check git log); the Phoenix Flame particle-effects pass.
+
+### D36 — Second full `unity-interviewer` audit: real brief-violating gaps found, not yet acted on (2026-08-26)
+**Choice:** Re-ran the `unity-interviewer` subagent for a fresh, full-project pass (first run was 2026-08-23, see D24-D26) — treated as a new engagement since Magic Words and Phoenix Flame didn't exist at the last audit. It read `BRIEF.md`, the full `current-context.md`/`decisions.md`, the actual deployed WebGL artifact (not just the project source), and verified current market claims (build-size budgets, Unity LTS timelines) via web search rather than asserting from training data. Full findings kept in the subagent's own report, not duplicated verbatim here — summary of what it rated **brief-violating** (Tier 1):
+1. The hosted build's `index.html` is the **unmodified stock Unity WebGL template** — hardcoded 960×600 desktop canvas, "Unity Web Player" tab title, "DefaultCompany" in the page source. This is the same gap the *first* audit flagged as its own Tier 0 finding #5 (recorded in D25 as "not done as part of this decision") — still unfixed three days and two full UI sessions later, even though D33/D34's work was substantially about symptoms of this same root cause (desktop aspect ratio).
+2. `MainMenuScene`'s Phoenix Flame button label reads `Phoenix Flame Button` (GameObject name pasted into the label field) — independently caught by `unity-ui-ux-expert` too, see D37.
+3. `MagicWordsResponseParser.Parse` calls `JsonUtility.FromJson` directly with no try/catch; it throws (doesn't return null) on malformed JSON, so an HTTP-200-but-not-real-JSON response (a captive portal, a proxy error page) kills the fetch coroutine silently and leaves the screen blank forever — the brief explicitly names a malformed-payload path and request timeouts (also absent) as requirements.
+4. Real deployed transfer size is **~20MB**, not the "~13MB" `current-context.md` claimed (now corrected, see D37's neighboring edits/this doc's own maintenance) — over the ~10-15MB instant-play budget the brief calls its highest-leverage item. Root cause identified: `LargeFlame02.tif` (6.9MB, no WebGL texture-size override at all) plus ~7MB of font atlases including Rubik, which per D29 is loaded but wired onto zero TMP components.
+5. `README.md` still stated Magic Words and Phoenix Flame were "Not built yet" — stale since D28/D31 built them. Fixed as part of this doc pass (see below).
+6. `ai-context/BRIEF.md` is committed and `README.md` points reviewers at `ai-context/` directly; `BRIEF.md` contains the developer's stated salary target/ceiling — flagged as needing an explicit decision before submission, not another deferral (D27 already left this open once).
+
+Also flagged, real-but-debatable (Tier 2): post-processing disabled on every camera means Phoenix Flame's HDR emission colors (up to 2.8 intensity, see D31/D32) clamp toward white with no Bloom to render the intended glow — plausibly the concrete mechanism behind "the project needs visual polish"; WebGL ships the `PC` URP quality tier (depth texture + SSAO both on) with no per-platform override, direct relative of D35's fix having landed one layer too shallow; `CanvasScaler`'s portrait-tuned `matchWidthOrHeight: 1` is the worst-case match mode for the landscape desktop letterbox from finding #1; Magic Words' avatar loader has no cache/timeout and a stale-callback race if the fast-forward button is spammed past a still-loading avatar; `PhoenixFlameConfig.ColorOptions`' entire D32 apparatus is read only for `.Count` at runtime (colors/duration are actually baked into the Animator) — real, but D32's own stated reasoning (preventing two sources of the same data silently desyncing) still holds even if the mechanism it protects turned out to be write-only.
+**Why:** Requested directly, to get an honest fresh read on where the project stands after Magic Words/Phoenix Flame/D33-D35, ahead of the final UI/UX polish push.
+**Not done:** none of Tier 1 or Tier 2 has been fixed yet, except the menu-button label (fixed as part of D37, which happened to independently catch the same thing). The interview-question half of the audit was run and answers weren't yet relayed back. This is the immediate next-priority list, effectively superseding parts of the "developer's own priority list" ordering — see current-context.md.
+
+### D35 — Phoenix Flame invisible on WebGL: Soft Particles disabled on LargeFlame02.mat (2026-08-26)
+**Choice:** Disabled Soft Particles on `Assets/Feature/PhoenixFlame/Materials/LargeFlame02.mat`
+(`_SoftParticlesEnabled: 1 → 0`, `_SOFTPARTICLES_ON` moved from `m_ValidKeywords` to
+`m_InvalidKeywords`). Confirmed fixed by rebuilding and redeploying the WebGL build — the flame
+is now visible.
+**Why:** The developer reported the flame wasn't visible at all in the hosted WebGL build (Editor
+Play Mode was fine). The browser console showed
+`Shader Hidden/CoreSRP/CoreCopy shader is not supported on this GPU (none of subshaders/fallbacks
+are suitable)` — a URP-internal camera color/depth blit shader, not anything specific to this
+project's own shaders. `LargeFlame02.mat` has Soft Particles enabled, which depends on sampling
+the camera's depth texture to fade the particle near intersecting geometry — if the copy pass that
+produces that depth texture fails on a given GPU/browser's WebGL2 context, the fade calculation
+gets invalid input and the shader's failure mode is "render fully transparent," which matches
+exactly what was reported (everything else in the scene, which doesn't depend on that pass,
+rendered fine). Disabling Soft Particles removes the dependency entirely — a real fix for a real
+compatibility gap, not a workaround for a bug in this project's own code, and a reasonable trade
+since nothing in the Phoenix Flame scene actually needs the flame to soft-fade against intersecting
+geometry in the first place.
+**Not done:** the root GPU/WebGL2 limitation itself isn't something fixable from the project side
+(it's the tester's GPU/browser rejecting a Unity/URP-internal shader) — worth keeping in mind if
+other depth-texture-dependent features (bloom, distortion, other post-processing) are added later,
+since the same class of failure could resurface elsewhere. The `Hidden/Universal/HDRDebugView`
+error in the same console log is unrelated (URP's Rendering Debugger HDR view shader) and can be
+ignored.
+
+### D34 — Shared UI chrome (rounded rect + shadow) applied project-wide; Magic Words dialogue boxes rebuilt to scale with canvas width (2026-08-26)
+**Choice:** Two changes shipped together since the second was discovered while reviewing the
+first:
+- **New shared UI chrome**: `Assets/App/Sprites/UI/Chrome/ui_rounded_base.png` (a tintable,
+  9-sliced rounded-rect shape) and `ui_soft_shadow.png`, both generated procedurally in C# via
+  Unity MCP scripting (a per-pixel rounded-rect signed-distance function, a separable box blur for
+  the shadow) rather than through the AI asset-generation tool — that tool has no model configured
+  for this Unity install (`Unity_AssetGeneration_GetModels` returns empty, and `GenerateAsset`
+  errors "A model must be selected"). Applied via `Image.Type.Sliced` (so it doesn't distort at
+  different sizes) across every button and popup panel project-wide — Main Menu's 3 buttons + the
+  panel behind them, Ace of Shadows' Restart button + finished-message panel, Magic Words'
+  finished-message panel and dialogue box background, Phoenix Flame's 3 color buttons — tinted
+  per-feature to match the existing blue/green/orange accents (the exact same RGB values as
+  `PhoenixFlameConfig`'s own Orange/Green/Blue options, a deliberate callback for consistency).
+  Shadows use Unity's built-in `UnityEngine.UI.Shadow` component (draws from the graphic's own
+  mesh, offset and tinted) rather than a second sprite/GameObject — simpler, and it automatically
+  matches whatever shape the graphic actually is instead of needing separate positioning/sizing
+  logic. **Home/back button icon art was deliberately left untouched** (only a shadow added) since
+  its sprite bakes the house icon directly into the art with no separate icon layer — swapping it
+  for the plain chrome would have deleted the icon with no replacement available.
+  **A real gotcha hit during this pass**: setting `Image.sprite`/`.type`/`.color` directly via
+  script on the 3 Main Menu button `PrefabInstance`s didn't persist through `EditorSceneManager.
+  SaveScene` — structural changes (adding a component) saved fine, but plain field edits silently
+  didn't stick, and reopening the scene reverted them to the prefab's own default. Diagnosed by
+  reading the actual scene YAML back (the modification list was simply missing those entries) and
+  fixed by writing the `PrefabInstance` modification entries directly into the scene file instead
+  of relying on the live-script-edit + save path. Worth remembering: prefab-instance property
+  overrides set via a bare C# assignment aren't guaranteed to register the way structural changes
+  are — verify by re-reading the saved file, not just by checking the in-memory value right after
+  setting it.
+- **Magic Words dialogue boxes rebuilt to scale with the canvas's actual width**: this was
+  supposed to already be fixed by D33 (which shrunk the box to a smaller *fixed* pixel width,
+  620px), but the developer found it now read as too small on a wide/desktop-shaped canvas — a
+  fixed pixel width can't simultaneously avoid overflowing a narrow portrait canvas and avoid
+  looking lost on a wide one, since canvas width varies by orders of magnitude between the two.
+  Real fix: `LeftDialogueBox.prefab`'s root `RectTransform` now uses a genuine stretch anchor
+  (`anchorMin.x/anchorMax.x: 0.02/0.57`, `sizeDelta.x: 0`) instead of a point anchor with a fixed
+  `sizeDelta.x` — the box is now always ~55% of whatever the canvas width actually is, mirrored for
+  `RightDialogueBox` (`0.43/0.98`) via its existing scale-flip convention. `DialogueBoxView`'s
+  `hiddenAnchoredX`/`shownAnchoredX` fields (fixed pixel constants) are gone — `shownAnchoredX` was
+  always `0` regardless of box width so it's now just hardcoded in `SlideIn`, and the off-screen
+  hidden position is computed at runtime from the box's actual current `RectTransform.rect.width`
+  (`hideDirectionSign * (width + offscreenMargin)`, `hideDirectionSign` being `-1`/`+1` per side,
+  the one thing that still needs a per-instance value since it can't be derived). The
+  `RightDialogueBox` scene-level `PrefabInstance` override for the old `hiddenAnchoredX` field was
+  replaced with one for `hideDirectionSign` instead. Verified directly in Unity: at the Editor's
+  then-current ~1920×1080-ish Game view resolution, the box now computes to 1877px wide (both
+  sides symmetric) instead of the old fixed 620px.
+**Why:** Requested directly, in detail, continuing the same session's UI-polish work. The dialogue
+box fix specifically corrects a real architectural gap D33 didn't go far enough to fix — D33 picked
+a smaller *constant*, which is safe against a narrow-but-not-too-narrow range but was never going
+to work simultaneously against both the narrowest portrait phone and a wide desktop browser window
+(WebGL's desktop rendering isn't orientation-locked the way native mobile is, so a wide/landscape-
+shaped browser window is a real, expected case this app has to handle even though the app is
+"portrait" by policy).
+**Not done:** the dialogue box is still glued flush to the literal screen edge when shown (no
+margin baked in beyond the small `0.02` anchor inset) and isn't `Screen.safeArea`-aware — same
+caveat D33 already flagged, still open.
+
 ### D33 — Reversed D25: the app is portrait-first now, not landscape-locked (2026-08-26)
 **Choice:** `ProjectSettings.asset` orientation flags flipped —
 `allowedAutorotateToPortrait`/`PortraitUpsideDown` → `1`,

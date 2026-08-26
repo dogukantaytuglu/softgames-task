@@ -7,10 +7,16 @@
 Last updated: 2026-08-26 (the app was flipped from landscape-locked to
 portrait-first, D33, reversing D25 — see "Immediate next steps" below; this also
 fixed the fixed-pixel-anchor bugs behind the named "mobile support is broken" risk,
-in Magic Words' dialogue boxes and the Main Menu button container. Also this
-session: Phoenix Flame's color list moved to being derived from its Animator
-Controller instead of hand-typed (D32), a project-wide comment cleanup, and a
-"Casual Arcade Direction" design mockup — now in portrait to match D33 — at
+in Magic Words' dialogue boxes and the Main Menu button container, followed by a
+shared UI chrome pass (rounded rect + shadow, D34) and a real rebuild of the
+dialogue box to scale with canvas width instead of a fixed size (also D34,
+superseding D33's fixed-620px re-tune). Also this session: Phoenix Flame's color
+list moved to being derived from its Animator Controller instead of hand-typed
+(D32); **Phoenix Flame's flame was invisible on WebGL, root-caused and fixed
+(D35)** — Soft Particles on `LargeFlame02.mat` depended on a URP-internal
+depth-copy shader that failed on the test GPU/browser, confirmed fixed after a
+WebGL rebuild+redeploy; a project-wide comment cleanup; and a "Casual Arcade
+Direction" design mockup — now in portrait to match D33 — at
 https://claude.ai/code/artifact/06510f2d-e5eb-4cc1-b121-6deb4c596c18). Ace of
 Shadows is done and everything through D27 is
 committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
@@ -39,6 +45,23 @@ Mode-verified.** Config-driven flame prefab + instanced material, a 3-color
 Animator Controller (Orange/Green/Blue, crossfading over 1.5s), 3 UI buttons.
 Its color list is now derived from the Animator Controller instead of hand-typed
 (D32, 2026-08-26) — see "Phoenix Flame architecture" below and D31/D32.
+
+**Also this session (2026-08-26, continuing after D35):** two new global subagents
+created, `unity-animation-expert` (motion/tween feel, not yet run) and
+`unity-ui-ux-expert` (casual/hypercasual UI/UX direction — see Tooling below for
+both). A fresh full-project `unity-interviewer` audit found real brief-violating
+gaps beyond what D24-D35 already covers — the stock WebGL desktop template, a
+placeholder menu-button label, an unhandled malformed-JSON crash path in Magic
+Words, an undercounted build-size claim in this doc, a stale "not built yet"
+README, and the `ai-context/BRIEF.md` privacy question — see D36; **none of it is
+fixed yet** except where it happened to overlap with the UI/UX pass below.
+Separately, `unity-ui-ux-expert` audited all 4 scenes with real scene renders,
+produced the "Mini Arcade Second Pass" mockup, and built **Round 1 of the item-4
+UI/UX polish pass**: MainMenuScene (skybox removed, label fixed, "MINI ARCADE"
+title, peeking-preview decorations per button, restacked into the thumb zone) and
+AppScene (FPS counter resized/restyled) — see D37 and "Main menu"/"FPS counter"
+below. Ace of Shadows, Magic Words, and Phoenix Flame each still need their own
+round.
 
 ## What we're building
 
@@ -113,6 +136,37 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   architecture review of the SceneFlow feature, found a build-breaking bug (AppScene
   missing from Build Settings) plus several real async/lifecycle bugs; findings
   were acted on, see D13.
+- **`unity-interviewer` subagent** (global, `~/.claude/agents/unity-interviewer.md`)
+  — job-application-style holistic project audit (build/asset/performance/
+  architecture/tests/git hygiene) against current mobile-gaming industry
+  standards, plus a mock-interview pass targeting the weak points it finds. First
+  run 2026-08-23 (see D24-D26). **Second full run 2026-08-26** — found real
+  brief-violating gaps the first pass predates (stock WebGL desktop template,
+  a placeholder menu-button label, an unhandled malformed-JSON crash path in
+  Magic Words, build size undercounted in this very doc, a stale README still
+  claiming Magic Words/Phoenix Flame aren't built, `ai-context/BRIEF.md`'s
+  compensation details being committed/pointed-to) plus real-but-debatable
+  findings (post-processing off so Phoenix Flame's HDR colors clamp toward
+  white, WebGL shipping the PC quality tier, CanvasScaler tuned for portrait
+  fighting the desktop letterbox) — see D36. Not yet acted on except where
+  D37's UI/UX pass happened to overlap (the menu-button label).
+- **`unity-animation-expert` subagent** (global,
+  `~/.claude/agents/unity-animation-expert.md`, created 2026-08-25) — DOTween/
+  Animator motion-*feel* review and tuning for casual mobile game feel (easing,
+  duration, staggering, anticipation/overshoot, idle/ambient motion). Matches
+  developer priority-list item 3 (tween polishing). **Not yet run.**
+- **`unity-ui-ux-expert` subagent** (global,
+  `~/.claude/agents/unity-ui-ux-expert.md`, created 2026-08-26) — casual/
+  hypercasual UI/UX direction: layout, color, typography, iconography, "juice"
+  allocation, judged against current genre standards and checked with real
+  scene renders rather than guessed from YAML; explicitly briefed to be
+  creative but non-disruptive, and to prototype non-trivial ideas as a visual
+  mockup (via the `design`/Artifact tooling) before implementing. Matches
+  developer priority-list item 4 ("the project needs visual polish"). **First run
+  2026-08-26** — audited all 4 scenes with real captures, produced the "Mini
+  Arcade Second Pass" mockup
+  (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`), then
+  implemented Round 1 (MainMenuScene + AppScene) directly — see D37.
 - **IDE: Rider, not VS Code.** Rider is free for non-commercial use (JetBrains
   changed this in 2024) — activate via the "Free non-commercial license" option in
   Rider's license dialog, no payment needed for this take-home. VS Code + C# Dev
@@ -481,16 +535,31 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   hand-built symmetric box into a prefab instance of `LeftDialogueBox.prefab`
   (`Assets/Feature/MagicWords/Prefab/`), mirrored via `m_LocalScale.x: -1` plus
   right-edge anchor/pivot overrides.
-  **Box width/offscreen-clearance re-tuned for portrait (D33, 2026-08-26):** this
-  literal-corner-anchor setup was fine in wide landscape but left almost no
-  margin on a narrow portrait canvas — `sizeDelta.x` shrunk `750 → 620`,
-  `hiddenAnchoredX` rescaled `-800 → -670` (mirrored `800 → 670` on
-  `RightDialogueBox`, whose sizing is a separate `PrefabInstance` override in
-  `MagicWordsScene.unity`, not inherited from the prefab — both had to be edited).
-  `shownAnchoredX` stayed `0` (a zero offset needs no mirroring). Still glued
-  flush to the literal screen edge when shown, not OS-safe-area-aware
-  (`Screen.safeArea` isn't read anywhere in this project) — a real device with a
-  notch/gesture-bar inset could still clip this; flagged, not fixed.
+  **Box width now genuinely scales with the canvas (D34, 2026-08-26), superseding
+  D33's fixed-620px re-tune.** D33's smaller fixed width was still a fixed
+  *constant* — safe against narrow portrait but read as too small against a
+  wide/desktop-shaped canvas (WebGL on desktop isn't orientation-locked the way
+  native mobile is, so a wide browser window is a real case). The box's root
+  `RectTransform` is now a real stretch anchor (`anchorMin.x/anchorMax.x:
+  0.02/0.57`, `sizeDelta.x: 0`) instead of a point anchor with a fixed pixel
+  width — always ~55% of whatever the canvas width actually is, mirrored for
+  `RightDialogueBox` (`0.43/0.98`). The old fixed `hiddenAnchoredX`/
+  `shownAnchoredX` fields on `DialogueBoxView` are gone: `shownAnchoredX` was
+  always `0` regardless of width so it's now just hardcoded in `SlideIn`, and the
+  off-screen hidden position is computed at runtime from the box's actual
+  current `RectTransform.rect.width` (`hideDirectionSign * (width +
+  offscreenMargin)`) rather than a stale constant — `hideDirectionSign` (`-1`/
+  `+1` per side) is the one thing still set per-instance, since it can't be
+  derived. Verified in Unity: at a ~1920×1080-ish Game view resolution the box
+  now computes to 1877px wide (both sides symmetric), not the old fixed 620px.
+  **Background now uses the shared UI chrome (D34)** — `Image.Type.Sliced` with
+  `ui_rounded_base` (see "Other packages/deps"/UI chrome below) instead of a
+  non-sliced sprite, so it holds its rounded corners correctly at this new
+  variable width instead of stretching/distorting. Still glued flush to the
+  literal screen edge when shown (only a small `0.02` anchor inset), not
+  OS-safe-area-aware (`Screen.safeArea` isn't read anywhere in this project) —
+  a real device with a notch/gesture-bar inset could still clip this; flagged,
+  not fixed.
 - **Emoji tokens render as real emoji via a TMP Sprite Asset (D30).** The
   endpoint embeds named tokens like `{satisfied}`, not real Unicode emoji
   codepoints, so `DialogueTextFormatter.FormatTokens` maps a fixed table of the
@@ -591,15 +660,31 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   sprites already used for the main menu's own colored buttons
   (`buttons_38`/`buttons_12`/`buttons_29` from `Assets/App/Sprites/UI/buttons.png`)
   rather than sourcing new art — same-color coincidence made this free.
-- **Not done in this pass**: Play Mode verification (compiles clean, 6/6 new
-  EditMode tests pass, every built asset/scene reference was read back and checked
-  field-by-field, but nothing here has been clicked through yet); the button
-  layout hasn't been eyeballed against the real canvas (now 1080×1920 portrait,
-  D33 — checked numerically safe, not yet seen rendering); ~145MB of unused
-  `Assets/UnityTechnologies/ParticlePack/` effect categories (Goop/Magic/Misc/
-  Smoke/Water/Weapon/Legacy Particles) beyond `Fire & Explosion Effects` are still
-  sitting in the repo, same "decide the build-size levers deliberately" treatment
-  as D26, not yet acted on.
+- **Was invisible on WebGL — fixed (D35, 2026-08-26).** `LargeFlame02.mat` had
+  Soft Particles enabled, which needs the camera depth texture; on the
+  developer's test GPU/browser, URP's internal depth/color copy shader
+  (`Hidden/CoreSRP/CoreCopy`) failed to compile ("not supported on this GPU"),
+  which made the soft-particle fade calculation invalid and the flame render
+  fully transparent — everything else in the scene, not depending on that pass,
+  rendered fine. Fixed by disabling Soft Particles on the material
+  (`_SoftParticlesEnabled: 0`, `_SOFTPARTICLES_ON` removed) — confirmed working
+  after rebuilding and redeploying the WebGL build. Worth remembering if any
+  future depth-texture-dependent effect (bloom, distortion) gets added — same
+  class of GPU-compatibility failure could resurface there too.
+- **`Assets/UnityTechnologies/ParticlePack/` no longer exists in the repo** —
+  the previously-flagged ~145MB of unused effect categories is resolved; only
+  the actually-used bits (`LargeFlame02.mat` + its source textures) now live
+  directly under `Assets/Feature/PhoenixFlame/Materials/` and `.../Textures/`.
+  This doc previously claimed the raw pack was still sitting there — corrected
+  2026-08-26, verified by checking the filesystem directly rather than trusting
+  the old note.
+- **Still not done**: a true Play Mode click-through of the color buttons in the
+  Editor (compiles clean, 6/6 EditMode tests pass, every built asset/scene
+  reference was read back and checked field-by-field, and the flame is now
+  confirmed actually rendering in a real WebGL build — but nobody has clicked
+  the 3 color buttons and watched them crossfade); the button layout hasn't been
+  eyeballed against the real canvas (1080×1920 portrait, D33 — checked
+  numerically safe, not yet seen rendering).
 
 ### Scene-flow architecture
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
@@ -711,18 +796,52 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   stretch anchor (D33)** — `anchorMin.x/anchorMax.x: 0.1/0.9`, `sizeDelta.x: 0`
   (was a fixed `994.5px`, which was wider than the worst-case portrait canvas
   width and would have clipped on real tall phones).
+  **Visually redesigned, Round 1 of the item-4 UI/UX pass (D37, 2026-08-26):**
+  the stock default skybox is gone (camera clears Solid Color `#FFC27C` behind a
+  new full-bleed `Bg` Image with a baked warm radial gradient), the
+  `Phoenix Flame Button` placeholder label is fixed to `Phoenix Flame`, a
+  "MINI ARCADE" title lockup (Baloo 2 Bold, rotated −2.4°, hard offset shadow
+  layer) sits above the menu, and each button now has a decorative "peeking
+  preview" breaking past its rounded-rect edge — fanned playing cards (Ace of
+  Shadows), a speech bubble with two real Twemoji sprites (Magic Words), a
+  flame-lick sprite (Phoenix Flame, a plain static `Image` with **zero
+  reference to the real `PhoenixFlame` prefab/material/Animator Controller**,
+  deliberately, since that flame's actual look is still pending a dedicated
+  particle-effects pass). All preview graphics are `raycastTarget: false` so
+  taps still land on the button underneath. The cream button-container card is
+  gone; buttons now stretch to full container width, sit in the bottom thumb
+  zone, and Ace of Shadows carries a "START HERE" chip. New sprites generated
+  procedurally in C# (`Assets/Feature/MainMenu/Sprites/{bg_menu_warm,
+  deco_flame_flat, deco_bubble_tail}.png`), same no-AI-model-configured
+  workaround as D34. **Deliberately deferred**: the title lockup's white-
+  outline/hard-underlay upgrade (would need a per-component `fontMaterial`
+  instance — a real decision, not a tweak), and any actual motion (buttons
+  are still flat `ColorTint`, no idle/entrance animation — that's
+  `unity-animation-expert`'s pass, item 3).
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
   changes). **Lives once, centrally, in `AppScene.unity`'s always-loaded canvas** (moved
   out of `AceOfShadowsScene.unity`'s `OverlayUI` this session) — visible top-left across
-  every scene automatically, no per-scene duplication needed.
+  every scene automatically, no per-scene duplication needed. **Resized/restyled as
+  part of D37** (2026-08-26): was 328×125 at 78px type (flagged as visually louder
+  than the actual game on 3 of 4 screens) — now a 236×66 pill at 34px on the shared
+  `ui_rounded_base` chrome with a small green status dot. White-on-any-ground, which
+  reads fine against every current background; will want a dark-chrome variant once
+  Phoenix Flame's scene moves to its own dark background (not done yet).
 - **WebGL build + hosting:** build settings are **Brotli compression +
   Decompression Fallback enabled** (Player Settings → Publishing Settings) — this
   combination is required because the host (GitHub Pages) can't send a
   `Content-Encoding: br` header, and Decompression Fallback embeds a client-side
-  JS decompressor so it works anyway while keeping the ~13MB transfer size (vs
-  ~60MB with compression disabled). Verified working live.
+  JS decompressor so it works anyway while keeping compressed transfer well under
+  the uncompressed size. **Corrected 2026-08-26 (D36)**: actual current deployed
+  transfer measured directly off the hosted `.unityweb` files is **~20MB**, not
+  the previously-claimed ~13MB — this doc's own number was stale/wrong, caught by
+  a fresh `unity-interviewer` audit measuring the real files instead of trusting
+  the earlier claim. Verified working live (the build loads and runs), but the
+  size itself is now over the ~10-15MB instant-play budget the brief flags as its
+  highest-leverage item — see D36 for the root-cause breakdown (an uncapped
+  6.9MB flame texture, ~7MB of font atlases including an unused Rubik asset).
   - Hosted at **https://dogukantaytuglu.github.io/softgames-task-build/**, a
     **separate repo** `github.com/dogukantaytuglu/softgames-task-build` (public,
     required for free GitHub Pages), sibling folder at
@@ -739,13 +858,32 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Definition-of-Done list.
 
 ### Available asset packs
+- **`Assets/App/Sprites/UI/Chrome/` — shared UI chrome (D34, 2026-08-26).**
+  `ui_rounded_base.png` (tintable, 9-sliced rounded rect) and `ui_soft_shadow.png`
+  (kept for reference, but shadows actually use the built-in `UnityEngine.UI.
+  Shadow` component instead, not this sprite — see D34), both generated
+  procedurally via Unity MCP scripting (the AI asset-generation tool has no model
+  configured for this Unity install and isn't usable). Applied via
+  `Image.Type.Sliced`, tinted per-feature (same RGB values as
+  `PhoenixFlameConfig`'s Orange/Green/Blue), across every button and popup panel
+  project-wide — **this superseded `popups_17`/`popups_4` below as the dialogue
+  box background and finished-message panels' sprite**, which are no longer
+  referenced by those specific elements (still used elsewhere/kept in the atlas).
+  Home/back button icon art was deliberately left on the old `buttons.png` sprite
+  (icon baked into the art, no replacement available) — only a shadow was added.
+- **`Assets/Feature/MainMenu/Sprites/` — Main Menu Round 1 decoration (D37,
+  2026-08-26).** `bg_menu_warm.png` (baked warm radial gradient, replaces the
+  scene's stock skybox), `deco_flame_flat.png` (the Phoenix Flame button's
+  peeking-preview flame-lick — a plain decorative sprite, not connected to the
+  real particle system/material), `deco_bubble_tail.png` (the Magic Words
+  button's speech-bubble tail). Plus `Assets/App/Sprites/UI/Chrome/ui_dot.png`
+  (the resized FPS pill's status dot). All generated procedurally in C#, same
+  no-AI-model-configured workaround as D34's chrome.
 - **`Assets/App/Sprites`** (moved from `Assets/Art/Sprites`, GUIDs preserved) —
-  clean, no watermark, in active use (main menu buttons, home button icon,
-  Magic Words' dialogue box/avatar-frame chrome). `buttons.png`, `popups.png`
-  (`popups_17` = dialogue box background, `popups_4` = the "conversation
-  finished" panel), `additional controls.png` (`additional controls_13`/`_12` =
-  avatar frame / fallback avatar sprite). `icons.png` was removed in D24 (dead
-  weight, zero references at the time).
+  clean, no watermark, in active use (main menu buttons' icon-only home button,
+  Magic Words' avatar-frame chrome). `buttons.png`, `additional controls.png`
+  (`additional controls_13`/`_12` = avatar frame / fallback avatar sprite).
+  `icons.png` was removed in D24 (dead weight, zero references at the time).
 - **`Assets/Feature/AceOfShadows/Prefabs/PlayingCards` + `.../Textures`** — a real
   playing-card asset pack (per-rank/suit prefabs across multiple decks, 2 currently
   kept in `AceOfShadowsConfig.CardVisuals`), packed into
@@ -803,7 +941,11 @@ partly superseded/subsumed by it:
    mechanics working (config-driven flame, Animator-driven color transitions, 3
    buttons) but it was explicitly scoped as a first pass, not a polished demo. Needs
    a real pass on the actual fire look/scale/placement, not just "does clicking a
-   button change the color."
+   button change the color." **One real blocker is now cleared (D35, 2026-08-26):**
+   the flame was actually invisible in the hosted WebGL build (Soft Particles
+   depending on a URP depth-copy shader that failed on the test GPU) — fixed and
+   confirmed working after a rebuild/redeploy, so look/scale/placement polish can
+   now proceed against what players will actually see.
 2. **Mobile support was the single biggest named risk — partially addressed by
    D33 (2026-08-26), still needs real device/Play Mode verification.** The
    specific named failure (Magic Words' dialogue boxes not scaling with screen
@@ -823,7 +965,18 @@ partly superseded/subsumed by it:
 4. **Overall UI/color polish** — developer's own words: "the project looks
    horrible." This is a real aesthetics gap, not false modesty — the brief grades
    aesthetics explicitly (`BRIEF.md` §3), so this isn't optional polish, it's a
-   scored criterion currently unmet.
+   scored criterion currently unmet. **In progress, going scene-by-scene (D37,
+   2026-08-26).** Round 1 (MainMenuScene + AppScene) is built and saved — see
+   "Main menu"/"FPS counter" above. Ace of Shadows, Magic Words, and Phoenix
+   Flame each still need their own round; the `unity-ui-ux-expert` subagent's
+   "Mini Arcade Second Pass" mockup
+   (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`) has a
+   creative direction already proposed for all three (a felt-table playing
+   surface for Ace of Shadows, large speaker portraits for Magic Words, a
+   brazier + background glow for Phoenix Flame) — not yet built. Phoenix
+   Flame's actual fire look is explicitly held back for a separate
+   particle-effects pass (possibly its own specialist subagent, not yet
+   created) rather than being redesigned as part of this UI/UX pass.
 5. **Code polishing** — a general cleanup pass, not tied to one specific finding yet.
 
 ### Older next-steps list (partly superseded by the above — kept for the detail)
@@ -877,9 +1030,10 @@ partly superseded/subsumed by it:
 4. Verify responsive layout + touch input on a real phone — now also needs to cover
    the additive AppScene→content scene transition specifically (untested on-device).
 5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
-   not started; the Brotli+Fallback numbers from the Ace of Shadows deploy work
-   are a natural starting point (~13MB vs ~60MB uncompressed, already measured
-   in this session's conversation history, just not written up anywhere yet).
+   not started; still a real gap per D36's fresh interviewer audit, which also
+   corrected the actual current number to ~20MB (not the ~13MB this doc used to
+   claim) and named the real driver (an uncapped 6.9MB flame texture) — a better
+   starting point now than the original Brotli+Fallback numbers alone.
 6. README covering architecture/decisions/trade-offs — not started.
 
 ## Conventions (binding for all three tasks, from the original brief)
