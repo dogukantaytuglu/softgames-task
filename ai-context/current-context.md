@@ -4,64 +4,42 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-26 (the app was flipped from landscape-locked to
-portrait-first, D33, reversing D25 — see "Immediate next steps" below; this also
-fixed the fixed-pixel-anchor bugs behind the named "mobile support is broken" risk,
-in Magic Words' dialogue boxes and the Main Menu button container, followed by a
-shared UI chrome pass (rounded rect + shadow, D34) and a real rebuild of the
-dialogue box to scale with canvas width instead of a fixed size (also D34,
-superseding D33's fixed-620px re-tune). Also this session: Phoenix Flame's color
-list moved to being derived from its Animator Controller instead of hand-typed
-(D32); **Phoenix Flame's flame was invisible on WebGL, root-caused and fixed
-(D35)** — Soft Particles on `LargeFlame02.mat` depended on a URP-internal
-depth-copy shader that failed on the test GPU/browser, confirmed fixed after a
-WebGL rebuild+redeploy; a project-wide comment cleanup; and a "Casual Arcade
-Direction" design mockup — now in portrait to match D33 — at
-https://claude.ai/code/artifact/06510f2d-e5eb-4cc1-b121-6deb4c596c18). Ace of
-Shadows is done and everything through D27 is
-committed/pushed: the world-space→UI conversion (D21), exit-cascade animation
-(D22), Restart button (D23), a `unity-interviewer` audit (first run, see
-Tooling) and its mechanical fixes (D24), the original landscape-lock decision
-(D25, since reversed by D33), build-size lever outcomes (D26 — packages/modules
-trimmed, crunch tried and declined, stripping/exceptions declined outright), and a
-real README (D27).
-**Nothing past D21 has actually been Play Mode-verified by the developer yet**
-— still an open item, see Immediate next steps. **Magic Words: built, Play
-Mode-verified, and committed/pushed** — dialogue sequencer/boxes/reveal/
-fast-forward (D28, commit `798b720`), Baloo 2 Bold + Rubik font pairing (D29,
-commit `6a07367`), and real emoji rendering via a Twemoji-backed TMP Sprite
-Asset (D30, commit `7a7fbaf`). The developer then polished the scene directly
-(commit `15f2030`, not built by Claude): `LeftDialogueBox` became a proper
-prefab, `RightDialogueBox` is now a mirrored instance of it (`m_LocalScale.x:
--1` plus right-edge anchor/pivot overrides) instead of a separately hand-built
-symmetric box, the box-tween ease was retuned from `OutBack` (27) to ease
-value `18`, `shownAnchoredX` moved from `40`/`-40` to `0`/`0` (boxes now slide
-fully to center), and the name text got auto-sizing enabled. Docs below
-reflect the pre-polish values in a few spots — see "Magic Words architecture"
-for what's confirmed current. Also still open: Rubik isn't wired onto any TMP
-component yet (D29), and Magic Words hasn't been verified in a WebGL build
-(CORS). **Phoenix Flame: first pass built (D31, 2026-08-25), not yet Play
-Mode-verified.** Config-driven flame prefab + instanced material, a 3-color
-Animator Controller (Orange/Green/Blue, crossfading over 1.5s), 3 UI buttons.
-Its color list is now derived from the Animator Controller instead of hand-typed
-(D32, 2026-08-26) — see "Phoenix Flame architecture" below and D31/D32.
+Last updated: 2026-08-27. **Ace of Shadows has had its UI/UX Round 2 and the card
+art pipeline was rebuilt — everything below through D39 is committed and pushed**
+(`4587f45`, `7c3261b`).
 
-**Also this session (2026-08-26, continuing after D35):** two new global subagents
-created, `unity-animation-expert` (motion/tween feel, not yet run) and
-`unity-ui-ux-expert` (casual/hypercasual UI/UX direction — see Tooling below for
-both). A fresh full-project `unity-interviewer` audit found real brief-violating
-gaps beyond what D24-D35 already covers — the stock WebGL desktop template, a
-placeholder menu-button label, an unhandled malformed-JSON crash path in Magic
-Words, an undercounted build-size claim in this doc, a stale "not built yet"
-README, and the `ai-context/BRIEF.md` privacy question — see D36; **none of it is
-fixed yet** except where it happened to overlap with the UI/UX pass below.
-Separately, `unity-ui-ux-expert` audited all 4 scenes with real scene renders,
-produced the "Mini Arcade Second Pass" mockup, and built **Round 1 of the item-4
-UI/UX polish pass**: MainMenuScene (skybox removed, label fixed, "MINI ARCADE"
-title, peeking-preview decorations per button, restacked into the thumb zone) and
-AppScene (FPS counter resized/restyled) — see D37 and "Main menu"/"FPS counter"
-below. Ace of Shadows, Magic Words, and Phoenix Flame each still need their own
-round.
+This session, in order: the developer reimported the playing-card art, which broke
+Ace of Shadows outright (`AceOfShadowsConfig`'s 107 `cardVisuals` pointed at deleted
+prefabs) and left two broken prefab instances in the Main Menu's card fan. All 106
+prefabs in `Deck01`/`Deck02` were rebuilt into the UI structure `CardView` requires
+and resized to 300×375; the Main Menu fan was repointed at `Deck01_Heart_K` /
+`Deck01_Spade_A`; the developer reassigned `cardVisuals` by hand. Then
+`unity-ui-ux-expert` built **Round 2 on Ace of Shadows** — felt table, dashed card
+slots, SOURCE/TARGET counter pills, a rewritten completion moment, a screen title,
+and a countdown ring moved off the target slot. The shared `HomeButton.prefab` was
+retired off the glossy `buttons_41` atlas art onto the shared cream chrome with a
+tintable ink house glyph at 150×150 (this propagates to **all three** feature
+scenes, and Magic Words / Phoenix Flame have not been looked at since). The stack
+fan was retuned and **`perCardOffset` / `maxPileRise` now live in
+`AceOfShadowsConfig`** rather than as private constants. Finally the developer
+deleted the unused `Deck03`–`Deck06` decks, the `DeckSets` prefabs and the
+`Deck03`–`Deck08` textures, repacking the atlas to two textures — a real BRIEF §6
+build-size lever whose before/after number is still unmeasured.
+
+Full detail and reasoning: **D39** (card pipeline, Round 2, its three deviations,
+and the home button), **D38** (how Round 2 was scoped). Earlier context: D33/D34
+(portrait-first, shared UI chrome), D35 (WebGL flame fix), D36 (interviewer audit —
+still-open Tier 1 items), D37 (Round 1: Main Menu + AppScene).
+
+⚠️ **Two things need a human and are not done:** the EditMode tests have never been
+run through the Test Runner this session (the Test Runner API cannot be driven over
+MCP — it needs its window; assertions were instead evaluated directly against the
+real `CardStackLayout`, 5/5, and the test assembly confirmed compiled), and
+`AceOfShadowsConfig` currently ships **`perCardOffset: 1`, `maxPileRise: 200`**,
+not the `2` / `340` Round 2 was tuned around. At 1px a full deck rises 143px
+instead of 286px, which halves the pile-height signal the whole retune exists to
+create. It may have been a deliberate hand-tune — it was not overridden, only
+flagged.
 
 ## What we're building
 
@@ -74,22 +52,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 ## Current state
 
 ### Task progress
-- **Ace of Shadows: built and working**, now past a polish/optimization pass, a
-  UI conversion (D21), an exit-cascade animation (D22), a Restart button (D23),
-  a `unity-interviewer` audit + mechanical fixes (D24), a landscape lock (D25),
-  and build-size lever decisions (D26). 144-card deck drain between two stacks,
-  Source→Target, one move per second, message on completion, real playing-card
-  visuals (random per card), pop-animated stack counters, project-wide Baloo 2
-  font. Cards/stacks render as UI (RectTransform/Image under a Screen Space -
-  Overlay Canvas), not world-space SpriteRenderers. Once the deck empties: both
-  counters hide and every landed card cascades off-screen (staggered), the
-  finished message shows, and a Restart button on that message rebuilds the
-  deck/cards from scratch and restarts the timer. See "Ace of Shadows
-  architecture" and "Rendering & performance" below, and D21-D26 in
-  decisions.md. **All of it is committed and pushed to `origin/master`**, but
-  **nothing past D21 has actually been Play Mode-verified by the developer
-  yet** — still an open item (next steps item 0b), don't assume it's been
-  clicked through just because it compiles and the tests pass.
+- **Ace of Shadows: built, and past its UI/UX Round 2 (D39).** 144-card deck drain
+  between two stacks, one move per second, message on completion, Restart. Now on a
+  felt table with dashed card slots, SOURCE/TARGET cream counter pills (reparented
+  onto the canvas — as children of the stack roots they drew *under* the cards), a
+  completion moment rewritten to "Deck cleared! / Every card made it across" with a
+  gold `144 / 144` on an ink plate and a real "Play again" button, a screen title,
+  and a countdown ring on the transfer axis between the pills rather than around the
+  target slot (the radial sweep started exactly where the growing pile covers it).
+  Card art is the reimported `Deck01`/`Deck02` at 300×375. Committed and pushed.
+  **Still never Play Mode-verified by the developer**, and the fan values in the
+  config are not the tuned ones — see the ⚠️ at the top.
 - **Magic Words: built, Play Mode-verified, committed/pushed (D28, D30,
   2026-08-24)**. Two dialogue boxes edge-anchored left/right slide toward
   center on their turn to speak, TMP text reveals via DOTween Pro's
@@ -931,56 +904,37 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
-### ROUND 2 IS SCOPED AND APPROVED — Ace of Shadows (set 2026-08-26, see D38)
+### Round 2 (Ace of Shadows) is DONE — where the UI/UX pass goes next
 
-The developer has given the green light for Round 2 of the item-4 UI/UX pass, on
-**Ace of Shadows**. Full reasoning, the agreed scope, the three things dropped from
-the original proposal, and the agent's recorded dissent (it would have shipped the
-stock `index.html` fix first) are in **D38**. Short version of what to build:
+Round 1 (Main Menu + AppScene, D37) and Round 2 (Ace of Shadows, D39) are built,
+committed and pushed. **Magic Words and Phoenix Flame still have no round.**
 
-- **Safe polish:** completion panel to ink `#2A2438`, copy to "Deck cleared! / Every
-  card made it across", `144 / 144` in reward gold as text, a real "Play again"
-  label on the Restart button; counters become cream pills with `SOURCE`/`TARGET`
-  caps labels; the `Knob` countdown sprite becomes a ring around the target slot
-  (single Image, `fillAmount`, no code change).
-- **Approved bigger swings:** the **felt table** (`#2A5F55` → `#153C36`, dashed card
-  slots) replacing the flat gold `Bg`; and **`MaxVisibleDepth` 12 → ~26,
-  `PerCardOffset` 3 → 4** in `CardStackLayout.cs:7,11`.
-- **Watch out:** the felt table inverts the screen to dark, so everything on it gets
-  re-checked against a dark ground — including the FPS pill, whose dark-chrome
-  variant D37 explicitly deferred. And BRIEF §5 wants the chosen stack cap explained
-  in the README; `README.md` currently has no stack-cap paragraph at all.
+`unity-ui-ux-expert` reordered the remaining two itself, and the reasoning is worth
+respecting because both would otherwise be built on top of something about to move:
 
-🔴 **BLOCKED ON TOOLING, not on a decision.** Two things are missing and both are
-resolved the same way:
+- **Phoenix Flame's UI round goes BELOW the particle pass.** Its hero element is the
+  fire, the fire is still the D31 first pass, and the proposed direction (a brazier
+  under the flame, a background glow taking the current flame colour) is scenery
+  built around art that is going to be replaced. Do the fire first.
+- **Magic Words' portraits go BELOW the malformed-JSON/timeout fix** (D36 Tier 1
+  #3 — `MagicWordsResponseParser.Parse` calls `JsonUtility.FromJson` with no
+  try/catch and throws on a non-JSON 200, killing the coroutine and leaving the
+  screen blank forever; request timeouts are absent too). The large-speaker-portrait
+  idea leans on the avatar-fallback path reading as *deliberate*, and that is the
+  exact subsystem the fix touches.
 
-1. **Unity MCP is not connected for this project.** The Unity Editor *is* running on
-   `softgames-task` (6000.0.82f1) with `Unity.AI.MCP.Editor.dll` loaded from
-   `com.unity.ai.assistant@2.18.0-pre.2`, listening on `127.0.0.1:38000` — but
-   `~/.claude.json` has `mcpServers: {}` for this project and there is no `.mcp.json`
-   in the repo, so no `mcp__unity-mcp__*` tools exist in-session. ⚠️ The `UnityMCP`
-   entry that *does* exist in `~/.claude.json` is the **wrong one** — it is registered
-   under `/Users/dogukan/Whatwapp` and `backgammon-unity`, points at
-   `http://127.0.0.1:8080/mcp`, and that endpoint is a separate `mcp-for-unity` Python
-   bridge launched `--project-scoped-tools` with a `--unity-instance-token` and a
-   pidfile under `backgammon-unity/Backgammon/Library/MCPForUnity/RunState/`. It is
-   pinned to Backgammon. Do not point this project at it. Register the softgames
-   endpoint from the Unity Editor's own AI Assistant MCP client setup instead.
-2. **The four project agents don't load.** `unity-architect`, `unity-interviewer`,
-   `unity-ui-ux-expert` and `unity-animation-expert` now live in `.claude/agents/`
-   (committed, `0f6147d`) — but agent definitions and MCP servers are both resolved
-   at session start, so a session that began before they existed cannot see them.
+So the honest next step is **not** another UI round — it is one of the two
+prerequisites, or one of D36's still-open Tier 1 items (the stock WebGL
+`index.html`, the ~20MB build size now that six card atlases have been dropped, the
+`BRIEF.md` salary-figure privacy question, the README's architecture/decisions
+write-up including the stack-cap paragraph drafted in D39).
 
-**One Claude Code restart picks up both.** Until then only the safe-polish items are
-actually doable (text/colour/rect edits via the direct-YAML route from D34); the ring,
-gradient and dashed-slot sprites are procedurally generated C#, and nothing can be
-rendered for visual verification at all. The UI agent declined to call a round done on
-unverified visuals in a graded submission, and specifically declined the
-PIL-PNG-plus-hand-written-`.meta` workaround as making importer settings *and*
-appearance unverified instead of one of them. Note also that
-`Unity_AssetGeneration_GenerateAsset` was already a dead end in D37 — no model is
-configured on this install — so MCP buys the scene-capture/verification workflow and
-editor automation, **not** asset generation.
+Also carried forward from D39, unactioned: **the Main Menu King no longer reads.**
+The new deck puts the large rank in the lower-right of the face, exactly where the
+overlapping Ace covers it, so the back card reads as "a red card" rather than a
+King. Two one-value fixes were offered — move the K ~30px further left so its rank
+clears the Ace, or swap the sibling order so the K sits in front, since "A" survives
+partial occlusion far better than "K".
 
 ### Developer's own priority list for the next session (set 2026-08-25, end of day)
 
