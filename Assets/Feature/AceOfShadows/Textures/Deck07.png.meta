@@ -5,7 +5,7 @@ AssetOrigin:
   productId: 160928
   packageName: Playing Cards Design Pack for Mobile
   packageVersion: 1.0
-  assetPath: Assets/Asset_PlayingCards/Textures/Deck07.png
+  assetPath: Assets/Feature/AceOfShadows/Textures/Deck07.png
   uploadId: 346900
 TextureImporter:
   internalIDToNameTable:
@@ -223,7 +223,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 0
+  spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
