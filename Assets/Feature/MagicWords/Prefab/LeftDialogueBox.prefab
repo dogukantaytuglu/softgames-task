@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6083973375840344715}
   - component: {fileID: 775611531973887557}
   - component: {fileID: 1667026605973493296}
+  - component: {fileID: 8800341968695792725}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -58,15 +59,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.96, b: 0.85, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1849313155, guid: 6d1a2570067e3ae4cb5c72a2bca3b8d5, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2e0266b1f6ce96545aede2d7f8ef6a3b, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -75,6 +76,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8800341968695792725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 334361213603798886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.35}
+  m_EffectDistance: {x: 0, y: -6}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1951249019344770654
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,10 +450,10 @@ RectTransform:
   - {fileID: 147023584799805490}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -670, y: 220}
-  m_SizeDelta: {x: 620, y: 260}
+  m_AnchorMin: {x: 0.02, y: 0}
+  m_AnchorMax: {x: 0.57, y: 0}
+  m_AnchoredPosition: {x: 0, y: 220}
+  m_SizeDelta: {x: 0, y: 260}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &4147749729898517400
 MonoBehaviour:
@@ -455,8 +471,8 @@ MonoBehaviour:
   dialogueText: {fileID: 3091214760859095079}
   avatarImage: {fileID: 8713378518686270524}
   fallbackAvatarSprite: {fileID: 544408492, guid: 85703ee0d52ea0d479ea35a4259a0b41, type: 3}
-  hiddenAnchoredX: -670
-  shownAnchoredX: 0
+  offscreenMargin: 60
+  hideDirectionSign: -1
 --- !u!1 &9102714782458677639
 GameObject:
   m_ObjectHideFlags: 0

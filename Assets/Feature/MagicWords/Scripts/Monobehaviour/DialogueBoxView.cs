@@ -14,12 +14,15 @@ namespace MagicWords.Monobehaviour
         [SerializeField] private Image avatarImage;
         [SerializeField] private Sprite fallbackAvatarSprite;
 
-        [Header("Anchored X - hidden (off to this box's own screen edge) vs shown")]
-        [SerializeField] private float hiddenAnchoredX;
-        [SerializeField] private float shownAnchoredX;
+        [Header("Width is anchor-stretched (scales with canvas x-axis) - only the offscreen hide distance is computed, not a fixed pixel width")]
+        [SerializeField] private float offscreenMargin = 60f;
+        [Tooltip("-1 for a box anchored to the left edge, +1 for the right (mirrored) edge - which direction is offscreen for this instance.")]
+        [SerializeField] private float hideDirectionSign = -1f;
 
         private RectTransform _rectTransform;
         private RectTransform RectTransform => _rectTransform ??= (RectTransform)transform;
+
+        private float HiddenAnchoredX => hideDirectionSign * (RectTransform.rect.width + offscreenMargin);
 
         public void Initialize()
         {
@@ -36,13 +39,13 @@ namespace MagicWords.Monobehaviour
         public void SnapHidden()
         {
             transform.DOKill();
-            RectTransform.anchoredPosition = new Vector2(hiddenAnchoredX, RectTransform.anchoredPosition.y);
+            RectTransform.anchoredPosition = new Vector2(HiddenAnchoredX, RectTransform.anchoredPosition.y);
         }
 
         public void SlideIn(float duration, Ease ease)
         {
             transform.DOKill();
-            RectTransform.DOAnchorPosX(shownAnchoredX, duration).SetEase(ease).SetTarget(transform);
+            RectTransform.DOAnchorPosX(0f, duration).SetEase(ease).SetTarget(transform);
         }
 
         public void PlayReveal(string text, float charactersPerSecond, Action onComplete)

@@ -214,13 +214,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3886301222404875065, guid: db7306560bcc2764e9dec9b1e769c68f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 210615407}
   m_SourcePrefab: {fileID: 100100000, guid: db7306560bcc2764e9dec9b1e769c68f, type: 3}
 --- !u!224 &210615405 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1075826146216796983, guid: db7306560bcc2764e9dec9b1e769c68f, type: 3}
   m_PrefabInstance: {fileID: 210615404}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &210615406 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3886301222404875065, guid: db7306560bcc2764e9dec9b1e769c68f, type: 3}
+  m_PrefabInstance: {fileID: 210615404}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &210615407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 210615406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.35}
+  m_EffectDistance: {x: 0, y: -6}
+  m_UseGraphicAlpha: 1
 --- !u!1 &466035377
 GameObject:
   m_ObjectHideFlags: 0
@@ -355,6 +378,7 @@ GameObject:
   - component: {fileID: 599035313}
   - component: {fileID: 599035312}
   - component: {fileID: 599035311}
+  - component: {fileID: 599035315}
   m_Layer: 0
   m_Name: BlueButton
   m_TagString: Untagged
@@ -452,15 +476,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.3, g: 0.55, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -775807451, guid: 156ec492e516ccb4099add479601d65e, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2e0266b1f6ce96545aede2d7f8ef6a3b, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -477,6 +501,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 599035309}
   m_CullTransparentMesh: 1
+--- !u!114 &599035315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 599035309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.35}
+  m_EffectDistance: {x: 0, y: -6}
+  m_UseGraphicAlpha: 1
 --- !u!1 &615070956
 GameObject:
   m_ObjectHideFlags: 0
@@ -490,6 +529,7 @@ GameObject:
   - component: {fileID: 615070960}
   - component: {fileID: 615070959}
   - component: {fileID: 615070958}
+  - component: {fileID: 615070962}
   m_Layer: 0
   m_Name: GreenButton
   m_TagString: Untagged
@@ -587,15 +627,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.3, g: 1, b: 0.35, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1957500794, guid: 156ec492e516ccb4099add479601d65e, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2e0266b1f6ce96545aede2d7f8ef6a3b, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -612,6 +652,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 615070956}
   m_CullTransparentMesh: 1
+--- !u!114 &615070962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 615070956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.35}
+  m_EffectDistance: {x: 0, y: -6}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1009391656
 GameObject:
   m_ObjectHideFlags: 0
@@ -643,6 +698,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 4c22d240e739813438a85492bc5638f9, type: 2}
   flameSpawnPoint: {fileID: 1074971713}
+  buttons:
+  - {fileID: 615070958}
+  - {fileID: 599035311}
+  - {fileID: 1211013899}
 --- !u!4 &1009391658
 Transform:
   m_ObjectHideFlags: 0
@@ -702,6 +761,7 @@ GameObject:
   - component: {fileID: 1211013901}
   - component: {fileID: 1211013900}
   - component: {fileID: 1211013899}
+  - component: {fileID: 1211013903}
   m_Layer: 0
   m_Name: OrangeButton
   m_TagString: Untagged
@@ -799,15 +859,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.55, b: 0.15, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -1989461574, guid: 156ec492e516ccb4099add479601d65e, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2e0266b1f6ce96545aede2d7f8ef6a3b, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -824,6 +884,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1211013897}
   m_CullTransparentMesh: 1
+--- !u!114 &1211013903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211013897}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.35}
+  m_EffectDistance: {x: 0, y: -6}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1394087145
 GameObject:
   m_ObjectHideFlags: 0
