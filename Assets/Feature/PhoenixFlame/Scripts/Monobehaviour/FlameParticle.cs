@@ -9,16 +9,22 @@ namespace PhoenixFlame.Monobehaviour
         [SerializeField] private Animator animator;
 
         private PhoenixFlameColorState _colorState;
-        private ParticleSystemRenderer _particleSystemRenderer;
         private Animator _fakeLightAnimator;
+        private Material _runtimeMaterial;
 
         private static readonly int ColorIndex = Animator.StringToHash(ColorIndexParam);
         private const string ColorIndexParam = "ColorIndex";
 
         public void Initialize(PhoenixFlameConfig config, Animator fakeLightAnimator = null)
         {
+            // The Animator writes colour straight onto the renderer's material, so each
+            // flame needs its own copy - animating the shared asset would edit it on disk
+            // in the Editor and bleed between instances at runtime. We own this copy, so
+            // we're also the ones who have to destroy it (see OnDestroy) - scene unload
+            // won't free it on its own.
             var particleSystemRenderer = particle.GetComponent<ParticleSystemRenderer>();
-            particleSystemRenderer.material = Instantiate(config.BaseMaterial);
+            _runtimeMaterial = Instantiate(config.BaseMaterial);
+            particleSystemRenderer.material = _runtimeMaterial;
             animator.runtimeAnimatorController = config.AnimatorController;
             _colorState = new PhoenixFlameColorState(config.ColorOptions.Count);
             animator.SetInteger(ColorIndex, _colorState.CurrentIndex);
@@ -44,6 +50,15 @@ namespace PhoenixFlame.Monobehaviour
 
             if (_fakeLightAnimator != null)
                 _fakeLightAnimator.SetInteger(ColorIndex, index);
+        }
+
+        private void OnDestroy()
+        {
+            if (_runtimeMaterial == null)
+                return;
+
+            Destroy(_runtimeMaterial);
+            _runtimeMaterial = null;
         }
     }
 }
