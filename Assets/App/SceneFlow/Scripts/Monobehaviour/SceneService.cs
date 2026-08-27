@@ -69,7 +69,7 @@ namespace SceneFlow.Monobehaviour
             _state.CompleteNavigation();
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }

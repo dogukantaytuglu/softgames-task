@@ -26,13 +26,11 @@ namespace AceOfShadows.Monobehaviour
 
         // Covers the button being hidden (finished screen, restart) while still held -
         // without this the accelerated timer would keep running with nothing to release it.
+        // Also the general DOTween teardown: OnDisable always runs before OnDestroy, so this
+        // still catches the destroy path - Release() only kills a tween if one was left running.
         private void OnDisable()
         {
             Release();
-        }
-
-        private void OnDestroy()
-        {
             transform.DOKill();
         }
 

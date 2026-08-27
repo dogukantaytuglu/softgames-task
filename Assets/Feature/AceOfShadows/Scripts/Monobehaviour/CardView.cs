@@ -59,7 +59,7 @@ namespace AceOfShadows.Monobehaviour
                 .OnComplete(() => onComplete?.Invoke());
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             transform.DOKill();
         }

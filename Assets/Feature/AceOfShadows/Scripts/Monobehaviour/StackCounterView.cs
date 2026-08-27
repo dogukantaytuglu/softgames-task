@@ -17,7 +17,7 @@ namespace AceOfShadows.Monobehaviour
             _initScale = transform.localScale;
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             transform.DOKill();
         }

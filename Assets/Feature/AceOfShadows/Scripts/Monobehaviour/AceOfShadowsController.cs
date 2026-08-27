@@ -48,7 +48,7 @@ namespace AceOfShadows.Monobehaviour
             fastForwardButton.HoldEnded += OnFastForwardHoldEnded;
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             _deck.CardMoved -= OnCardMoved;
             _deck.AllAnimationsFinished -= OnAllAnimationsFinished;

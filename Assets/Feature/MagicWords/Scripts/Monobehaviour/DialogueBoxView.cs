@@ -65,7 +65,7 @@ namespace MagicWords.Monobehaviour
             dialogueText.maxVisibleCharacters = dialogueText.textInfo.characterCount;
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             transform.DOKill();
             DOTween.Kill(dialogueText);

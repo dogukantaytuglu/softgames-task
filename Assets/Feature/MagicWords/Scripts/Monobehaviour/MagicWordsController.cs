@@ -45,7 +45,7 @@ namespace MagicWords.Monobehaviour
             Fetch();
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             _autoAdvanceTimer?.Stop();
             advanceButton.onClick.RemoveListener(OnAdvanceClicked);
