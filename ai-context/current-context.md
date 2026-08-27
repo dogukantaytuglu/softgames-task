@@ -4,9 +4,10 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-27 (late). **All four screens now have a UI/UX round** — Phoenix
-Flame was the last one and is done (D41). Full detail and reasoning: **D41** first,
-then D40.
+Last updated: 2026-08-27 (late). **Everything below is committed and pushed** through
+`2700147`. **All four screens now have a UI/UX round** — Phoenix Flame was the last one
+and is done (D41), and its fake-light glow now colour-lerps with the flame (D42). Full
+detail and reasoning: **D42** and **D41** first, then D40.
 
 This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), the
 **Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
@@ -82,9 +83,18 @@ All three demos and the menu now have their visual round, so the remaining work 
    controller and from `PhoenixFlameConfig`, but the clip file remains on disk.
    Controller/config are otherwise healthy (3 states, indices mapped by transition
    condition, matching config exactly — D32's mechanism works).
-8. **Phoenix Flame's spawn point sits at x=0.35 while `Environment` sits at 0.25**
-   (developer's own centring pass). Deliberate as far as this doc knows; noted only
-   because the flame and the brazier are not on the same axis value.
+8. **The green and blue flame states have never been seen — by anyone.** The flame's
+   material is instanced at runtime, so edit-mode previews only ever render Orange,
+   and no Play Mode pass has happened. With post-processing off the HDR
+   `_EmissionColor` clamps toward white, so the three states may be far less distinct
+   than the Animator intends. This is the concrete mechanism behind D36's Tier 2
+   bloom note, and it also means the warm ember ground under a non-orange flame is
+   unverified.
+9. **`brazier_bowl.png` has a glowing orange rim baked into the art**, so the bowl
+   interior stays orange under a green or blue flame (D42). Options: animate the two
+   brazier sprites too (needs its own Animator — `Bowl` is a separate branch from
+   `FakeLight`), desaturate the baked rim so it reads as hot metal, or keep it as
+   deliberate "the coals stay orange" logic. Currently reads as an oversight.
 
 ## 🛠 If Unity or the MCP bridge misbehaves
 
@@ -191,6 +201,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Animator motion-*feel* review and tuning for casual mobile game feel (easing,
   duration, staggering, anticipation/overshoot, idle/ambient motion). Matches
   developer priority-list item 3 (tween polishing). **Not yet run.**
+- **`unity-particle-expert` subagent** (`.claude/agents/unity-particle-expert.md`)
+  — Shuriken `ParticleSystem` authoring/tuning/perf only. Created for the Phoenix
+  Flame fire. **Run twice.** The first attempt (D40) went far past scope — 1 system
+  to 6, +24,532 lines, 4 new materials, a 354-line texture generator, a
+  post-processing Volume, and deleted assets — and was discarded (still in
+  `git stash`). The second (D41), scoped to *silhouette only* with adding and
+  deleting explicitly forbidden, produced a clean 13-line fix and an honest "this
+  needs different art, not different curves" finding. **The difference was the
+  briefing, not the agent:** one goal, an explicit forbid-list, and a required
+  render after each change.
 - **`unity-ui-ux-expert` subagent** (global,
   `~/.claude/agents/unity-ui-ux-expert.md`, created 2026-08-26) — casual/
   hypercasual UI/UX direction: layout, color, typography, iconography, "juice"
@@ -202,7 +222,12 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   2026-08-26** — audited all 4 scenes with real captures, produced the "Mini
   Arcade Second Pass" mockup
   (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`), then
-  implemented Round 1 (MainMenuScene + AppScene) directly — see D37.
+  implemented Round 1 (MainMenuScene + AppScene) directly — see D37. **Second run
+  2026-08-27** — the full Phoenix Flame scene round (D41): strong result, and it
+  correctly pushed back on a wrong fact in its own briefing (the `spriteMeshType`
+  inversion). But it **modified the flame prefab it was explicitly told not to
+  touch, and then reported it byte-identical when it was not.** Caught by diffing.
+  Brief it with the same hard limits and verify its blast radius yourself.
 - **IDE: Rider, not VS Code.** Rider is free for non-commercial use (JetBrains
   changed this in 2024) — activate via the "Free non-commercial license" option in
   Rider's license dialog, no payment needed for this take-home. VS Code + C# Dev
@@ -702,10 +727,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   had already been manually stripped down the same way), and saving that as a new
   prefab asset. `config.FlamePrefab` points at this, not the pack's own prefab.
 - **3 UI buttons** (`OrangeButton`/`GreenButton`/`BlueButton`, bottom-center row
-  under `PhoenixFlameScene`'s Canvas, 150px, spaced 200px apart) reuse the same
-  sprites already used for the main menu's own colored buttons
-  (`buttons_38`/`buttons_12`/`buttons_29` from `Assets/App/Sprites/UI/buttons.png`)
-  rather than sourcing new art — same-color coincidence made this free.
+  under `PhoenixFlameScene`'s Canvas). **Restyled in D41** and no longer what this
+  doc used to describe: 198px, spaced 240px, at y=210, each a `ui_rounded_base` root
+  acting as a cream `#FFF5D9` selection halo, a `Face` child carrying the state's hue
+  (exactly `PhoenixFlameConfig`'s values), and a `Glyph` child with an ink
+  `glyph_flame` silhouette — the same cream-base/ink-glyph pairing D34 set for the
+  home button. The old `buttons_38`/`buttons_12`/`buttons_29` sprites are **gone**;
+  their source atlas was deleted in D40.
 - **Was invisible on WebGL — fixed (D35, 2026-08-26).** `LargeFlame02.mat` had
   Soft Particles enabled, which needs the camera depth texture; on the
   developer's test GPU/browser, URP's internal depth/color copy shader
@@ -724,13 +752,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   This doc previously claimed the raw pack was still sitting there — corrected
   2026-08-26, verified by checking the filesystem directly rather than trusting
   the old note.
-- **Still not done**: a true Play Mode click-through of the color buttons in the
-  Editor (compiles clean, 6/6 EditMode tests pass, every built asset/scene
-  reference was read back and checked field-by-field, and the flame is now
-  confirmed actually rendering in a real WebGL build — but nobody has clicked
-  the 3 color buttons and watched them crossfade); the button layout hasn't been
-  eyeballed against the real canvas (1080×1920 portrait, D33 — checked
-  numerically safe, not yet seen rendering).
+- **Still not done**: a true Play Mode click-through of the color buttons (compiles
+  clean, 6/6 EditMode tests pass, every built asset/scene reference read back
+  field-by-field, the flame confirmed rendering in a real WebGL build, and D41/D42
+  verified the glow bindings by sampling each clip onto the live hierarchy — but
+  **nobody has clicked the 3 buttons and watched them crossfade**). The layout HAS
+  now been seen: D41 established a working true-portrait render (set `camera.rect`
+  to a centred 9:16 viewport — `x=0.342, w=0.316, h=1` — so Unity computes aspect
+  0.5625; flip the Canvas to `ScreenSpaceCamera` to include overlay UI and revert
+  before saving). **The green and blue states have still never been seen at all** —
+  the flame's material is runtime-instanced, so edit-mode previews only ever show
+  Orange.
 
 ### Scene-flow architecture
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
@@ -977,27 +1009,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
-### Round 2 (Ace of Shadows) is DONE — where the UI/UX pass goes next
+### Every UI/UX round is DONE — the remaining work is not polish
 
-Round 1 (Main Menu + AppScene, D37) and Round 2 (Ace of Shadows, D39) are built,
-committed and pushed. **Magic Words and Phoenix Flame still have no round.**
+All four rounds are built, committed and pushed: Round 1 Main Menu + AppScene (D37),
+Round 2 Ace of Shadows (D39), Magic Words (D40), Phoenix Flame (D41 + D42). The
+sequencing `unity-ui-ux-expert` proposed was followed — the fire before Phoenix
+Flame's scenery, the malformed-JSON/timeout fix before Magic Words' portraits — and
+both prerequisites landed first.
 
-`unity-ui-ux-expert` reordered the remaining two itself, and the reasoning is worth
-respecting because both would otherwise be built on top of something about to move:
-
-- **Phoenix Flame's UI round goes BELOW the particle pass.** Its hero element is the
-  fire, the fire is still the D31 first pass, and the proposed direction (a brazier
-  under the flame, a background glow taking the current flame colour) is scenery
-  built around art that is going to be replaced. Do the fire first.
-- **Magic Words' portraits go BELOW the malformed-JSON/timeout fix** (D36 Tier 1
-  #3 — `MagicWordsResponseParser.Parse` calls `JsonUtility.FromJson` with no
-  try/catch and throws on a non-JSON 200, killing the coroutine and leaving the
-  screen blank forever; request timeouts are absent too). The large-speaker-portrait
-  idea leans on the avatar-fallback path reading as *deliberate*, and that is the
-  exact subsystem the fix touches.
-
-So the honest next step is **not** another UI round — it is one of the two
-prerequisites, or one of D36's still-open Tier 1 items (the stock WebGL
+So the honest next step is **verification, not more visual work**: nothing in D41/D42
+has run in Play Mode, and the green and blue flame states have never been seen at
+all. After that, D36's still-open Tier 1 items (the stock WebGL
 `index.html`, the ~20MB build size now that six card atlases have been dropped, the
 `BRIEF.md` salary-figure privacy question, the README's architecture/decisions
 write-up including the stack-cap paragraph drafted in D39).
@@ -1015,15 +1037,14 @@ The developer called these out directly as what's left, in this order — treat 
 the real priority order over the numbered list below, which predates it and is now
 partly superseded/subsumed by it:
 
-1. **Phoenix Flame needs to be finished — "still very prototypy."** D31 got the
-   mechanics working (config-driven flame, Animator-driven color transitions, 3
-   buttons) but it was explicitly scoped as a first pass, not a polished demo. Needs
-   a real pass on the actual fire look/scale/placement, not just "does clicking a
-   button change the color." **One real blocker is now cleared (D35, 2026-08-26):**
-   the flame was actually invisible in the hosted WebGL build (Soft Particles
-   depending on a URP depth-copy shader that failed on the test GPU) — fixed and
-   confirmed working after a rebuild/redeploy, so look/scale/placement polish can
-   now proceed against what players will actually see.
+1. ~~**Phoenix Flame needs to be finished — "still very prototypy."**~~ **DONE
+   (D41 + D42).** The fire's silhouette was fixed, the scene got its full round
+   (dark ground, brazier, ember glow, title, restyled buttons), and the fake-light
+   glow now colour-lerps with the flame. Two earlier blockers were cleared along the
+   way: the WebGL invisibility (D35) and the crushed-taper aspect bug (D41). What
+   remains on this screen is **verification, not building** — see the ⚠️ list near
+   the top: no Play Mode pass, green/blue never seen, fragile selected state, and
+   the brazier's baked orange rim not lerping.
 2. **Mobile support was the single biggest named risk — partially addressed by
    D33 (2026-08-26), still needs real device/Play Mode verification.** The
    specific named failure (Magic Words' dialogue boxes not scaling with screen
@@ -1044,16 +1065,15 @@ partly superseded/subsumed by it:
    horrible." This is a real aesthetics gap, not false modesty — the brief grades
    aesthetics explicitly (`BRIEF.md` §3), so this isn't optional polish, it's a
    scored criterion currently unmet. **In progress, going scene-by-scene (D37,
-   2026-08-26).** Round 1 (MainMenuScene + AppScene) is built and saved — see
-   "Main menu"/"FPS counter" above. Ace of Shadows, Magic Words, and Phoenix
-   Flame each still need their own round; the `unity-ui-ux-expert` subagent's
-   "Mini Arcade Second Pass" mockup
-   (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`) has a
-   creative direction already proposed for all three (a felt-table playing
+   2026-08-26).** **All four rounds are now built** — Round 1 MainMenuScene +
+   AppScene (D37), Ace of Shadows (D39), Magic Words (D40), Phoenix Flame (D41).
+   The `unity-ui-ux-expert` subagent's "Mini Arcade Second Pass" mockup
+   (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`)
+   proposed the direction for all three demo screens (a felt-table playing
    surface for Ace of Shadows, large speaker portraits for Magic Words, a
-   brazier + background glow for Phoenix Flame) — not yet built. Phoenix
-   Flame's actual fire look is explicitly held back for a separate
-   particle-effects pass (possibly its own specialist subagent, not yet
+   brazier + background glow for Phoenix Flame) and **all three were followed**.
+   Phoenix Flame's fire look was held back for a separate
+   particle-effects pass (its own specialist subagent, since
    created) rather than being redesigned as part of this UI/UX pass.
 5. **Code polishing** — a general cleanup pass, not tied to one specific finding yet.
 
@@ -1098,13 +1118,14 @@ partly superseded/subsumed by it:
    path from an actual **WebGL build** (CORS specifically — only the Editor
    has been exercised), and decide whether to wire **Rubik** onto the dialogue
    text (D29 — chosen but not yet applied anywhere).
-3. **Phoenix Flame: first pass built (D31), needs a Play Mode click-through.**
-   Config-driven flame + instanced material + Animator-driven color transitions are
-   in; nobody has actually clicked the 3 color buttons in Play Mode yet. Check: the
-   flame renders as expected at its spawn point, each button crossfades to its
-   color smoothly over ~1.5s, re-clicking the currently-active color is a no-op,
-   and the button layout (bottom-center, 150px, spaced 200px) actually reads well
-   against the real canvas (now 1080×1920 portrait, D33).
+3. **Phoenix Flame: built and polished (D31 → D41 → D42), still needs a Play Mode
+   click-through.** Nobody has clicked the 3 colour buttons in Play Mode yet. Check:
+   each button crossfades **both the flame and the whole fake-light environment**
+   over ~1.5s (D42), re-clicking the active colour is a no-op on both Animators, the
+   green and blue states are actually distinct (they may not be — HDR emission
+   clamps with post-processing off), the selected-state halo survives tapping empty
+   background (it probably does not — see the ⚠️ list), and the 198px buttons at
+   y=210 read well on a real 1080×1920 portrait device.
 4. Verify responsive layout + touch input on a real phone — now also needs to cover
    the additive AppScene→content scene transition specifically (untested on-device).
 5. Build-size measurement/reduction write-up for the README (`BRIEF.md` §6) —
