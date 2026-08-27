@@ -2,7 +2,8 @@
     "name": "MagicWords.Tests",
     "rootNamespace": "",
     "references": [
-        "MagicWords.Logic"
+        "MagicWords.Logic",
+        "MagicWords.Monobehaviour"
     ],
     "includePlatforms": [
         "Editor"
