@@ -4980,6 +4980,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particle: {fileID: 5775425682002284315}
   animator: {fileID: 3353164512581396308}
+  bowlHighlightRenderer: {fileID: 5472355647150899846}
 --- !u!1 &6892310886327838305
 GameObject:
   m_ObjectHideFlags: 0

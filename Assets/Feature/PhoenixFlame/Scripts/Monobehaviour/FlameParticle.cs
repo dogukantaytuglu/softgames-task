@@ -7,10 +7,12 @@ namespace PhoenixFlame.Monobehaviour
     {
         [SerializeField] private ParticleSystem particle;
         [SerializeField] private Animator animator;
+        [SerializeField] private SpriteRenderer bowlHighlightRenderer;
 
         private PhoenixFlameColorState _colorState;
         private Animator _fakeLightAnimator;
         private Material _runtimeMaterial;
+        private Material _highlightMaterial;
 
         private static readonly int ColorIndex = Animator.StringToHash(ColorIndexParam);
         private const string ColorIndexParam = "ColorIndex";
@@ -25,6 +27,17 @@ namespace PhoenixFlame.Monobehaviour
             var particleSystemRenderer = particle.GetComponent<ParticleSystemRenderer>();
             _runtimeMaterial = Instantiate(config.BaseMaterial);
             particleSystemRenderer.material = _runtimeMaterial;
+
+            // Same reasoning as above: the Animator also drives the bowl's fake-light
+            // sprite (see path "BowlHighlight" in the color clips), so it needs its own
+            // material instance too, or previewing/playing writes straight onto
+            // BrazierBowlFakeLight.mat on disk.
+            if (bowlHighlightRenderer != null)
+            {
+                _highlightMaterial = Instantiate(bowlHighlightRenderer.sharedMaterial);
+                bowlHighlightRenderer.material = _highlightMaterial;
+            }
+
             animator.runtimeAnimatorController = config.AnimatorController;
             _colorState = new PhoenixFlameColorState(config.ColorOptions.Count);
             animator.SetInteger(ColorIndex, _colorState.CurrentIndex);
@@ -54,11 +67,17 @@ namespace PhoenixFlame.Monobehaviour
 
         private void OnDestroy()
         {
-            if (_runtimeMaterial == null)
-                return;
+            if (_runtimeMaterial != null)
+            {
+                Destroy(_runtimeMaterial);
+                _runtimeMaterial = null;
+            }
 
-            Destroy(_runtimeMaterial);
-            _runtimeMaterial = null;
+            if (_highlightMaterial != null)
+            {
+                Destroy(_highlightMaterial);
+                _highlightMaterial = null;
+            }
         }
     }
 }
