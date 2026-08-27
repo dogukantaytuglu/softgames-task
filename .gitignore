@@ -118,3 +118,8 @@ InitTestScene*.unity*
 
 # Local dev tooling config (machine-specific paths, not part of the assignment deliverable)
 /.mcp.json
+
+# Unity Performance Testing run artifacts. These get written into Resources/,
+# which is force-included in every build, so they'd ship as dead weight.
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*.json
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*.json.meta
