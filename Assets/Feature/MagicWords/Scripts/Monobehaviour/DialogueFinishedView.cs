@@ -1,33 +1,49 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MagicWords.Monobehaviour
 {
+    /// <summary>
+    /// The two end states of the screen. They are separate panels rather than one panel with
+    /// swapped colours because they mean opposite things: a conversation that finished is a
+    /// reward moment (gold badge, gold "Play again"), a conversation that never arrived is not
+    /// (muted badge, the real error text, a neutral "Try again"). Reward gold stays reserved
+    /// for the win, so a failure can never be mistaken for one at a glance.
+    /// </summary>
     public class DialogueFinishedView : MonoBehaviour
     {
         [SerializeField] private GameObject root;
-        [SerializeField] private TMP_Text message;
-
-        private const string FinishedMessage = "That's the end of the conversation.";
+        [SerializeField] private GameObject successPanel;
+        [SerializeField] private GameObject failurePanel;
+        [SerializeField] private TMP_Text lineCountText;
+        [SerializeField] private TMP_Text failureReasonText;
+        [SerializeField] private Button replayButton;
+        [SerializeField] private Button retryButton;
 
         public void Initialize()
         {
             root.SetActive(false);
         }
 
-        public void Show()
+        public void Show(int lineCount, Action onReplay)
         {
-            SetMessage(FinishedMessage);
+            lineCountText.text = $"{lineCount} / {lineCount}";
+            Wire(replayButton, onReplay);
+            successPanel.SetActive(true);
+            failurePanel.SetActive(false);
             root.SetActive(true);
         }
 
         /// A failed fetch must not be presented as a completed conversation - showing the
         /// same "end of the conversation" panel tells the player everything worked.
-        public void ShowFailure(string reason)
+        public void ShowFailure(string reason, Action onRetry)
         {
-            SetMessage(string.IsNullOrWhiteSpace(reason)
-                ? "The conversation could not be loaded."
-                : $"The conversation could not be loaded.\n{reason}");
+            failureReasonText.text = string.IsNullOrWhiteSpace(reason) ? "Unknown error." : reason;
+            Wire(retryButton, onRetry);
+            successPanel.SetActive(false);
+            failurePanel.SetActive(true);
             root.SetActive(true);
         }
 
@@ -36,10 +52,11 @@ namespace MagicWords.Monobehaviour
             root.SetActive(false);
         }
 
-        private void SetMessage(string text)
+        private static void Wire(Button button, Action action)
         {
-            if (message != null)
-                message.text = text;
+            button.onClick.RemoveAllListeners();
+            if (action != null)
+                button.onClick.AddListener(() => action());
         }
     }
 }
