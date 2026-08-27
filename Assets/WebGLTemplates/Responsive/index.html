@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover">
+    <meta name="description" content="{{{ PRODUCT_NAME }}} by {{{ COMPANY_NAME }}}">
+    <meta name="theme-color" content="#181327">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      /*
+        The app is portrait-locked at a 1080x1920 reference resolution, so the job of
+        this page is to hand Unity a portrait-shaped canvas at whatever size the
+        viewport can actually afford - never a fixed pixel box. Unity's stock template
+        hard-codes 960x600 on desktop, which puts a portrait app inside a landscape
+        letterbox and shrinks every screen; that is the specific thing this replaces.
+      */
+      :root {
+        --ground: #181327;
+        --cream: #fff5d9;
+        --ink: #2a2140;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--ground);
+        color: var(--cream);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        /* Stops iOS Safari from bouncing the page behind the canvas on drag. */
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+
+      #unity-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Respect notches and gesture bars rather than drawing underneath them. */
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+
+      /*
+        aspect-ratio + max-width/max-height is the whole responsive story: the canvas
+        grows to fill whichever axis runs out first and stays 9:16 either way. On a
+        portrait phone that resolves to the full viewport; on a desktop browser it
+        resolves to a full-height portrait pane centred on the ground colour.
+      */
+      #unity-canvas {
+        aspect-ratio: 1080 / 1920;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: 100%;
+        display: block;
+        background: var(--ground);
+        /* Unity draws its own cursor logic; keep the browser from fighting it. */
+        touch-action: none;
+      }
+
+      /* Wide-but-short windows (a short laptop viewport) hit the width bound first. */
+      @media (max-aspect-ratio: 1080/1920) {
+        #unity-canvas {
+          width: 100%;
+          height: auto;
+        }
+      }
+
+      #unity-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: var(--ground);
+        transition: opacity 240ms ease;
+      }
+
+      #unity-loading.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #unity-loading-title {
+        font-size: clamp(18px, 4vw, 28px);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--cream);
+      }
+
+      #unity-progress-track {
+        width: min(280px, 60vw);
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 245, 217, 0.16);
+        overflow: hidden;
+      }
+
+      #unity-progress-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: var(--cream);
+        transition: width 120ms linear;
+      }
+
+      #unity-loading-hint {
+        font-size: 13px;
+        opacity: 0.55;
+        letter-spacing: 0.02em;
+      }
+
+      #unity-warning {
+        position: fixed;
+        left: 50%;
+        top: 16px;
+        transform: translateX(-50%);
+        z-index: 10;
+        max-width: min(560px, 90vw);
+      }
+
+      #unity-warning > div {
+        margin-bottom: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" tabindex="-1"></canvas>
+    </div>
+
+    <div id="unity-loading">
+      <div id="unity-loading-title">{{{ PRODUCT_NAME }}}</div>
+      <div id="unity-progress-track"><div id="unity-progress-fill"></div></div>
+      <div id="unity-loading-hint">Loading…</div>
+    </div>
+
+    <div id="unity-warning"></div>
+
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
+      var loading = document.querySelector("#unity-loading");
+      var progressFill = document.querySelector("#unity-progress-fill");
+      var loadingHint = document.querySelector("#unity-loading-hint");
+
+      function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? "block" : "none";
+        }
+        var div = document.createElement("div");
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == "error") {
+          div.style.background = "#ff6b6b";
+        } else {
+          if (type == "warning") div.style.background = "#ffd166";
+          setTimeout(function () {
+            if (div.parentNode) warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+        memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        showBanner: unityShowBanner,
+      };
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressFill.style.width = 100 * progress + "%";
+        })
+          .then(() => {
+            loading.classList.add("hidden");
+            setTimeout(() => { loading.style.display = "none"; }, 260);
+          })
+          .catch((message) => {
+            loadingHint.textContent = message;
+            loadingHint.style.opacity = "1";
+            unityShowBanner(message, "error");
+          });
+      };
+      script.onerror = () => {
+        loadingHint.textContent = "Could not load the game files.";
+        loadingHint.style.opacity = "1";
+      };
+
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
