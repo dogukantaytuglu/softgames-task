@@ -130,3 +130,4 @@ MonoBehaviour:
   exitDuration: 0.5
   exitEase: 26
   exitStagger: 0.02
+  speedMultiplier: 15
