@@ -9,6 +9,13 @@ Last updated: 2026-08-27 (late). **Everything below is committed and pushed** th
 and is done (D41), and its fake-light glow now colour-lerps with the flame (D42). Full
 detail and reasoning: **D42** and **D41** first, then D40.
 
+✅ **Phoenix Flame is Play Mode-verified by the developer (2026-08-27).** They ran it,
+saw all three colour states, and called the quality acceptable. That closes the
+longest-standing unknown on this screen and, importantly, **settles the bloom
+question by evidence**: the three states read as distinct *without* post-processing,
+so the HDR-clamping worry (D36 Tier 2) did not materialise in practice and no Volume
+needs adding. See "the hosted build is stale" below for what is now the top risk.
+
 This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), the
 **Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
 (`eecf159`), a **runtime-only sprite-atlas bug** found and mostly fixed
@@ -21,19 +28,19 @@ The second one modified the fire prefab it was explicitly told not to touch, the
 reported it byte-identical — it wasn't. See D41. **An agent's own "I verified nothing
 else changed" is not evidence; `git diff --stat` against a known-good line count is.**
 
-## 👉 NEXT JOB: the non-visual gaps
+## 👉 NEXT JOB: redeploy, then the README
 
-All three demos and the menu now have their visual round, so the remaining work is
-**not** more polish. In rough priority order:
+All four screens have their visual round and Phoenix Flame is developer-verified, so
+the remaining work is **not** polish. In priority order:
 
-1. **Play Mode verification, which only the developer can do.** Nothing in D41 has
-   been seen running: the button selected state, the colour crossfade, and how the
-   warm ember ground reads under a green or blue flame. Ace of Shadows Round 2 and
-   Magic Words' portrait groundwork are also still unverified (see below).
-2. **Nobody has ever seen the green or blue flame states.** With post-processing off
-   the HDR `_EmissionColor` clamps toward white, so they may be far less distinct
-   than the Animator intends. This is the concrete mechanism behind D36's Tier 2
-   bloom note, and it makes the bloom decision worth actually making.
+1. 🔴 **Clone the build repo and redeploy.** The public link is pre-D37 and shows
+   none of this work; the deploy script needs
+   `/Users/dogukan/PersonalProjects/softgames-task-build` to exist and it does not.
+   See open item 9. This is the single highest-value action left, because the hosted
+   build is what actually gets graded.
+2. **The README architecture/decisions write-up** (`BRIEF.md` §6/§7) — still not
+   started, and explicitly graded. `decisions.md` is the raw material; it needs
+   distilling, not rewriting. The build-size measurement write-up belongs here too.
 3. **D36's still-open Tier 1 items**: the stock WebGL `index.html`, the ~20MB build
    size, the `BRIEF.md` salary-figure privacy question, and the README's
    architecture/decisions write-up (still not started, `BRIEF.md` §6/§7).
@@ -83,14 +90,29 @@ All three demos and the menu now have their visual round, so the remaining work 
    controller and from `PhoenixFlameConfig`, but the clip file remains on disk.
    Controller/config are otherwise healthy (3 states, indices mapped by transition
    condition, matching config exactly — D32's mechanism works).
-8. **The green and blue flame states have never been seen — by anyone.** The flame's
-   material is instanced at runtime, so edit-mode previews only ever render Orange,
-   and no Play Mode pass has happened. With post-processing off the HDR
-   `_EmissionColor` clamps toward white, so the three states may be far less distinct
-   than the Animator intends. This is the concrete mechanism behind D36's Tier 2
-   bloom note, and it also means the warm ember ground under a non-orange flame is
-   unverified.
-9. **`brazier_bowl.png` has a glowing orange rim baked into the art**, so the bowl
+8. ~~**The green and blue flame states have never been seen.**~~ **RESOLVED
+   2026-08-27** — the developer ran Play Mode, saw all three states, and judged the
+   quality acceptable. The feared HDR-emission clamping did not materialise: the
+   states are distinct enough with post-processing off, so **bloom is not needed**
+   and D36's Tier 2 note on it can be treated as closed. Note this covers the colour
+   states specifically; the **selected-state halo's fragility (item 6) was not part
+   of what they reported on**, so treat that as still open unless they say otherwise.
+9. 🔴 **THE HOSTED BUILD IS BADLY STALE, AND DEPLOYING IS CURRENTLY BLOCKED.** The
+   public link the brief requires
+   (https://dogukantaytuglu.github.io/softgames-task-build/) was last deployed
+   *before* D37, so it contains **none** of the four UI/UX rounds, none of Magic
+   Words' failure-path fixes, none of the sprite-atlas fix, and none of Phoenix
+   Flame's polish. Anyone opening that link today sees a substantially worse project
+   than the repo contains. Worse: `Assets/Editor/DeployWebGL.cs` builds into a
+   **sibling folder** `../softgames-task-build` and runs `git add -A` / `commit` /
+   `push origin master` inside it — and **that folder does not exist on this
+   machine** (this doc previously recorded it at `E:\Projects\UnityProjects\...`,
+   a Windows path from a different machine). So `Build → Build && Deploy WebGL` will
+   fail at the git step until the build repo is cloned to
+   `/Users/dogukan/PersonalProjects/softgames-task-build`. **Clone it, then
+   redeploy** — this is the highest-value remaining action in the whole project,
+   because it is the artifact the grader actually opens.
+10. **`brazier_bowl.png` has a glowing orange rim baked into the art**, so the bowl
    interior stays orange under a green or blue flame (D42). Options: animate the two
    brazier sprites too (needs its own Animator — `Bowl` is a separate branch from
    `FakeLight`), desaturate the baked rim so it reads as hot metal, or keep it as
@@ -904,9 +926,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   every scene automatically, no per-scene duplication needed. **Resized/restyled as
   part of D37** (2026-08-26): was 328×125 at 78px type (flagged as visually louder
   than the actual game on 3 of 4 screens) — now a 236×66 pill at 34px on the shared
-  `ui_rounded_base` chrome with a small green status dot. White-on-any-ground, which
-  reads fine against every current background; will want a dark-chrome variant once
-  Phoenix Flame's scene moves to its own dark background (not done yet).
+  `ui_rounded_base` chrome with a small green status dot. White-on-any-ground.
+  **Phoenix Flame's scene HAS since moved to a dark background (D41)** — the
+  predicted problem was checked and did not appear: the pill reads fine against the
+  `#181327` plum, so no dark-chrome variant is needed.
 - **WebGL build + hosting:** build settings are **Brotli compression +
   Decompression Fallback enabled** (Player Settings → Publishing Settings) — this
   combination is required because the host (GitHub Pages) can't send a
