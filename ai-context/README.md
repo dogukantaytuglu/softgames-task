@@ -15,6 +15,7 @@ first, then branch out as needed.
 |---|---|---|
 | `current-context.md` | Single living spine doc: what's built, current state, immediate next step | **Always, first** — onboarding or resuming |
 | `decisions.md` | Decision log (newest first) — what was chosen and why | Before re-debating a choice; prepping to defend a decision out loud |
+| `build-size-plan.md` | Parked plan for the WebGL build-size measurement + reduction write-up (`BRIEF.md` §6) — current numbers, identified drivers, order of work | Before doing any size optimisation, or writing the README's size section |
 | `BRIEF.md` | The original self-contained assignment handoff brief (context, plan, grading criteria, definition of done) | Understanding the assignment itself, task-by-task guidance |
 | `Softgames_-_Unity_Developer_Assignment.pdf` | Original assignment PDF, verbatim | Cross-checking the brief against the source |
 

@@ -4,17 +4,26 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-27 (late). **Everything below is committed and pushed** through
-`2700147`. **All four screens now have a UI/UX round** — Phoenix Flame was the last one
-and is done (D41), and its fake-light glow now colour-lerps with the flame (D42). Full
-detail and reasoning: **D42** and **D41** first, then D40.
+Last updated: 2026-08-27 (end of day). **All four screens have a UI/UX round** —
+Phoenix Flame was the last (D41), and its fake-light glow colour-lerps with the flame
+(D42). This day closed with a third `unity-interviewer` audit and an action pass on it
+(**D43** — read that first; it supersedes several claims that used to live here).
 
-✅ **Phoenix Flame is Play Mode-verified by the developer (2026-08-27).** They ran it,
-saw all three colour states, and called the quality acceptable. That closes the
-longest-standing unknown on this screen and, importantly, **settles the bloom
-question by evidence**: the three states read as distinct *without* post-processing,
-so the HDR-clamping worry (D36 Tier 2) did not materialise in practice and no Volume
-needs adding. See "the hosted build is stale" below for what is now the top risk.
+✅ **Phoenix Flame is verified ON DEVICE by the developer (2026-08-27).** Not just
+Play Mode — they ran it on a real device, saw all three colour states, and called the
+quality acceptable. That closes the longest-standing unknown on this screen and
+**settles the bloom question by evidence**: the three states read as distinct *without*
+post-processing, so the HDR-clamping worry (D36 Tier 2) did not materialise and no
+Volume needs adding. The developer also reports **FPS was not a problem even on the
+lowest-performing device they tried** — which is why the WebGL quality work in D43 was
+deliberately scoped to removing dead cost, not to squeezing frames.
+
+🔴 **The hosted build is CURRENT, not stale — the previous version of this file was
+wrong.** Commit `47f40da` claimed the public link predates D37 and that deploying was
+blocked. Verified false on 2026-08-27: the build repo has a `Build 2026-08-27 16:04`
+commit (14:04 UTC), *after* the last content commit, and the live page's
+`last-modified` matches. D37–D42 are all live. **But see open item 9 — deploying
+*from this machine* is genuinely blocked, for reasons the old note got wrong.**
 
 This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), the
 **Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
@@ -28,22 +37,35 @@ The second one modified the fire prefab it was explicitly told not to touch, the
 reported it byte-identical — it wasn't. See D41. **An agent's own "I verified nothing
 else changed" is not evidence; `git diff --stat` against a known-good line count is.**
 
-## 👉 NEXT JOB: redeploy, then the README
+## 👉 NEXT JOB: make this machine able to build, then redeploy
 
-All four screens have their visual round and Phoenix Flame is developer-verified, so
-the remaining work is **not** polish. In priority order:
+D43 changed things a grader sees first (custom WebGL template, WebGL quality tier,
+product/company name, README) — **and none of it reaches the public link until a
+build is produced and deployed.** In priority order:
 
-1. 🔴 **Clone the build repo and redeploy.** The public link is pre-D37 and shows
-   none of this work; the deploy script needs
-   `/Users/dogukan/PersonalProjects/softgames-task-build` to exist and it does not.
-   See open item 9. This is the single highest-value action left, because the hosted
-   build is what actually gets graded.
-2. **The README architecture/decisions write-up** (`BRIEF.md` §6/§7) — still not
-   started, and explicitly graded. `decisions.md` is the raw material; it needs
-   distilling, not rewriting. The build-size measurement write-up belongs here too.
-3. **D36's still-open Tier 1 items**: the stock WebGL `index.html`, the ~20MB build
-   size, the `BRIEF.md` salary-figure privacy question, and the README's
-   architecture/decisions write-up (still not started, `BRIEF.md` §6/§7).
+1. 🔴 **Install the WebGL module and clone the build repo.** *Neither exists on this
+   machine.* `modules.json` reports `webgl selected: False` for all four installed
+   Unity versions (2022.3.62f2, 6000.0.82f1, 6000.3.16f1, 6000.5.4f1), and
+   `/Users/dogukan/PersonalProjects/softgames-task-build` is absent. Today's 16:04
+   deploy therefore came from a *different machine*. Until both are fixed,
+   `Build → Build && Deploy WebGL` cannot run here at all — this is a harder blocker
+   than the old "just clone it" note implied.
+2. **Redeploy**, so the template/quality/naming work is actually live.
+3. 🔴 **The `BRIEF.md` / `current-context.md` privacy scrub** — salary target, their
+   [redacted] ceiling, the §6 strategy framing, and "the project needs visual polish" are all
+   still committed. The README no longer *points* at those two files (D43 dropped the
+   pointer and now references `decisions.md` only), which lowers the odds a grader
+   wanders in, but it does not remove the content. **The developer explicitly took
+   this one to handle themselves — do not scrub it for them.**
+4. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
+   a full plan in `ai-context/build-size-plan.md`. The developer wants to talk through
+   the optimisation before it happens, so the README ships with *no* size numbers
+   rather than half-measured ones. Un-parking needs item 1 done first.
+5. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
+   **the developer is taking this one themselves.** At 1px a top card covers the one
+   below by 0.3%, which arguably doesn't meet the brief's "partially covering."
+
+The README architecture/decisions write-up is **done** (D43) — that item is closed.
 4. **The fire has a known ceiling, documented in D41**: its flipbook has ≤1.2%
    bottom alpha margin on all 64 frames, so the flat base cut can only be
    *mitigated* in Shuriken, never cured. The brazier now hides it. Retiring it
@@ -75,9 +97,10 @@ the remaining work is **not** polish. In priority order:
    **`ui_rounded_base.png`: Tight, with a 64px 9-slice border** — and it is the
    sprite behind every button and panel in the app. Untouched so far because it is
    shared chrome across all four screens.
-5. **`Assets/Resources/PerformanceTestRunInfo.json` / `PerformanceTestRunSettings.json`**
-   got committed — Unity Performance Testing artifacts, and everything under
-   `Resources/` is force-included in every build. Probably belong in `.gitignore`.
+5. ~~**`Assets/Resources/PerformanceTestRun*.json` got committed**~~ — **RESOLVED
+   (D43).** Deleted from the repo and added to `.gitignore` so they can't come back.
+   Everything under `Resources/` is force-included in every build, so these shipped
+   as dead weight.
 
 6. **Phoenix Flame's button selected state is real but fragile (D41).** It rides
    `Button`'s built-in Selected transition, so tapping empty background or the home
@@ -97,21 +120,19 @@ the remaining work is **not** polish. In priority order:
    and D36's Tier 2 note on it can be treated as closed. Note this covers the colour
    states specifically; the **selected-state halo's fragility (item 6) was not part
    of what they reported on**, so treat that as still open unless they say otherwise.
-9. 🔴 **THE HOSTED BUILD IS BADLY STALE, AND DEPLOYING IS CURRENTLY BLOCKED.** The
-   public link the brief requires
-   (https://dogukantaytuglu.github.io/softgames-task-build/) was last deployed
-   *before* D37, so it contains **none** of the four UI/UX rounds, none of Magic
-   Words' failure-path fixes, none of the sprite-atlas fix, and none of Phoenix
-   Flame's polish. Anyone opening that link today sees a substantially worse project
-   than the repo contains. Worse: `Assets/Editor/DeployWebGL.cs` builds into a
-   **sibling folder** `../softgames-task-build` and runs `git add -A` / `commit` /
-   `push origin master` inside it — and **that folder does not exist on this
-   machine** (this doc previously recorded it at `E:\Projects\UnityProjects\...`,
-   a Windows path from a different machine). So `Build → Build && Deploy WebGL` will
-   fail at the git step until the build repo is cloned to
-   `/Users/dogukan/PersonalProjects/softgames-task-build`. **Clone it, then
-   redeploy** — this is the highest-value remaining action in the whole project,
-   because it is the artifact the grader actually opens.
+9. 🔴 **DEPLOYING FROM THIS MACHINE IS BLOCKED — but the live build is CURRENT.**
+   The previous version of this item claimed the public link was pre-D37 and badly
+   stale. **That was wrong**, and commit `47f40da` recorded it wrongly. Verified
+   2026-08-27: the build repo has a `Build 2026-08-27 16:04` commit landing *after*
+   the last content commit, the live page's `last-modified` matches, and the deployed
+   payload was decompressed and checked to contain the D37–D42 work. What *is* true is
+   that this machine cannot produce a build at all: **the WebGL module is not
+   installed for any of the four Unity versions here** (`modules.json` →
+   `webgl selected: False` for 2022.3.62f2, 6000.0.82f1, 6000.3.16f1, 6000.5.4f1),
+   and the deploy script's sibling folder
+   `/Users/dogukan/PersonalProjects/softgames-task-build` does not exist. Today's
+   deploy therefore came from a different machine. Both need fixing before D43's
+   template/quality/naming changes can reach the graded artifact.
 10. **`brazier_bowl.png` has a glowing orange rim baked into the art**, so the bowl
    interior stays orange under a green or blue flame (D42). Options: animate the two
    brazier sprites too (needs its own Animator — `Bowl` is a separate branch from
@@ -309,13 +330,24 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   there is actually unit-tested — usually nothing is, since Monobehaviours in this
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
-  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **54 EditMode tests actually run**
-  right now (5 FpsCounter, 19 Ace of Shadows, 8 SceneFlow, 22 MagicWords) —
-  verified by running the suite (`TestRunnerApi`, `PassCount`), not by counting
-  attributes. MagicWords' 22 only cover its `Logic` layer (`DialogueSequence`,
-  `DialogueSequenceBuilder`, `DialogueTextFormatter`, `SpeakerAvatarLookup`) —
-  same "Monobehaviours are thin wiring, not unit-tested" pattern as everywhere
-  else in this project.
+  `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **80 EditMode test cases exist**
+  as of D43 (5 FpsCounter, 20 Ace of Shadows, 8 SceneFlow, 6 PhoenixFlame,
+  41 MagicWords) — that is an **attribute count, not a run count**: 75 `[Test]`
+  methods plus 2 methods carrying 5 bare `[TestCase]`s between them. The suite has
+  still never been executed through the Test Runner window (open item 1), so "they
+  pass" currently rests on older `TestRunnerApi` runs plus static reading. The `54`
+  this line used to claim predated the Phoenix Flame tests and later MagicWords
+  additions. MagicWords' tests cover its `Logic` layer (`DialogueSequence`,
+  `DialogueSequenceBuilder`, `DialogueTextFormatter`, `SpeakerAvatarLookup`) **plus,
+  as of D43, `MagicWordsResponseParser` — the first deliberate exception to the
+  "Monobehaviours are thin wiring, not unit-tested" pattern.** It earns the exception
+  because it is real branching logic the brief explicitly asks for (malformed payload
+  handling) that only lives in the Monobehaviour assembly because `JsonUtility` needs
+  `UnityEngine`. `MagicWords.Tests.asmdef` now references `MagicWords.Monobehaviour`
+  as well as `MagicWords.Logic` to reach it. `MagicWordsRepository.Fetch` remains
+  untested — it is an `IEnumerator` around `UnityWebRequest`, so covering it would
+  need either real network calls in a unit test or an abstraction the developer
+  declined to add.
   ⚠️ **`grep -c "\[Test\]"` undercounts by 2**: `SceneFlowStateTests.
   TryBeginNavigation_ToNullOrEmptyScene_ReturnsFalse` uses two `[TestCase(...)]`
   attributes with no `[Test]` attribute at all (valid NUnit — `[TestCase]` alone
