@@ -36,6 +36,12 @@ namespace AceOfShadows.Monobehaviour
         [SerializeField] private Ease exitEase = Ease.InBack;
         [SerializeField] private float exitStagger = 0.02f;
 
+        [Header("Fast Forward")]
+        [Tooltip("How much faster the deal runs while the fast-forward button is held - both " +
+                 "the move cadence and each card's own slide are divided by this, so the whole " +
+                 "sequence compresses instead of just piling up more overlapping card tweens.")]
+        [SerializeField] private float speedMultiplier = 3f;
+
         public int TotalCards => totalCards;
         public float MoveInterval => moveInterval;
         public float MaxRotationDegrees => maxRotationDegrees;
@@ -48,5 +54,6 @@ namespace AceOfShadows.Monobehaviour
         public float ExitDuration => exitDuration;
         public Ease ExitEase => exitEase;
         public float ExitStagger => exitStagger;
+        public float SpeedMultiplier => speedMultiplier;
     }
 }

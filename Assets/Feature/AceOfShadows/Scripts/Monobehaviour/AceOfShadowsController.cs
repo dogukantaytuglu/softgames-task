@@ -16,6 +16,7 @@ namespace AceOfShadows.Monobehaviour
         [SerializeField] private StackCounterView targetCounterView;
         [SerializeField] private FinishedMessageView finishedMessageView;
         [SerializeField] private Image countdownFill;
+        [SerializeField] private FastForwardButtonView fastForwardButton;
 
         private const float CountdownFillStep = 0.01f;
 
@@ -23,6 +24,8 @@ namespace AceOfShadows.Monobehaviour
         private readonly Dictionary<int, CardView> _cardViewsByCardId = new();
         private CountdownTimer _timer;
         private float _lastCountdownFillAmount = -1f;
+        private bool _isFastForwarding;
+        private float _extraTickAccumulator;
 
         private void Awake()
         {
@@ -40,6 +43,9 @@ namespace AceOfShadows.Monobehaviour
                 .OnTick(UpdateCountdownFill)
                 .OnLoop(TryMoveNext);
             _timer.Start();
+
+            fastForwardButton.HoldStarted += OnFastForwardHoldStarted;
+            fastForwardButton.HoldEnded += OnFastForwardHoldEnded;
         }
 
         private void OnDestroy()
@@ -47,6 +53,39 @@ namespace AceOfShadows.Monobehaviour
             _deck.CardMoved -= OnCardMoved;
             _deck.AllAnimationsFinished -= OnAllAnimationsFinished;
             _timer?.Stop();
+
+            fastForwardButton.HoldStarted -= OnFastForwardHoldStarted;
+            fastForwardButton.HoldEnded -= OnFastForwardHoldEnded;
+        }
+
+        // The countdown timer only advances on real Time.deltaTime (see TimerUtil.Timer.Tick),
+        // and it's shared plumbing used elsewhere - so instead of teaching it about speed, we
+        // feed it extra ticks ourselves. Each TryTick() consumes one more frame's worth of
+        // countdown, so calling it (speedMultiplier - 1) extra times a frame makes the move
+        // cadence land speedMultiplier-times more often. The accumulator carries the
+        // fractional remainder so a non-integer multiplier still averages out correctly.
+        private void Update()
+        {
+            if (!_isFastForwarding)
+                return;
+
+            _extraTickAccumulator += config.SpeedMultiplier - 1f;
+            while (_extraTickAccumulator >= 1f)
+            {
+                _timer.TryTick();
+                _extraTickAccumulator -= 1f;
+            }
+        }
+
+        private void OnFastForwardHoldStarted()
+        {
+            _isFastForwarding = true;
+        }
+
+        private void OnFastForwardHoldEnded()
+        {
+            _isFastForwarding = false;
+            _extraTickAccumulator = 0f;
         }
 
         private void CreateCardViews()
@@ -111,8 +150,9 @@ namespace AceOfShadows.Monobehaviour
 
             var localPosition = CardStackLayout.GetOffset(distanceFromBottom, config.PerCardOffset, config.MaxPileRise);
             var localRotation = CardStackLayout.GetRandomZRotation(config.MaxRotationDegrees);
+            var duration = _isFastForwarding ? config.MoveDuration / config.SpeedMultiplier : config.MoveDuration;
 
-            view.MoveTo(localPosition, localRotation, OnCardLanded);
+            view.MoveTo(localPosition, localRotation, duration, OnCardLanded);
         }
 
         private void OnCardLanded()
@@ -126,6 +166,7 @@ namespace AceOfShadows.Monobehaviour
             finishedMessageView.Show(_deck.Target.Count, config.TotalCards);
             sourceCounterView.Hide();
             targetCounterView.Hide();
+            fastForwardButton.gameObject.SetActive(false);
             AnimateTargetStackExit();
         }
 
@@ -156,6 +197,7 @@ namespace AceOfShadows.Monobehaviour
 
             sourceCounterView.Show();
             targetCounterView.Show();
+            fastForwardButton.gameObject.SetActive(true);
             sourceCounterView.SetCount(_deck.Source.Count);
             targetCounterView.SetCount(_deck.Target.Count);
 

@@ -35,14 +35,14 @@ namespace AceOfShadows.Monobehaviour
             RectTransform.localRotation = localRotation;
         }
 
-        public void MoveTo(Vector2 anchoredPosition, Quaternion localRotation, Action onComplete)
+        public void MoveTo(Vector2 anchoredPosition, Quaternion localRotation, float duration, Action onComplete)
         {
             transform.DOKill();
 
             DOTween.Sequence()
                 .SetTarget(transform)
-                .Join(RectTransform.DOAnchorPos(anchoredPosition, _config.MoveDuration))
-                .Join(transform.DOLocalRotateQuaternion(localRotation, _config.MoveDuration))
+                .Join(RectTransform.DOAnchorPos(anchoredPosition, duration))
+                .Join(transform.DOLocalRotateQuaternion(localRotation, duration))
                 .SetEase(_config.MoveEase)
                 .OnComplete(() => onComplete?.Invoke());
         }
