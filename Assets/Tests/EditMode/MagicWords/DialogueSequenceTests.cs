@@ -63,6 +63,21 @@ namespace MagicWords.Tests
         }
 
         [Test]
+        public void CurrentNumber_IsZeroBeforeStart_ThenOneBasedPosition()
+        {
+            var sequence = new DialogueSequence(new List<DialogueLine> { Line(), Line(), Line() });
+
+            Assert.AreEqual(0, sequence.CurrentNumber);
+
+            sequence.MoveNext();
+            Assert.AreEqual(1, sequence.CurrentNumber);
+
+            sequence.MoveNext();
+            sequence.MoveNext();
+            Assert.AreEqual(sequence.Count, sequence.CurrentNumber);
+        }
+
+        [Test]
         public void Count_ReflectsConstructorLineCount()
         {
             var sequence = new DialogueSequence(new List<DialogueLine> { Line(), Line(), Line() });

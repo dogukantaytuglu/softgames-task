@@ -12,6 +12,7 @@ namespace MagicWords.Monobehaviour
         [SerializeField] private DialogueBoxView rightBox;
         [SerializeField] private Button advanceButton;
         [SerializeField] private DialogueFinishedView finishedView;
+        [SerializeField] private DialogueProgressView progressView;
 
         private readonly MagicWordsRepository _repository = new();
         private DialogueSequence _sequence;
@@ -24,6 +25,7 @@ namespace MagicWords.Monobehaviour
             leftBox.Initialize();
             rightBox.Initialize();
             finishedView.Initialize();
+            progressView.Initialize();
             advanceButton.onClick.AddListener(OnAdvanceClicked);
 
             _autoAdvanceTimer = TimerService.CreateCountdownTimer(config.AutoAdvanceDelay, loopCount: 1)
@@ -93,6 +95,8 @@ namespace MagicWords.Monobehaviour
             otherBox.SnapHidden();
             otherBox.gameObject.SetActive(false);
 
+            progressView.SetProgress(_sequence.CurrentNumber, _sequence.Count);
+
             _activeBox = box;
             box.gameObject.SetActive(true);
             box.Bind(line.SpeakerName, null);
@@ -114,6 +118,7 @@ namespace MagicWords.Monobehaviour
         {
             leftBox.gameObject.SetActive(false);
             rightBox.gameObject.SetActive(false);
+            progressView.Hide();
             finishedView.Show();
         }
     }

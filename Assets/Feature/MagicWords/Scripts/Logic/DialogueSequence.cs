@@ -14,6 +14,12 @@ namespace MagicWords.Logic
         public bool IsFinished => HasStarted && _index >= _lines.Count - 1;
         public DialogueLine Current => HasStarted && _index < _lines.Count ? _lines[_index] : null;
 
+        /// <summary>
+        /// 1-based position of the line currently being shown, or 0 before the first
+        /// <see cref="MoveNext"/>. Pairs with <see cref="Count"/> for a "line N of M" read-out.
+        /// </summary>
+        public int CurrentNumber => _index + 1;
+
         public DialogueSequence(IReadOnlyList<DialogueLine> lines)
         {
             if (lines == null)
