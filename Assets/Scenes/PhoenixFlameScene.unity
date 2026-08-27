@@ -1656,10 +1656,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 4c22d240e739813438a85492bc5638f9, type: 2}
   flameSpawnPoint: {fileID: 1074971713}
+  fakeLightAnimator: {fileID: 1754738775}
   buttons:
-  - {fileID: 599035311}
   - {fileID: 615070958}
   - {fileID: 1211013899}
+  - {fileID: 599035311}
 --- !u!4 &1009391658
 Transform:
   m_ObjectHideFlags: 0
@@ -1873,12 +1874,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1074971712}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.35, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.15, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1932351874}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1211013897
 GameObject:
@@ -2821,6 +2822,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1754738774}
+  - component: {fileID: 1754738775}
   m_Layer: 0
   m_Name: FakeLight
   m_TagString: Untagged
@@ -2847,6 +2849,28 @@ Transform:
   - {fileID: 1850133518}
   m_Father: {fileID: 1576279845}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &1754738775
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1754738773}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 4eac7dd2088f64149b5caaf93e238e12, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1787069216
 GameObject:
   m_ObjectHideFlags: 0
@@ -3399,12 +3423,13 @@ Transform:
   m_GameObject: {fileID: 1932351873}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.15, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 504326862}
   - {fileID: 944234271}
+  - {fileID: 1074971713}
   m_Father: {fileID: 1576279845}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2117721514
@@ -3451,10 +3476,9 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1009391658}
   - {fileID: 1436619864}
   - {fileID: 466035379}
   - {fileID: 1419751331}
   - {fileID: 1394087148}
-  - {fileID: 1074971713}
-  - {fileID: 1009391658}
   - {fileID: 1576279845}

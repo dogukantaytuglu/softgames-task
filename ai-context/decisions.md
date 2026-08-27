@@ -6,6 +6,24 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D42 — The fake-light glow is colour-lerped by a SECOND Animator sharing the flame's controller and clips (2026-08-27)
+
+The developer grouped the scene's glow sprites under a `FakeLight` GameObject and asked for the Animator to lerp their colour alongside the flame, rather than leaving them permanently orange.
+
+**Why a second Animator rather than extending the existing one.** An Animator can only animate its own hierarchy, and the flame's Animator sits on the runtime-instantiated `PhoenixFlame` prefab root — `FakeLight` lives under `Environment`, a different branch, so it is physically unreachable from there. The tidy-looking alternative (move the Animator to a shared parent and target both by animation path) was rejected because `Object.Instantiate` names the clone **`PhoenixFlame(Clone)`** — verified, not assumed — so the flame's path would depend on a runtime-generated name. Moving the glow sprites *into* the flame prefab was the zero-code option but was rejected too: it would undo the developer's own grouping and put scene scenery inside the reusable flame prefab.
+
+**One authored place is preserved.** Both Animators share `PhoenixFlameColors.controller` and the same three clips; the clips simply gained `m_Color` curves on the `FlameHalo` / `EmberPool` / `EmberPoolCore` paths alongside the existing `material._BaseColor` / `_EmissionColor` curves. D32 therefore still holds — the Animator remains the single source of truth, and `PhoenixFlameAnimatorColorReader` is unaffected because it matches on `propertyName` only (`material._BaseColor.r` etc.), never on path or type. Verified: 12 sprite-colour curves and all 8 original material curves present in every clip.
+
+**Known cost of sharing one controller:** the flame's Animator now also carries curves for `FlameHalo`/`EmberPool`/`EmberPoolCore`, paths that do not exist under it. Unity ignores missing bindings at runtime, but the Animation window shows them as missing when the flame prefab is selected. Accepted deliberately — the alternative is a second controller and a second set of clips, i.e. exactly the two-authored-places drift D32 was created to prevent.
+
+**Colour derivation: Orange is the reference state, not a computed one.** The first attempt derived all three states from the config hue with a fixed saturation per layer, and **silently overwrote the developer's own retune of `FlameHalo`** (they had moved it to `255,138,58` at alpha 56; the computed value was paler and dimmer). Corrected to preserve, per layer, its authored saturation, value, alpha **and its hue offset from the flame's own hue** — swapping only the hue per state. Orange now reproduces the authored scene values bit-exactly, and the developer's "embers run slightly redder than the flame" intent carries into green and blue instead of being flattened. `ContactShadow` is deliberately excluded: it is a shadow, not light. Verified by sampling each clip onto the live hierarchy.
+
+**The lesson worth keeping:** re-read authored values immediately before overwriting them. The developer was editing the scene in parallel, and a value read minutes earlier was already stale.
+
+**Still open:** `brazier_bowl.png` has a glowing orange rim **baked into the art**, so the bowl interior stays orange under a green or blue flame. Options are to animate the two brazier sprites too (needs its own Animator — `Bowl` is a separate branch from `FakeLight`), desaturate the baked rim so it reads as hot metal, or keep it as deliberate "the coals stay orange" logic. Currently reads as an oversight rather than a choice.
+
+---
+
 ### D41 — Phoenix Flame finished: fire silhouette fixed, scene given its UI/UX round; a second agent overreached and was caught; `spriteMeshType` note corrected (2026-08-27)
 
 **Phoenix Flame was the last unpolished screen.** Two scoped agent passes, run one at a time with the Editor held by only one agent, per D40's post-mortem.

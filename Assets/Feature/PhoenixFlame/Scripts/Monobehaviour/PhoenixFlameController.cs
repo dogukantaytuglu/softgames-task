@@ -7,6 +7,7 @@ namespace PhoenixFlame.Monobehaviour
     {
         [SerializeField] private PhoenixFlameConfig config;
         [SerializeField] private Transform flameSpawnPoint;
+        [SerializeField] private Animator fakeLightAnimator;
         [SerializeField] private PhoenixFlameColorButton[] buttons;
 
         private Animator _flameAnimator;
@@ -14,7 +15,7 @@ namespace PhoenixFlame.Monobehaviour
         private void Awake()
         {
             var flameParticle = Instantiate(config.FlamePrefab, flameSpawnPoint.position, flameSpawnPoint.rotation, flameSpawnPoint);
-            flameParticle.Initialize(config);
+            flameParticle.Initialize(config, fakeLightAnimator);
 
             foreach (var button in buttons)
             {

@@ -670,6 +670,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Inspector, a 4th state ("Pink", same colors as Blue, not yet retinted) was added to
   the controller to confirm auto-pickup** — it worked, and that test state/color entry
   is currently in the project as a working proof, not finished content.
+- **The scene's fake-light glow lerps with the flame, via a second Animator (D42).**
+  `Environment/FakeLight` holds the glow sprites (`FlameHalo`, `EmberPool`,
+  `EmberPoolCore`, plus a `ContactShadow` that deliberately does *not* lerp) and
+  carries its own `Animator` sharing the flame's controller and clips — the flame's
+  own Animator cannot reach it, since it sits on the runtime-instantiated prefab in a
+  different branch. `PhoenixFlameController` serializes `fakeLightAnimator` and passes
+  it to `FlameParticle.Initialize`, which drives both Animators from one `ColorIndex`
+  behind the existing `TrySelect` guard. Per-state glow colours keep each layer's
+  authored saturation/value/alpha and its hue offset from the flame, so the Orange
+  state reproduces the hand-tuned scene values exactly.
 - **The color transition is 100% Animator Controller — no tween, no script lerp**,
   per the brief's explicit requirement for this task. `PhoenixFlameColors.controller`
   (`Assets/Feature/PhoenixFlame/Animations/`) has 3 states (Orange/Green/Blue), each
