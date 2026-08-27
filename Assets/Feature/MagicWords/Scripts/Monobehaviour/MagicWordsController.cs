@@ -123,7 +123,6 @@ namespace MagicWords.Monobehaviour
             box.Bind(line.SpeakerName);
             box.SlideIn(config.BoxMoveDuration, config.BoxMoveEase);
 
-            portrait.Bind(line.SpeakerName, null);
             portrait.SetSpeaking(true);
             otherPortrait.SetSpeaking(false);
 
