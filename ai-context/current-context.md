@@ -4,42 +4,67 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-27. **Ace of Shadows has had its UI/UX Round 2 and the card
-art pipeline was rebuilt — everything below through D39 is committed and pushed**
-(`4587f45`, `7c3261b`).
+Last updated: 2026-08-27 (late). **Everything below is committed and pushed** through
+`7b8ab0e`. Three screens now have a UI/UX round; Phoenix Flame's fire is the next job.
 
-This session, in order: the developer reimported the playing-card art, which broke
-Ace of Shadows outright (`AceOfShadowsConfig`'s 107 `cardVisuals` pointed at deleted
-prefabs) and left two broken prefab instances in the Main Menu's card fan. All 106
-prefabs in `Deck01`/`Deck02` were rebuilt into the UI structure `CardView` requires
-and resized to 300×375; the Main Menu fan was repointed at `Deck01_Heart_K` /
-`Deck01_Spade_A`; the developer reassigned `cardVisuals` by hand. Then
-`unity-ui-ux-expert` built **Round 2 on Ace of Shadows** — felt table, dashed card
-slots, SOURCE/TARGET counter pills, a rewritten completion moment, a screen title,
-and a countdown ring moved off the target slot. The shared `HomeButton.prefab` was
-retired off the glossy `buttons_41` atlas art onto the shared cream chrome with a
-tintable ink house glyph at 150×150 (this propagates to **all three** feature
-scenes, and Magic Words / Phoenix Flame have not been looked at since). The stack
-fan was retuned and **`perCardOffset` / `maxPileRise` now live in
-`AceOfShadowsConfig`** rather than as private constants. Finally the developer
-deleted the unused `Deck03`–`Deck06` decks, the `DeckSets` prefabs and the
-`Deck03`–`Deck08` textures, repacking the atlas to two textures — a real BRIEF §6
-build-size lever whose before/after number is still unmeasured.
+This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), then the
+**Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
+(`eecf159`), and a **runtime-only sprite-atlas bug** found and mostly fixed
+(`7b8ab0e`, which also flattened the sprite folder). A **Phoenix Flame particle
+attempt was aborted as overengineered** and is parked in a git stash. Full detail
+and reasoning: **D40** first, then D39.
 
-Full detail and reasoning: **D39** (card pipeline, Round 2, its three deviations,
-and the home button), **D38** (how Round 2 was scoped). Earlier context: D33/D34
-(portrait-first, shared UI chrome), D35 (WebGL flame fix), D36 (interviewer audit —
-still-open Tier 1 items), D37 (Round 1: Main Menu + AppScene).
+## 👉 NEXT JOB: Phoenix Flame's fire
 
-⚠️ **Two things need a human and are not done:** the EditMode tests have never been
-run through the Test Runner this session (the Test Runner API cannot be driven over
-MCP — it needs its window; assertions were instead evaluated directly against the
-real `CardStackLayout`, 5/5, and the test assembly confirmed compiled), and
-`AceOfShadowsConfig` currently ships **`perCardOffset: 1`, `maxPileRise: 200`**,
-not the `2` / `340` Round 2 was tuned around. At 1px a full deck rises 143px
-instead of 286px, which halves the pile-height signal the whole retune exists to
-create. It may have been a deliberate hand-tune — it was not overridden, only
-flagged.
+Read **D40's "Phoenix Flame" section before briefing anyone.** A previous attempt took
+the prefab from 1 ParticleSystem to 6 (+24,532 lines), added 4 materials, a
+post-processing Volume and a 354-line texture generator, and deleted the original
+material, three textures and an Animator state file — then got stuck chasing an
+artefact it had introduced. It is recoverable (`git stash list`, "phoenix-flame
+particle agent output"); Phoenix Flame itself is back at HEAD.
+
+The briefing error was giving one agent three heavyweight goals at once. For the
+retry: **keep the existing single ParticleSystem and material**, limit changes to
+curves / colour-over-lifetime / emission / size / noise, **forbid adding systems,
+materials or volumes and forbid deleting anything**, require a render after each
+change, and restate that D32 makes the Animator state names the single source of
+truth for the flame's colours. Handle the two real Phoenix Flame decisions —
+post-processing for that scene (D35 WebGL risk) and the uncapped 6.9MB
+`LargeFlame02.tif` (cheap fix: a WebGL texture-size override, not new art) —
+**separately from the look pass**, not folded into it.
+
+## ⚠️ Open items that need a human, not an agent
+
+1. **EditMode tests have never been run through the Test Runner** — its API cannot be
+   driven over MCP (needs its window; rejected as a user interaction). Outstanding
+   since D39. Assertions were evaluated directly against the real code instead.
+2. **`AceOfShadowsConfig` ships `perCardOffset: 1` / `maxPileRise: 200`**, not the
+   `2` / `340` Round 2 was tuned around. At 1px a full deck rises 143px instead of
+   286px, halving the pile-height signal the retune exists to create. May be a
+   deliberate hand-tune; flagged, never overridden.
+3. **Magic Words' portrait groundwork is committed but unverified** —
+   `SpeakerPortraitView`, `SpeakerInitial` and the disc/ring/glow/glyph sprites are in
+   version control, but two consecutive agent runs died mid-verification so none of it
+   has been seen in Play Mode. Also still open on that screen: the dialogue box
+   positions, and dropping the now-redundant in-box avatar chips.
+4. **Two small sprite defects remain:** `UI.spriteatlas` still has `enableRotation: 1`
+   (unsafe for 9-sliced sprites — the borders do not rotate with the sprite), and
+   `ui_capsule.png` is `spriteMeshType: 0` (Tight) while carrying a 15px 9-slice
+   border, which clips its ends in any packing mode.
+5. **`Assets/Resources/PerformanceTestRunInfo.json` / `PerformanceTestRunSettings.json`**
+   got committed — Unity Performance Testing artifacts, and everything under
+   `Resources/` is force-included in every build. Probably belong in `.gitignore`.
+
+## 🛠 If Unity or the MCP bridge misbehaves
+
+**Restarting Unity makes this particular failure worse, not better** — see D40's
+"Operational" section for the full recovery. Short version: stale
+`~/.unity/mcp/connections/*.json` descriptors and their `/tmp/unity-mcp-*` sockets
+accumulate one per Editor launch and are never cleaned up, and an orphaned
+`relay_mac_arm64 --relay --editor-pid <dead>` can sit on ports 9001/9002 preventing
+the new Editor from standing up its own relay. Clear all of that, then start Unity.
+Also: **only one Editor-driving agent at a time** — `OpenScene(..., Single)` is global,
+so a second agent discards the first's unsaved work.
 
 ## What we're building
 
@@ -63,19 +88,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Card art is the reimported `Deck01`/`Deck02` at 300×375. Committed and pushed.
   **Still never Play Mode-verified by the developer**, and the fan values in the
   config are not the tuned ones — see the ⚠️ at the top.
-- **Magic Words: built, Play Mode-verified, committed/pushed (D28, D30,
-  2026-08-24)**. Two dialogue boxes edge-anchored left/right slide toward
-  center on their turn to speak, TMP text reveals via DOTween Pro's
-  `DOMaxVisibleCharacters` typewriter technique, a full-screen invisible
-  button fast-forwards (first click completes the reveal, second click
-  advances) with an auto-advance timer if the player never clicks, and the
-  whole thing runs on real data fetched from the endpoint at runtime
-  (`MagicWordsRepository`, coroutine-based) with a graceful fallback avatar
-  sprite for the endpoint's two guaranteed-broken avatar URLs. The endpoint's
-  `{word}` tokens (`satisfied`, `intrigued`, `neutral`, `affirmative`,
-  `laughing`, `win`) render as real emoji via a TMP Sprite Asset built from
-  Twemoji art (D30); unrecognized tokens still strip cleanly. See "Magic Words
-  architecture" below and D28/D30 in decisions.md for the full design.
+- **Magic Words: built, and past its UI/UX round (D40).** Two dialogue boxes slide
+  toward centre on their turn, DOTween typewriter reveal, fast-forward + auto-advance,
+  real data fetched at runtime, Twemoji emoji via a TMP Sprite Asset (D30). The round
+  added: dialogue 42 at 1.445 line-height (it had been autosizing to ~24px inside a
+  267px column), name plate 52 in its own 92px row, box 445 tall sized against all 17
+  real endpoint lines, 5% inset, a speech-bubble tail, a TAP hint, a `LINE n OF m`
+  progress pill, and a warm gradient ground. Fixed a real defect: every line had been
+  rendering TMP synthetic faux-bold because `fontStyle: Bold` was set on a Rubik asset
+  with no bold weight wired. **Failure handling now works** — the parser no longer
+  throws on non-JSON, requests have a 10s timeout, and a failed fetch no longer
+  announces "That's the end of the conversation." **Not verified:** the large speaker
+  portraits are committed as groundwork only and have never run in Play Mode; box
+  positions and the redundant in-box avatar chips are still open.
 - **Phoenix Flame: first pass built, not yet Play Mode-verified (D31, 2026-08-25).**
   A config-driven flame (own prefab + a runtime-instanced material) recolors via a
   3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. See
