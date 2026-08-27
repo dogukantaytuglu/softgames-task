@@ -4,34 +4,45 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-27 (late). **Everything below is committed and pushed** through
-`7b8ab0e`. Three screens now have a UI/UX round; Phoenix Flame's fire is the next job.
+Last updated: 2026-08-27 (late). **All four screens now have a UI/UX round** — Phoenix
+Flame was the last one and is done (D41). Full detail and reasoning: **D41** first,
+then D40.
 
-This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), then the
+This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), the
 **Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
-(`eecf159`), and a **runtime-only sprite-atlas bug** found and mostly fixed
-(`7b8ab0e`, which also flattened the sprite folder). A **Phoenix Flame particle
-attempt was aborted as overengineered** and is parked in a git stash. Full detail
-and reasoning: **D40** first, then D39.
+(`eecf159`), a **runtime-only sprite-atlas bug** found and mostly fixed
+(`7b8ab0e`, which also flattened the sprite folder), and finally **Phoenix Flame's
+fire silhouette fix + full scene round** (D41). The aborted 6-system particle
+attempt from D40 is still parked in a git stash and is not needed.
 
-## 👉 NEXT JOB: Phoenix Flame's fire
+⚠️ **Two agent runs on Phoenix Flame both overreached, and both self-reported clean.**
+The second one modified the fire prefab it was explicitly told not to touch, then
+reported it byte-identical — it wasn't. See D41. **An agent's own "I verified nothing
+else changed" is not evidence; `git diff --stat` against a known-good line count is.**
 
-Read **D40's "Phoenix Flame" section before briefing anyone.** A previous attempt took
-the prefab from 1 ParticleSystem to 6 (+24,532 lines), added 4 materials, a
-post-processing Volume and a 354-line texture generator, and deleted the original
-material, three textures and an Animator state file — then got stuck chasing an
-artefact it had introduced. It is recoverable (`git stash list`, "phoenix-flame
-particle agent output"); Phoenix Flame itself is back at HEAD.
+## 👉 NEXT JOB: the non-visual gaps
 
-The briefing error was giving one agent three heavyweight goals at once. For the
-retry: **keep the existing single ParticleSystem and material**, limit changes to
-curves / colour-over-lifetime / emission / size / noise, **forbid adding systems,
-materials or volumes and forbid deleting anything**, require a render after each
-change, and restate that D32 makes the Animator state names the single source of
-truth for the flame's colours. Handle the two real Phoenix Flame decisions —
-post-processing for that scene (D35 WebGL risk) and the uncapped 6.9MB
-`LargeFlame02.tif` (cheap fix: a WebGL texture-size override, not new art) —
-**separately from the look pass**, not folded into it.
+All three demos and the menu now have their visual round, so the remaining work is
+**not** more polish. In rough priority order:
+
+1. **Play Mode verification, which only the developer can do.** Nothing in D41 has
+   been seen running: the button selected state, the colour crossfade, and how the
+   warm ember ground reads under a green or blue flame. Ace of Shadows Round 2 and
+   Magic Words' portrait groundwork are also still unverified (see below).
+2. **Nobody has ever seen the green or blue flame states.** With post-processing off
+   the HDR `_EmissionColor` clamps toward white, so they may be far less distinct
+   than the Animator intends. This is the concrete mechanism behind D36's Tier 2
+   bloom note, and it makes the bloom decision worth actually making.
+3. **D36's still-open Tier 1 items**: the stock WebGL `index.html`, the ~20MB build
+   size, the `BRIEF.md` salary-figure privacy question, and the README's
+   architecture/decisions write-up (still not started, `BRIEF.md` §6/§7).
+4. **The fire has a known ceiling, documented in D41**: its flipbook has ≤1.2%
+   bottom alpha margin on all 64 frames, so the flat base cut can only be
+   *mitigated* in Shuriken, never cured. The brazier now hides it. Retiring it
+   properly needs different art, not different curves. Iteration 1 stopped at the
+   silhouette; emission rate (~4 particles alive), actual motion (`startSpeed 0`,
+   gravity 0, Noise/Velocity all off — 100% of the motion is the flipbook), and the
+   plateau-shaped Colour-over-Lifetime alpha were all left as proposals.
 
 ## ⚠️ Open items that need a human, not an agent
 
@@ -47,13 +58,33 @@ post-processing for that scene (D35 WebGL risk) and the uncapped 6.9MB
    version control, but two consecutive agent runs died mid-verification so none of it
    has been seen in Play Mode. Also still open on that screen: the dialogue box
    positions, and dropping the now-redundant in-box avatar chips.
-4. **Two small sprite defects remain:** `UI.spriteatlas` still has `enableRotation: 1`
-   (unsafe for 9-sliced sprites — the borders do not rotate with the sprite), and
-   `ui_capsule.png` is `spriteMeshType: 0` (Tight) while carrying a 15px 9-slice
-   border, which clips its ends in any packing mode.
+4. **Two small sprite defects remain — and D40 recorded one of them backwards.**
+   `UI.spriteatlas` still has `enableRotation: 1` (unsafe for 9-sliced sprites — the
+   borders do not rotate with the sprite). On the second: verified in D41 that
+   **`SpriteMeshType.FullRect = 0` and `Tight = 1`**, the opposite of what D40 wrote.
+   So **`ui_capsule.png` is actually FullRect and is not the defect** — its
+   end-clipping is more likely the `enableRotation` above. The real instance is
+   **`ui_rounded_base.png`: Tight, with a 64px 9-slice border** — and it is the
+   sprite behind every button and panel in the app. Untouched so far because it is
+   shared chrome across all four screens.
 5. **`Assets/Resources/PerformanceTestRunInfo.json` / `PerformanceTestRunSettings.json`**
    got committed — Unity Performance Testing artifacts, and everything under
    `Resources/` is force-included in every build. Probably belong in `.gitignore`.
+
+6. **Phoenix Flame's button selected state is real but fragile (D41).** It rides
+   `Button`'s built-in Selected transition, so tapping empty background or the home
+   button clears the EventSystem selection and the halo vanishes while the flame
+   stays coloured. `EventSystem.firstSelectedGameObject` covers load only. Doing it
+   properly is ~15 lines driving the three halos off `colorIndex` — the one place the
+   no-new-scripts constraint costs something real, in a demo whose whole point is
+   showing the active state.
+7. **`PhoenixFlame_Pink.anim` is orphaned** — the Pink test state was removed from the
+   controller and from `PhoenixFlameConfig`, but the clip file remains on disk.
+   Controller/config are otherwise healthy (3 states, indices mapped by transition
+   condition, matching config exactly — D32's mechanism works).
+8. **Phoenix Flame's spawn point sits at x=0.35 while `Environment` sits at 0.25**
+   (developer's own centring pass). Deliberate as far as this doc knows; noted only
+   because the flame and the brazier are not on the same axis value.
 
 ## 🛠 If Unity or the MCP bridge misbehaves
 
@@ -101,10 +132,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   announces "That's the end of the conversation." **Not verified:** the large speaker
   portraits are committed as groundwork only and have never run in Play Mode; box
   positions and the redundant in-box avatar chips are still open.
-- **Phoenix Flame: first pass built, not yet Play Mode-verified (D31, 2026-08-25).**
+- **Phoenix Flame: built, and past both its fire pass and its UI/UX round (D41).**
   A config-driven flame (own prefab + a runtime-instanced material) recolors via a
-  3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. See
-  "Phoenix Flame architecture" below and D31 in decisions.md.
+  3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. The fire's
+  silhouette was fixed (the flipbook is 1:2 tall and was being drawn on a near-square
+  quad, crushing its own taper ~40%; the flat base was four quad-bottom cuts landing
+  on one line). The scene lost Unity's stock grey skybox for a dark `#181327` ground
+  with a two-piece brazier the fire sits *inside*, an ember pool, a contact shadow,
+  ground sparks, a title/caption, and 198px buttons with ink flame glyphs. See
+  "Phoenix Flame architecture" below, D31 for the mechanics, D41 for this round.
+  **Not verified in Play Mode**, and **the green and blue states have never been
+  seen at all** — see the ⚠️ list.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
 - **Scene-flow/navigation shell built.** `AppScene.unity` is now build-index 0, the sole
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
