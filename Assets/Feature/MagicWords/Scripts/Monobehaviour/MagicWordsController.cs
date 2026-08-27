@@ -31,7 +31,7 @@ namespace MagicWords.Monobehaviour
             _autoAdvanceTimer = TimerService.CreateCountdownTimer(config.AutoAdvanceDelay, loopCount: 1)
                 .OnComplete(NextDialogue);
 
-            StartCoroutine(_repository.Fetch(config.EndpointUrl, OnDialogueLoaded, OnDialogueLoadFailed));
+            StartCoroutine(_repository.Fetch(config.EndpointUrl, config.RequestTimeoutSeconds, OnDialogueLoaded, OnDialogueLoadFailed));
         }
 
         private void OnDestroy()
@@ -55,7 +55,7 @@ namespace MagicWords.Monobehaviour
         private void OnDialogueLoadFailed(string error)
         {
             Debug.LogWarning($"MagicWords: failed to load dialogue - {error}");
-            finishedView.Show();
+            finishedView.ShowFailure(error);
         }
 
         private void OnAdvanceClicked()

@@ -1338,6 +1338,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   root: {fileID: 1674009433}
+  message: {fileID: 737975037}
 --- !u!224 &1674009435
 RectTransform:
   m_ObjectHideFlags: 0

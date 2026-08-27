@@ -7,9 +7,14 @@ namespace MagicWords.Monobehaviour
 {
     public class MagicWordsRepository
     {
-        public IEnumerator Fetch(string url, Action<MagicWordsResponseDto> onSuccess, Action<string> onError)
+        public IEnumerator Fetch(string url, int timeoutSeconds, Action<MagicWordsResponseDto> onSuccess, Action<string> onError)
         {
             using var request = UnityWebRequest.Get(url);
+
+            // Without this a request that never answers hangs the screen indefinitely -
+            // UnityWebRequest has no timeout by default.
+            request.timeout = timeoutSeconds;
+
             yield return request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)
@@ -19,7 +24,13 @@ namespace MagicWords.Monobehaviour
             }
 
             var dto = MagicWordsResponseParser.Parse(request.downloadHandler.text);
-            if (dto?.dialogue == null || dto.dialogue.Length == 0)
+            if (dto == null)
+            {
+                onError?.Invoke("Response was not valid JSON.");
+                yield break;
+            }
+
+            if (dto.dialogue == null || dto.dialogue.Length == 0)
             {
                 onError?.Invoke("Response parsed but contained no dialogue lines.");
                 yield break;
