@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SceneFlow.Monobehaviour
+namespace SceneServices.Monobehaviour
 {
     [RequireComponent(typeof(Button))]
     public class HomeButtonController : MonoBehaviour

@@ -1,8 +1,8 @@
-using SceneFlow.Logic;
+using SceneServices.Logic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace SceneFlow.Monobehaviour
+namespace SceneServices.Monobehaviour
 {
     public class SceneService : MonoBehaviour
     {
@@ -10,7 +10,7 @@ namespace SceneFlow.Monobehaviour
 
         [SerializeField] private string homeSceneName = SceneNames.MainMenu;
 
-        private SceneFlowState _state;
+        private SceneServiceState _state;
         private string _pendingScene;
 
         private void Awake()
@@ -22,12 +22,12 @@ namespace SceneFlow.Monobehaviour
             }
 
             Instance = this;
-            _state = new SceneFlowState();
+            _state = new SceneServiceState();
 
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.IsValid() && activeScene.name != gameObject.scene.name)
             {
-                _state = new SceneFlowState(activeScene.name);
+                _state = new SceneServiceState(activeScene.name);
                 return;
             }
 

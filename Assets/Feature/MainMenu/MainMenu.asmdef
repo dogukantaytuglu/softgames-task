@@ -1,6 +1,6 @@
 {
 	"name": "MainMenu",
 	"references": [
-		"SceneFlow.Monobehaviour"
+		"SceneServices.Monobehaviour"
 	]
 }

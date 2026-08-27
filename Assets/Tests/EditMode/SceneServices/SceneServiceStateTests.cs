@@ -1,14 +1,14 @@
 using NUnit.Framework;
-using SceneFlow.Logic;
+using SceneServices.Logic;
 
-namespace SceneFlow.Tests
+namespace SceneServices.Tests
 {
-    public class SceneFlowStateTests
+    public class SceneServiceStateTests
     {
         [Test]
         public void Constructor_DefaultsCurrentSceneToNull()
         {
-            var state = new SceneFlowState();
+            var state = new SceneServiceState();
 
             Assert.IsNull(state.CurrentScene);
         }
@@ -16,7 +16,7 @@ namespace SceneFlow.Tests
         [Test]
         public void TryBeginNavigation_ToNewScene_UpdatesCurrentScene_ReturnsTrue()
         {
-            var state = new SceneFlowState();
+            var state = new SceneServiceState();
 
             var result = state.TryBeginNavigation("MainMenu", out var previousScene);
 
@@ -28,7 +28,7 @@ namespace SceneFlow.Tests
         [Test]
         public void TryBeginNavigation_ToCurrentScene_ReturnsFalse_LeavesStateUnchanged()
         {
-            var state = new SceneFlowState("MainMenu");
+            var state = new SceneServiceState("MainMenu");
 
             var result = state.TryBeginNavigation("MainMenu", out var previousScene);
 
@@ -40,7 +40,7 @@ namespace SceneFlow.Tests
         [Test]
         public void TryBeginNavigation_ToDifferentScene_ReturnsPreviousScene()
         {
-            var state = new SceneFlowState("MainMenu");
+            var state = new SceneServiceState("MainMenu");
 
             var result = state.TryBeginNavigation("AceOfShadows", out var previousScene);
 
@@ -53,7 +53,7 @@ namespace SceneFlow.Tests
         [TestCase("")]
         public void TryBeginNavigation_ToNullOrEmptyScene_ReturnsFalse(string targetScene)
         {
-            var state = new SceneFlowState("MainMenu");
+            var state = new SceneServiceState("MainMenu");
 
             var result = state.TryBeginNavigation(targetScene, out var previousScene);
 
@@ -65,7 +65,7 @@ namespace SceneFlow.Tests
         [Test]
         public void TryBeginNavigation_WhileAlreadyTransitioning_ReturnsFalse_LeavesStateUnchanged()
         {
-            var state = new SceneFlowState("MainMenu");
+            var state = new SceneServiceState("MainMenu");
             state.TryBeginNavigation("AceOfShadows", out _);
 
             var result = state.TryBeginNavigation("MagicWords", out var previousScene);
@@ -78,7 +78,7 @@ namespace SceneFlow.Tests
         [Test]
         public void CompleteNavigation_AllowsANewNavigationToBegin()
         {
-            var state = new SceneFlowState("MainMenu");
+            var state = new SceneServiceState("MainMenu");
             state.TryBeginNavigation("AceOfShadows", out _);
 
             state.CompleteNavigation();

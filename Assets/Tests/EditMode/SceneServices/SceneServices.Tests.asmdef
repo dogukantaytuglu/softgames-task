@@ -1,8 +1,8 @@
 {
-    "name": "SceneFlow.Tests",
+    "name": "SceneServices.Tests",
     "rootNamespace": "",
     "references": [
-        "SceneFlow.Logic"
+        "SceneServices.Logic"
     ],
     "includePlatforms": [
         "Editor"

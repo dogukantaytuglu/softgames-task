@@ -1,11 +1,11 @@
-namespace SceneFlow.Logic
+namespace SceneServices.Logic
 {
-    public sealed class SceneFlowState
+    public sealed class SceneServiceState
     {
         public string CurrentScene { get; private set; }
         public bool IsTransitioning { get; private set; }
 
-        public SceneFlowState(string initialScene = null)
+        public SceneServiceState(string initialScene = null)
         {
             CurrentScene = initialScene;
         }

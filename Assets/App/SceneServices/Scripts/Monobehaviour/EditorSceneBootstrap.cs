@@ -1,8 +1,8 @@
-using SceneFlow.Logic;
+using SceneServices.Logic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace SceneFlow.Monobehaviour
+namespace SceneServices.Monobehaviour
 {
     internal static class EditorSceneBootstrap
     {

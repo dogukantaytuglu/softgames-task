@@ -1,4 +1,4 @@
-namespace SceneFlow.Logic
+namespace SceneServices.Logic
 {
     public static class SceneNames
     {
