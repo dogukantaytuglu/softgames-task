@@ -4,19 +4,30 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-28. **All four screens have a UI/UX round** —
+Last updated: 2026-08-29. **Sound is built, end-to-end (D46)** — click, card-move,
+dialogue, fire-loop/color-change, plus a persisted mute toggle. A static, self-
+initializing `SoundService` (`Assets/App/Sound/`, no scene wiring needed anywhere)
+backs all of it; see "Sound architecture" below. Built live with the developer over
+one long session (2026-08-28 → 2026-08-29) on branch `sound-implementation`, since
+fast-forward-merged into `master` and deleted — everything is on `master` now,
+pushed, tip `7172de0`. Two real, systemic bugs were found and fixed along the way
+(not scoped to Sound itself): a click-sound race across 4 button scripts using the
+older `RemoveAllListeners()` idiom, and a DOTween `Sequence.Join` + `AppendInterval`
+bug that silently ignored delay values entirely. See D46 for the full account.
+
+**All four screens have a UI/UX round** —
 Phoenix Flame was the last (D41), and its fake-light glow colour-lerps with the flame
 (D42). D43 (2026-08-27) closed the day with a third `unity-interviewer` audit and an
-action pass on it. **D44 (2026-08-28 — read that first) is a prep session for sound**:
-every button in the game now inherits one shared `BaseButton.prefab` (Prefab Variant
-lineage, not just a shared script) so a future click-sound component lands in one
-place; along the way, `SceneFlow` was renamed **`SceneServices`** (the folder,
-namespace, and asmdefs below reflect this — treat any lingering `SceneFlow` mention as
-stale), a real stale-`AssetDatabase` bug cost two rounds of visible regressions
-(lost Main Menu button colors/order, `HomeButton` snapping to screen-center) before
-being root-caused and fixed, and Ace of Shadows gained a hold-to-fast-forward button.
-Sound itself (button click, card movement, dialogue, fire burning) is the **next**
-piece of work, not yet started. **D45 (2026-08-28, same day) is a live pair-debugging
+action pass on it. **D44 (2026-08-28) was prep for sound**: every button in the game
+now inherits one shared `BaseButton.prefab` (Prefab Variant lineage, not just a
+shared script) so a future click-sound component lands in one place — that
+component landed in D46, see the top of this file and "Sound architecture" below.
+Along the way, `SceneFlow` was renamed **`SceneServices`** (the folder, namespace,
+and asmdefs below reflect this — treat any lingering `SceneFlow` mention as stale),
+a real stale-`AssetDatabase` bug cost two rounds of visible regressions (lost Main
+Menu button colors/order, `HomeButton` snapping to screen-center) before being
+root-caused and fixed, and Ace of Shadows gained a hold-to-fast-forward button.
+**D45 (2026-08-28, same day) is a live pair-debugging
 session on Magic Words**, started from a UI bug report (the progress pill's fill
 overflowing its track — fixed, committed, pushed) that led into two real, dated
 dialogue-screen bugs: text never becoming visible for each side's first line, and
@@ -191,6 +202,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   and a countdown ring on the transfer axis between the pills rather than around the
   target slot (the radial sweep started exactly where the growing pile covers it).
   Card art is the reimported `Deck01`/`Deck02` at 300×375. Committed and pushed.
+  **Each card move now plays a sound (D46)** — a Google Solitaire card-flip clip,
+  `CardView.MoveTo` → `SoundService.Play(config.MoveSound)`, pitch/volume randomized
+  slightly per play via `SoundConfig`'s min-max ranges so 144 identical clicks in a
+  row don't sound robotic.
   **Still never Play Mode-verified by the developer**, and the fan values in the
   config are not the tuned ones — see the ⚠️ at the top.
 - **Magic Words: built, and past its UI/UX round (D40).** Two dialogue boxes slide
@@ -215,7 +230,9 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   of D45:** the large speaker portraits are now exercised by real Play Mode testing
   (no longer "never run"), but a full clean 17-line run with both D45 fixes together
   hasn't been confirmed; box positions and the redundant in-box avatar chips are
-  still open.
+  still open. **A talking sound now plays for the duration of each line's reveal
+  (D46)** — `MagicWordsController` calls `SoundService.Play`/`Stop` around
+  `ShowLine`/`OnRevealComplete`.
 - **Phoenix Flame: built, and past both its fire pass and its UI/UX round (D41).**
   A config-driven flame (own prefab + a runtime-instanced material) recolors via a
   3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. The fire's
@@ -226,7 +243,10 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   ground sparks, a title/caption, and 198px buttons with ink flame glyphs. See
   "Phoenix Flame architecture" below, D31 for the mechanics, D41 for this round.
   **Not verified in Play Mode**, and **the green and blue states have never been
-  seen at all** — see the ⚠️ list.
+  seen at all** — see the ⚠️ list. **A fire-loop ambience plays continuously and a
+  color-change sound fires on each real swatch tap (D46)**, and the 3 color
+  buttons now grey out and disable themselves for the ~0.85s Animator crossfade
+  so rapid re-taps can't stack — see "Sound architecture" below.
 - **Phase 0 (menu/FPS/responsive/WebGL) is done**, see below.
 - **Scene-flow/navigation shell built.** `AppScene.unity` is now build-index 0, the sole
   persistent scene, holding the FPS counter (moved out of AceOfShadows) and a
@@ -439,11 +459,14 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   effect on Play Mode testing even though it's correctly saved.
 - **Every button in the game is a Prefab Variant of `Assets/App/UI/Prefabs/BaseButton.prefab`
   (D44, 2026-08-28)** — deliberately minimal (`RectTransform`+`CanvasRenderer`+`Image`+
-  `Button`, nothing else), so a future shared component (the queued click-sound work)
-  lands there once and every variant — `HomeButton`, `MainMenuButton`, `RestartButton`,
-  `FastForwardButton`, `AdvanceButton`, `ReplayButton`, `RetryButton`,
-  `ColorSwatchButton` (Phoenix Flame's 3 color swatches, one shared prefab) — picks
-  it up with zero per-button editing. **Unity has no "make this existing prefab a
+  `Button`, nothing else), so a future shared component lands there once and every
+  variant — `HomeButton`, `MainMenuButton`, `RestartButton`, `FastForwardButton`,
+  `AdvanceButton`, `ReplayButton`, `RetryButton`, `ColorSwatchButton` (Phoenix
+  Flame's 3 color swatches, one shared prefab), `SoundToggleButton`,
+  `SkipIntroButton` — picks it up with zero per-button editing. **That component
+  landed in D46 (2026-08-28/29)**: `ButtonClickSound`, self-wired additively so it
+  can't collide with a variant's own click handler — see "Sound architecture"
+  below, including the real cross-button bug this uncovered. **Unity has no "make this existing prefab a
   variant of that one" operation** — a Variant is only created by instantiating the
   base and saving that as a new asset, so retrofitting an *existing* prefab means
   recreating its object graph and accepting fresh internal fileIDs, which orphans any
@@ -1051,6 +1074,89 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Mode before relying on them (developer's own call per the Play Mode testing note
   above).
 
+### Sound architecture (D46, 2026-08-28 → 2026-08-29)
+- **App-level, flat (`Assets/App/Sound/`, single `Sound.asmdef`, no Logic/Monobehaviour
+  split)** — deliberately simpler than the first design proposed (which had a
+  `PlayAudio` component, a DTO, and a full split), rejected by the developer as
+  over-scoped for a 4-sound take-home. Same reasoning as `MainMenu`'s flat-asmdef
+  exception: nothing here is meaningfully engine-agnostic, so a `Logic` layer would
+  be ceremony with no payoff.
+- **`SoundService`** (static) is the single entry point, callable from any script
+  with zero scene setup: `EnsurePool()` lazily builds its own `DontDestroyOnLoad`
+  host `GameObject` carrying 8 plain `AudioSource`s on first use. `Play(SoundConfig)`
+  picks the first non-playing source (steals index 0 if the pool's fully busy — a
+  real pool was chosen specifically because a single shared source would make the
+  fire's loop and one-shot SFX cut each other off). `Stop(SoundConfig)` tags each
+  source with whatever config it's currently playing so a started loop can be
+  stopped by reference later (used by Phoenix Flame's fire loop and Magic Words'
+  talking sound). `IsEnabled`/`SetEnabled(bool)` is a global mute: `PlayerPrefs`-
+  persisted (`"Sound.Enabled"`, default on), applied through `AudioListener.volume`
+  (one engine-wide multiplier) rather than tracking/resuming individual sources —
+  instantly silences everything already playing, including an active loop, with no
+  bookkeeping.
+- **`SoundConfig`** (ScriptableObject) mirrors `AudioSource`'s settings — `clip`,
+  and `volume`/`pitch`/`priority` as **min-max ranges**, each resolving to a fresh
+  `Random.Range` on every read (repeated plays of the same config vary instead of
+  sounding identical; a degenerate `min == max` range reproduces a fixed value).
+  The ranges use a small custom `[MinMaxRange(min,max)]` `PropertyAttribute` +
+  `PropertyDrawer` (`MinMaxRangeAttribute.cs`/`MinMaxRangeDrawer.cs`) wrapping
+  Unity's own `EditorGUI.MinMaxSlider` — Unity has no built-in `[MinMaxSlider]`
+  attribute, but does have the underlying widget.
+- **`ButtonClickSound`** lives directly on `Assets/App/UI/Prefabs/BaseButton.prefab`
+  itself, so every button variant in the game (`HomeButton`, `MainMenuButton`,
+  `RestartButton`, `FastForwardButton`, `AdvanceButton`, `SoundToggleButton`,
+  `SkipIntroButton`, Phoenix Flame's `ColorSwatchButton`, …) inherits it with zero
+  per-button wiring — the "future click-sound component lands in one place" D44
+  set up. Self-wires **additively** in `Awake()` (`AddListener`, never
+  `RemoveAllListeners`) specifically so it can't stomp on whatever else a button's
+  own script wires to the same `onClick`, regardless of `Awake()` execution order.
+  A serialized `isActive` toggle opts a specific instance out (used by
+  `SkipIntroButton`, a full-screen invisible tap-to-skip button that should stay
+  silent).
+- **A real, systemic bug was found here**: `HomeButtonController`,
+  `MenuButtonSceneLoader`, `PhoenixFlameColorButton`, and
+  `DialogueFinishedView.Wire` all predated `ButtonClickSound` and wired their own
+  click handler with the older `RemoveAllListeners()` + `AddListener()` idiom —
+  since Unity doesn't guarantee `Awake()` order across components, whichever ran
+  *after* `ButtonClickSound.Awake()` on the same button silently ate the sound
+  listener. Non-deterministic per session, affecting every button in the game, not
+  just wherever it happened to get noticed. Fixed the first three by dropping the
+  now-redundant `RemoveAllListeners()` (each only ever runs once). Fixed
+  `DialogueFinishedView.Wire` surgically instead, since `Show`/`ShowFailure` can
+  legitimately re-run (a retried failed fetch re-wires `retryButton`) — it now
+  tracks and removes only its own previously-added `UnityAction`, never touching
+  `ButtonClickSound`'s.
+- **Per-feature hookups**: `CardView.MoveTo` (Ace of Shadows, via
+  `AceOfShadowsConfig.MoveSound`) plays once per card move. `MagicWordsController`
+  plays a talking sound on each line's reveal start and stops it on
+  `OnRevealComplete`. `FlameParticle.Initialize` starts the fire loop once (loop
+  config) and `SetColor` plays a color-change one-shot only when
+  `PhoenixFlameColorState.TrySelect` actually changes state (not on a redundant tap
+  of the already-active swatch); **`FlameParticle.OnDestroy` stops the fire loop**
+  — since `SoundService`'s pool lives on a `DontDestroyOnLoad` object, without this
+  the loop would keep playing after leaving the Phoenix Flame scene entirely.
+- **`SoundToggleButton`** (`BaseButton` variant, `Assets/App/Sound/Prefabs/`) swaps
+  an `Image.sprite` between two fields on click, backed by `SoundService.IsEnabled`.
+  Instanced once on `MainMenuScene`'s Canvas, top-right. **First pass was rejected
+  by the developer** ("didn't match the project") — a `unity-ui-ux-expert` pass
+  found the actual defect wasn't the icon art choice but that the prefab never
+  overrode `BaseButton`'s background sprite at all, rendering as a hard-cornered
+  pure-white square on a screen of rounded warm shapes; the original downloaded
+  icons were also pure-black-RGB, structurally untintable to the game's ink color
+  regardless of any sizing fix. Fixed with the missing chrome/shadow and
+  procedurally-regenerated on-style glyphs. One judgment call left for the
+  developer to weigh in on: the shadow is a hue-matched tan rather than
+  `HomeButton`'s plain black (reasoned from real render comparisons — the cream
+  plate has weak contrast against the background so the shadow carries the
+  silhouette), meaning the two icon buttons' shadows now differ slightly.
+- **Audio import gotchas hit this session**: Unity's audio importer doesn't support
+  `.m4a` (only `.wav`/`.aiff`/`.mp3`/`.ogg` + tracker formats) — a copied `.m4a`
+  imports silently as `DefaultImporter`, no error, just never becomes an
+  `AudioClip`; `ffmpeg` (`winget install Gyan.FFmpeg`) converts cleanly. A long
+  looping clip (`FireLoop.wav`, ~30s) defaults to `DecompressOnLoad`/quality-1 on
+  import (full PCM in RAM, larger build) — switched to `CompressedInMemory`/Vorbis
+  0.6, which matters for this project's known WebGL build-size sensitivity.
+
 ### Phase 0 status
 - **App is portrait-locked now, not landscape (D33, 2026-08-26, reverses D25)** —
   see decisions.md for the full reasoning (portrait-first is the more standard
@@ -1099,9 +1205,18 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   deco_flame_flat, deco_bubble_tail}.png`), same no-AI-model-configured
   workaround as D34. **Deliberately deferred**: the title lockup's white-
   outline/hard-underlay upgrade (would need a per-component `fontMaterial`
-  instance — a real decision, not a tweak), and any actual motion (buttons
-  are still flat `ColorTint`, no idle/entrance animation — that's
-  `unity-animation-expert`'s pass, item 3).
+  instance — a real decision, not a tweak).
+  **Intro motion was added since (commit `b5e32bc`, "Animate main menu",
+  2026-08-28, not built by Claude)** — title/subtitle text reveals and a
+  staggered bounce-scale pop-in for the 3 buttons and their preview icons, as 13
+  independent DOTween Pro `DOTweenAnimation` Inspector components, each
+  self-triggering with its own hardcoded delay. **Consolidated into one
+  `MainMenuAnimationHandler` (D46, 2026-08-29)** — a single serialized step list
+  (type, `Insert`/`Append`/`Join` sequence mode, target, delay/duration/ease)
+  driving one real `DOTween.Sequence()`, all 13 original steps ported 1:1 with
+  zero visual change. A new full-screen invisible `SkipIntroButton` (silent,
+  `ButtonClickSound.isActive = false`) lets a tap skip straight to the end via
+  `_sequence.Complete()`.
 - **FPS counter** (`Assets/App/FpsCounter/`): `FpsCalculator` (Logic, plain
   C#, windowed average not instantaneous 1/deltaTime) + `FpsCountUIController`
   (Monobehaviour, only writes `TMP_Text.text` when the rounded value actually
@@ -1227,14 +1342,20 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 
 ## Immediate next steps
 
-### 🔊 NEXT: sound (button click, card movement, dialogue, fire burning) — not started
+### ✅ Sound — DONE (D46, 2026-08-28 → 2026-08-29)
 
-D44 (2026-08-28) was explicitly prep work for this: every button now inherits
-`Assets/App/UI/Prefabs/BaseButton.prefab`, so a click-sound component can be added
-there once instead of per-button. Card movement, dialogue, and fire-burning sound
-still need their own hook points decided (likely `CardView.MoveTo`,
-`DialogueBoxView.PlayReveal`/`SlideIn`, and the Phoenix Flame particle/Animator
-respectively) — none of that design work has happened yet.
+Click (every button, via `BaseButton`), card movement (Ace of Shadows), dialogue
+line reveal (Magic Words), fire loop + color-change (Phoenix Flame), and a
+PlayerPrefs-persisted mute toggle on the main menu — all built on top of a static,
+self-initializing `SoundService`. See "Sound architecture" below for the design,
+D46 for the full account including two real bugs found along the way (a
+click-sound race across 4 unrelated button scripts, and a DOTween `Join`+
+`AppendInterval` bug). **Small items flagged, not done:** the old rejected
+`volume.png`/`sound-off.png` icons are dead weight, sitting unreferenced; the
+sound-toggle button isn't in `MainMenuAnimationHandler`'s intro pop-in list, so
+it's the one element on that screen that doesn't animate in; no EditMode tests
+exist for the Sound feature (consistent with the deliberate flat/no-Logic-split
+scope decision, but worth naming as a gap).
 
 ### Every UI/UX round is DONE — the remaining work is not polish
 
