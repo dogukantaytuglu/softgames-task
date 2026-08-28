@@ -6,6 +6,55 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D47 — Privacy scrub of `BRIEF.md`/`current-context.md`/`decisions.md`, retroactively across git history (2026-08-29)
+
+**Choice:** Removed all personal/career-strategy content from the three `ai-context/` docs —
+the salary figures, interview-stage/funnel narrative, the recruiter's name, "job-search
+session" references, and the direct "the project needs visual polish" self-assessment quote (replaced
+with neutral descriptions where the underlying point still needed to be made). `BRIEF.md` §1 and
+§8 were rewritten to drop the personal framing while keeping every technical fact that decisions
+elsewhere in this log actually depend on (the skill background, the build-size gap, the
+"must be defensible" constraint). §6 keeps its technical content (build-size measurement is a
+real, still-open Definition-of-Done item) with the personal interview narrative removed.
+`current-context.md`'s own meta-description of this open item (the priority-list entry naming the
+figures directly, so the *description of the problem* was itself an instance of it) got the same
+treatment. Then requested to be done **retroactively**: rewrote all 145 commits via
+`git filter-repo --blob-callback` (exact-byte matching for the two historical `BRIEF.md` blob
+variants — the file was edited once early on, before the salary/deadline paragraph reached its
+final wording, so there were two distinct pre-scrub versions, not one — plus a generic literal
+substring pass for the phrases that leaked into `current-context.md`/`decisions.md` prose rather
+than living only in `BRIEF.md`), tested on a throwaway branch pushed to origin first, and only
+promoted to `master` after review — see the Operational note below for the exact mechanism, since
+this is the kind of irreversible operation worth being able to reconstruct later. **Caught one
+real gap during verification**, worth remembering: a first pass redacted the quoted phrase but
+left the adjacent salary figures sitting in the same historical sentence untouched — checking
+"does the target phrase still appear anywhere in `git log -p`" isn't enough; the actual sensitive
+tokens (names, numbers) need their own explicit check independent of whichever phrase prompted
+the scrub.
+
+**Explicitly NOT touched, and shouldn't be:** the developer's full name as it appears in
+`ProjectSettings.asset`'s `companyName` field and in `MainMenuScene.unity`'s "A Case Project By
+—" in-game credit line. That's authorship attribution on a job-application submission, not
+career-strategy content — removing it would work against the actual point of the credit line.
+Flagged this distinction explicitly rather than assuming "remove the name everywhere" was the
+real intent.
+
+**Why:** Requested directly, superseding the earlier D36/D43-era deferral ("the developer
+explicitly took this one to handle themselves") — the developer decided to have it done now,
+including the retroactive history rewrite so the content isn't recoverable from `git log`/GitHub
+either, not just from the current file state.
+
+**Operational, for reconstructing this later:** a full mirror clone was made to a scratch
+directory first (`git clone --mirror`), a Python `--blob-callback` ran there doing exact-byte
+replacement of the known historical `BRIEF.md` blob contents plus a small generic substring pass
+for the handful of phrases/figures that had leaked into other files' prose — built by grepping
+`git log --all -p` for every known sensitive term so historical wording variants weren't missed —
+and the rewritten history was pushed to a new branch on `origin` for review before being
+force-pushed over `master`. A `git bundle --all` of the pre-rewrite history was kept as a local
+backup before the force-push.
+
+---
+
 ### D46 — Sound built end-to-end (click/card-move/dialogue/fire/mute), two systemic bugs found and fixed along the way, MainMenu's 13 DOTween components consolidated into one handler (2026-08-28 → 2026-08-29)
 
 The queued "sound" item from D44 became a full session, live-paired with the developer end-to-end (extensive mid-session Editor tuning throughout — this was Play Mode-verified continuously as it was built, not a build-then-check-later pass). Branch `sound-implementation`, later fast-forward-merged into `master` (no divergence, clean ff) and deleted once merged — everything now lives on `master`, pushed, tip `7172de0`.
@@ -262,7 +311,7 @@ Given the go-ahead to implement, did **Round 1 only** (MainMenuScene + AppScene,
 - Verified by reopening both scenes from disk before capturing (confirms it's what's actually saved, not in-memory state) and by checking `MenuButtonSceneLoader`'s 3 scene targets, `MainMenuInitializer`, and `FpsCountUIController.fpsText` are all still correctly wired post-edit. Also confirmed the D34 prefab-instance-edits-not-persisting gotcha is now avoidable by using `PrefabUtility.RecordPrefabInstancePropertyModifications` instead of a bare field assignment — worth remembering as the fix, not just the symptom, next time that gotcha comes up.
 
 **Deliberately scoped out of this round, on direct instruction:** the flame-lick preview sprite has **zero reference to the real `PhoenixFlame` prefab/material/Animator Controller** — it's a plain static `Image`, specifically so it doesn't entangle with a future dedicated particle-effects pass on the actual fire look (the developer flagged that the mockup's flame redesign doesn't match the real particle system and a `unity-particle-expert`-style agent may be needed for that later, not yet created). The card-fan preview reuses the current Ace of Shadows card prefabs as-is with no fine-detail polish, since that art is being replaced by the developer separately. Also deferred: the title lockup's white-outline/hard-underlay upgrade (would need a per-component `TMP_Text.fontMaterial` instance — judged a real decision, not a tweak), any actual motion/animation (buttons are still flat `ColorTint`, no idle or entrance animation — `unity-animation-expert`'s job, priority item 3), and a dark-chrome variant of the FPS pill (fine on every current background, will need inversion once Phoenix Flame's own round moves it to a dark background).
-**Why:** Requested directly — item 4 on the developer's own priority list ("the project needs visual polish," a scored aesthetics criterion per `BRIEF.md` §3), explicitly asked to be tackled scene-by-scene rather than all at once, starting with Main Menu + AppScene as the entry point.
+**Why:** Requested directly — item 4 on the developer's own priority list (the project's visual polish, a scored aesthetics criterion per `BRIEF.md` §3), explicitly asked to be tackled scene-by-scene rather than all at once, starting with Main Menu + AppScene as the entry point.
 **Not done:** Ace of Shadows, Magic Words, and Phoenix Flame's own UI/UX rounds (direction already proposed in the mockup, not yet built); committing/pushing (see D38 if a separate entry covers that, or check git log); the Phoenix Flame particle-effects pass.
 
 ### D36 — Second full `unity-interviewer` audit: real brief-violating gaps found, not yet acted on (2026-08-26)
@@ -274,7 +323,7 @@ Given the go-ahead to implement, did **Round 1 only** (MainMenuScene + AppScene,
 5. `README.md` still stated Magic Words and Phoenix Flame were "Not built yet" — stale since D28/D31 built them. Fixed as part of this doc pass (see below).
 6. `ai-context/BRIEF.md` is committed and `README.md` points reviewers at `ai-context/` directly; `BRIEF.md` contains the developer's stated salary target/ceiling — flagged as needing an explicit decision before submission, not another deferral (D27 already left this open once).
 
-Also flagged, real-but-debatable (Tier 2): post-processing disabled on every camera means Phoenix Flame's HDR emission colors (up to 2.8 intensity, see D31/D32) clamp toward white with no Bloom to render the intended glow — plausibly the concrete mechanism behind "the project needs visual polish"; WebGL ships the `PC` URP quality tier (depth texture + SSAO both on) with no per-platform override, direct relative of D35's fix having landed one layer too shallow; `CanvasScaler`'s portrait-tuned `matchWidthOrHeight: 1` is the worst-case match mode for the landscape desktop letterbox from finding #1; Magic Words' avatar loader has no cache/timeout and a stale-callback race if the fast-forward button is spammed past a still-loading avatar; `PhoenixFlameConfig.ColorOptions`' entire D32 apparatus is read only for `.Count` at runtime (colors/duration are actually baked into the Animator) — real, but D32's own stated reasoning (preventing two sources of the same data silently desyncing) still holds even if the mechanism it protects turned out to be write-only.
+Also flagged, real-but-debatable (Tier 2): post-processing disabled on every camera means Phoenix Flame's HDR emission colors (up to 2.8 intensity, see D31/D32) clamp toward white with no Bloom to render the intended glow — plausibly the concrete mechanism behind the project's flat visual read; WebGL ships the `PC` URP quality tier (depth texture + SSAO both on) with no per-platform override, direct relative of D35's fix having landed one layer too shallow; `CanvasScaler`'s portrait-tuned `matchWidthOrHeight: 1` is the worst-case match mode for the landscape desktop letterbox from finding #1; Magic Words' avatar loader has no cache/timeout and a stale-callback race if the fast-forward button is spammed past a still-loading avatar; `PhoenixFlameConfig.ColorOptions`' entire D32 apparatus is read only for `.Count` at runtime (colors/duration are actually baked into the Animator) — real, but D32's own stated reasoning (preventing two sources of the same data silently desyncing) still holds even if the mechanism it protects turned out to be write-only.
 **Why:** Requested directly, to get an honest fresh read on where the project stands after Magic Words/Phoenix Flame/D33-D35, ahead of the final UI/UX polish push.
 **Not done:** none of Tier 1 or Tier 2 has been fixed yet, except the menu-button label (fixed as part of D37, which happened to independently catch the same thing). The interview-question half of the audit was run and answers weren't yet relayed back. This is the immediate next-priority list, effectively superseding parts of the "developer's own priority list" ordering — see current-context.md.
 

@@ -73,21 +73,18 @@ Building and deploying is **no longer a blocker** — the site has already been 
 and redeployed with D43's changes (custom WebGL template, WebGL quality tier,
 product/company name, README) live. What's left, in priority order:
 
-1. 🔴 **The `BRIEF.md` / `current-context.md` privacy scrub** — salary target, their
-   [redacted] ceiling, the §6 strategy framing, and "the project needs visual polish" are all
-   still committed. The README no longer *points* at those two files (D43 dropped the
-   pointer and now references `decisions.md` only), which lowers the odds a grader
-   wanders in, but it does not remove the content. **The developer explicitly took
-   this one to handle themselves — do not scrub it for them.**
-2. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
+1. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
    a full plan in `ai-context/build-size-plan.md`. The developer wants to talk through
    the optimisation before it happens, so the README ships with *no* size numbers
    rather than half-measured ones.
-3. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
+2. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
    **the developer is taking this one themselves.** At 1px a top card covers the one
    below by 0.3%, which arguably doesn't meet the brief's "partially covering."
 
 The README architecture/decisions write-up is **done** (D43) — that item is closed.
+**The `BRIEF.md`/`current-context.md` privacy scrub (personal/career-strategy content —
+salary figures, interview-stage narrative, recruiter contact name) is done (D47,
+2026-08-29)** — that item is closed too, including a full git-history rewrite (see D47).
 4. **The fire has a known ceiling, documented in D41**: its flipbook has ≤1.2%
    bottom alpha margin on all 64 frames, so the flat base cut can only be
    *mitigated* in Shuriken, never cured. The brazier now hides it. Retiring it
@@ -312,7 +309,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   scene renders rather than guessed from YAML; explicitly briefed to be
   creative but non-disruptive, and to prototype non-trivial ideas as a visual
   mockup (via the `design`/Artifact tooling) before implementing. Matches
-  developer priority-list item 4 ("the project needs visual polish"). **First run
+  developer priority-list item 4 (the project's visual polish). **First run
   2026-08-26** — audited all 4 scenes with real captures, produced the "Mini
   Arcade Second Pass" mockup
   (`https://claude.ai/code/artifact/e6f0d151-0673-4369-8ee3-ec1b4862e34e`), then
