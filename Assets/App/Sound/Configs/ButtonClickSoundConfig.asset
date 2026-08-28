@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a108ba6c18862bf4db7e3ac0f59dcb46, type: 3}
-  m_Name: CardFlipSoundConfig
+  m_Name: ButtonClickSoundConfig
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 799036e569e56d046a7c9cdad0d0e73f, type: 3}
-  volumeRange: {x: 0.5146444, y: 0.5857741}
-  pitchRange: {x: 0.9414227, y: 1.1422596}
+  clip: {fileID: 8300000, guid: 9bb8eca3a5388d24ba37b3469258c2cb, type: 3}
+  volumeRange: {x: 1, y: 1}
+  pitchRange: {x: 1.0920503, y: 1.117155}
   loop: 0
-  priorityRange: {x: 128, y: 128}
+  priorityRange: {x: 256, y: 256}
