@@ -36,12 +36,13 @@ Volume needs adding. The developer also reports **FPS was not a problem even on 
 lowest-performing device they tried** — which is why the WebGL quality work in D43 was
 deliberately scoped to removing dead cost, not to squeezing frames.
 
-🔴 **The hosted build is CURRENT, not stale — the previous version of this file was
-wrong.** Commit `47f40da` claimed the public link predates D37 and that deploying was
-blocked. Verified false on 2026-08-27: the build repo has a `Build 2026-08-27 16:04`
-commit (14:04 UTC), *after* the last content commit, and the live page's
-`last-modified` matches. D37–D42 are all live. **But see open item 9 — deploying
-*from this machine* is genuinely blocked, for reasons the old note got wrong.**
+✅ **The hosted build is CURRENT, including D43's changes.** Commit `47f40da` had
+claimed the public link predates D37 and that deploying was blocked — that was wrong.
+The earlier "this machine can't build" note (missing WebGL module, missing build repo)
+was about a *different* machine; it doesn't apply here and has been dropped along with
+open item 9. The site has since been rebuilt and redeployed with D43's WebGL
+template/quality-tier/naming work, so nothing is waiting on a build/deploy step
+anymore.
 
 This session: Ace of Shadows Round 2 and the card-prefab rebuild (D39), the
 **Magic Words round** (`7caaf4d`), the **failure-path fixes** the brief demands
@@ -55,31 +56,23 @@ The second one modified the fire prefab it was explicitly told not to touch, the
 reported it byte-identical — it wasn't. See D41. **An agent's own "I verified nothing
 else changed" is not evidence; `git diff --stat` against a known-good line count is.**
 
-## 👉 NEXT JOB: make this machine able to build, then redeploy
+## 👉 NEXT JOB
 
-D43 changed things a grader sees first (custom WebGL template, WebGL quality tier,
-product/company name, README) — **and none of it reaches the public link until a
-build is produced and deployed.** In priority order:
+Building and deploying is **no longer a blocker** — the site has already been built
+and redeployed with D43's changes (custom WebGL template, WebGL quality tier,
+product/company name, README) live. What's left, in priority order:
 
-1. 🔴 **Install the WebGL module and clone the build repo.** *Neither exists on this
-   machine.* `modules.json` reports `webgl selected: False` for all four installed
-   Unity versions (2022.3.62f2, 6000.0.82f1, 6000.3.16f1, 6000.5.4f1), and
-   `/Users/dogukan/PersonalProjects/softgames-task-build` is absent. Today's 16:04
-   deploy therefore came from a *different machine*. Until both are fixed,
-   `Build → Build && Deploy WebGL` cannot run here at all — this is a harder blocker
-   than the old "just clone it" note implied.
-2. **Redeploy**, so the template/quality/naming work is actually live.
-3. 🔴 **The `BRIEF.md` / `current-context.md` privacy scrub** — salary target, their
+1. 🔴 **The `BRIEF.md` / `current-context.md` privacy scrub** — salary target, their
    [redacted] ceiling, the §6 strategy framing, and "the project needs visual polish" are all
    still committed. The README no longer *points* at those two files (D43 dropped the
    pointer and now references `decisions.md` only), which lowers the odds a grader
    wanders in, but it does not remove the content. **The developer explicitly took
    this one to handle themselves — do not scrub it for them.**
-4. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
+2. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
    a full plan in `ai-context/build-size-plan.md`. The developer wants to talk through
    the optimisation before it happens, so the README ships with *no* size numbers
-   rather than half-measured ones. Un-parking needs item 1 done first.
-5. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
+   rather than half-measured ones.
+3. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
    **the developer is taking this one themselves.** At 1px a top card covers the one
    below by 0.3%, which arguably doesn't meet the brief's "partially covering."
 
@@ -145,19 +138,10 @@ The README architecture/decisions write-up is **done** (D43) — that item is cl
    and D36's Tier 2 note on it can be treated as closed. Note this covers the colour
    states specifically; the **selected-state halo's fragility (item 6) was not part
    of what they reported on**, so treat that as still open unless they say otherwise.
-9. 🔴 **DEPLOYING FROM THIS MACHINE IS BLOCKED — but the live build is CURRENT.**
-   The previous version of this item claimed the public link was pre-D37 and badly
-   stale. **That was wrong**, and commit `47f40da` recorded it wrongly. Verified
-   2026-08-27: the build repo has a `Build 2026-08-27 16:04` commit landing *after*
-   the last content commit, the live page's `last-modified` matches, and the deployed
-   payload was decompressed and checked to contain the D37–D42 work. What *is* true is
-   that this machine cannot produce a build at all: **the WebGL module is not
-   installed for any of the four Unity versions here** (`modules.json` →
-   `webgl selected: False` for 2022.3.62f2, 6000.0.82f1, 6000.3.16f1, 6000.5.4f1),
-   and the deploy script's sibling folder
-   `/Users/dogukan/PersonalProjects/softgames-task-build` does not exist. Today's
-   deploy therefore came from a different machine. Both need fixing before D43's
-   template/quality/naming changes can reach the graded artifact.
+9. ~~**DEPLOYING FROM THIS MACHINE IS BLOCKED**~~ — **RESOLVED.** The earlier note
+   about a missing WebGL module / missing build-repo clone was about a different
+   machine and doesn't apply here. The site has since been rebuilt and redeployed
+   with D43's template/quality/naming changes live.
 10. **`brazier_bowl.png` has a glowing orange rim baked into the art**, so the bowl
    interior stays orange under a green or blue flame (D42). Options: animate the two
    brazier sprites too (needs its own Animator — `Bowl` is a separate branch from

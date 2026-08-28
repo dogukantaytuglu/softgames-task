@@ -88,13 +88,27 @@ The rejections are the part that shows judgement.
 
 ## Order of work when this un-parks
 
-1. Install the WebGL module + clone the build repo (neither exists on this machine —
-   see `current-context.md`). Nothing here is measurable until a build can be produced
-   locally.
-2. Baseline build, measured off the actual output files, not `BuildReport.totalSize`
-   (which reports pre-compression bytes — `DeployWebGL.cs` already measures the real
-   thing).
+1. ~~Install the WebGL module + clone the build repo~~ — **done**, both exist on the
+   current machine (`6000.0.82f1` has WebGLSupport; `../softgames-task-build` is
+   cloned and up to date, last deploy `2026-08-28 04:21`).
+2. ~~Baseline build, measured off the actual output files~~ — **done, re-verified
+   2026-08-28** off the current deployed build (not re-built, just re-measured — see
+   table below). Numbers essentially match the 2026-08-27 measurement, so nothing
+   material changed the payload in between.
 3. Flame texture cap → re-measure → visual check.
 4. Static font atlases → re-measure → glyph check across all four screens.
 5. Decide exceptions/stripping with the click-through cost priced in.
 6. Write it up.
+
+## Baseline re-verified (2026-08-28, off `../softgames-task-build/Build`, commit `4753444`)
+
+| File | Bytes | MB |
+|---|---|---|
+| `.data.unityweb` | 10,948,081 | 10.44 |
+| `.wasm.unityweb` | 8,241,881 | 7.86 |
+| `.framework.js.unityweb` | 77,315 | 0.07 |
+| `.loader.js` | 117,366 | 0.11 |
+| **Total** | **19,384,643** | **~18.5 MB** |
+
+Matches the 2026-08-27 figures closely (~19.4 MB then too) — confirms the numbers in
+this file are still trustworthy as a starting point, not stale.
