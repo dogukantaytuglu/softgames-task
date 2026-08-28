@@ -4223,7 +4223,7 @@ GameObject:
   - component: {fileID: 1856647625}
   - component: {fileID: 1856647624}
   m_Layer: 0
-  m_Name: MagicWords
+  m_Name: MagicWordsController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4249,6 +4249,7 @@ MonoBehaviour:
   advanceButton: {fileID: 5628266280656049964}
   finishedView: {fileID: 1674009434}
   progressView: {fileID: 1916555191}
+  talkingSound: {fileID: 11400000, guid: 074ae08c2de230845a9b0d0ca539313c, type: 2}
 --- !u!4 &1856647625
 Transform:
   m_ObjectHideFlags: 0
@@ -4646,6 +4647,8 @@ MonoBehaviour:
   root: {fileID: 1672985701}
   label: {fileID: 138764505}
   fillRect: {fileID: 909440467}
+  fillDuration: 0.3
+  fillEase: 27
 --- !u!224 &1916555192
 RectTransform:
   m_ObjectHideFlags: 0

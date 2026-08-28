@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   endpointUrl: https://private-624120-softgamesassignment.apiary-mock.com/v3/magicwords
   requestTimeoutSeconds: 10
-  charactersPerSecond: 2.2
-  autoAdvanceDelay: 2.5
+  duration: 2.5
+  autoAdvanceDelay: 3
   boxMoveDuration: 0.4
   boxMoveEase: 18

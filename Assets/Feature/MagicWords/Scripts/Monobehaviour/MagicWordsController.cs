@@ -1,4 +1,5 @@
 using MagicWords.Logic;
+using Sound;
 using TimerUtil;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +16,7 @@ namespace MagicWords.Monobehaviour
         [SerializeField] private Button advanceButton;
         [SerializeField] private DialogueFinishedView finishedView;
         [SerializeField] private DialogueProgressView progressView;
+        [SerializeField] private SoundConfig talkingSound;
 
         private readonly MagicWordsRepository _repository = new();
         private readonly AvatarSpriteLoader _avatarLoader = new();
@@ -128,6 +130,7 @@ namespace MagicWords.Monobehaviour
 
             _isRevealing = true;
             box.PlayReveal(line.DisplayText, config.Duration, OnRevealComplete);
+            SoundService.Play(talkingSound);
 
             var token = ++_lineToken;
             StartCoroutine(_avatarLoader.Load(line.AvatarUrl, sprite =>
@@ -144,6 +147,7 @@ namespace MagicWords.Monobehaviour
         {
             _isRevealing = false;
             _autoAdvanceTimer.Start();
+            SoundService.Stop(talkingSound);
         }
 
         private void EndDialogue()
@@ -176,7 +180,6 @@ namespace MagicWords.Monobehaviour
             leftPortrait.Hide();
             rightPortrait.Hide();
             progressView.Hide();
-
             // The advance button covers the whole screen and sits under the end panel. Left live
             // it would keep re-triggering the ending behind the panel on every stray tap.
             advanceButton.interactable = false;

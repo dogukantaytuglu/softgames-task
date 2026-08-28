@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "MagicWords.Logic",
+        "Sound",
         "TimerUtility",
         "Unity.TextMeshPro",
         "DOTween.Modules",
