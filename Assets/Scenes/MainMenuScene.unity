@@ -1062,7 +1062,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 762453795082100891, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Name
-      value: Ace of Shadows Button
+      value: Magic Words Button
       objectReference: {fileID: 0}
     - target: {fileID: 1821178117823212803, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_PreferredWidth
@@ -1098,11 +1098,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4367159669414649558, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: sceneName
-      value: AceOfShadowsScene
+      value: MagicWordsScene
       objectReference: {fileID: 0}
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_text
       value: Magic Words
+      objectReference: {fileID: 0}
+    - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 8564704101486309442, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Pivot.x
@@ -1208,6 +1212,38 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 0.24705882
       objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 7134244266805135622, guid: c022393acb8d2954198979946dc03ec3, type: 3}
@@ -1232,7 +1268,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 762453795082100891, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Name
-      value: Phoenix Flame Button
+      value: Ace of Shadows Button
       objectReference: {fileID: 0}
     - target: {fileID: 1821178117823212803, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_PreferredWidth
@@ -1280,7 +1316,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4367159669414649558, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: sceneName
-      value: PhoenixFlameScene
+      value: AceOfShadowsScene
       objectReference: {fileID: 0}
     - target: {fileID: 7135569913784137823, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_SizeDelta.x
@@ -1301,6 +1337,10 @@ PrefabInstance:
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_fontSize
       value: 52.95
+      objectReference: {fileID: 0}
+    - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 8564704101486309442, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Pivot.x
@@ -1413,6 +1453,38 @@ PrefabInstance:
     - target: {fileID: 8759336440351713846, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Color.r
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -1689,7 +1761,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 762453795082100891, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Name
-      value: Magic Words Button
+      value: Phoenix Flame Button
       objectReference: {fileID: 0}
     - target: {fileID: 1821178117823212803, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_PreferredWidth
@@ -1741,7 +1813,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4367159669414649558, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: sceneName
-      value: MagicWordsScene
+      value: PhoenixFlameScene
       objectReference: {fileID: 0}
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_text
@@ -1750,6 +1822,10 @@ PrefabInstance:
     - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_fontSize
       value: 42
+      objectReference: {fileID: 0}
+    - target: {fileID: 7899961406993666912, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 8564704101486309442, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Pivot.x
@@ -1866,6 +1942,38 @@ PrefabInstance:
     - target: {fileID: 8759336440351713846, guid: c022393acb8d2954198979946dc03ec3, type: 3}
       propertyPath: m_Color.r
       value: 0.247
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9142013239455323424, guid: c022393acb8d2954198979946dc03ec3, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -2122,9 +2230,9 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1151080868}
   - {fileID: 1127400368}
   - {fileID: 1489193932}
-  - {fileID: 1151080868}
   m_Father: {fileID: 1050841781}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.1, y: 0}
