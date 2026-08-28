@@ -31,9 +31,6 @@ namespace MagicWords.Monobehaviour
 
         private void Awake()
         {
-            Debug.Log($"[MagicWords] Awake - charactersPerSecond={config.CharactersPerSecond}, "
-                + $"autoAdvanceDelay={config.AutoAdvanceDelay}, boxMoveDuration={config.BoxMoveDuration}");
-
             leftBox.Initialize();
             rightBox.Initialize();
             leftPortrait.Initialize();
@@ -56,21 +53,13 @@ namespace MagicWords.Monobehaviour
 
         private void Fetch()
         {
-            Debug.Log($"[MagicWords] Fetch - url={config.EndpointUrl}, timeout={config.RequestTimeoutSeconds}s");
             StartCoroutine(_repository.Fetch(config.EndpointUrl, config.RequestTimeoutSeconds, OnDialogueLoaded, OnDialogueLoadFailed));
         }
 
         private void OnDialogueLoaded(MagicWordsResponseDto dto)
         {
-            Debug.Log($"[MagicWords] OnDialogueLoaded - dto.dialogue count={dto?.dialogue?.Length ?? -1}, "
-                + $"dto.avatars count={dto?.avatars?.Length ?? -1}");
-
             _response = dto;
             _sequence = DialogueSequenceBuilder.Build(dto);
-
-            Debug.Log($"[MagicWords] Built sequence - {_sequence.Count} usable line(s) "
-                + $"(dropped {(dto?.dialogue?.Length ?? 0) - _sequence.Count} for missing name/text)");
-
             if (_sequence.Count == 0)
             {
                 OnDialogueLoadFailed("Dialogue response contained no usable lines.");
@@ -88,15 +77,11 @@ namespace MagicWords.Monobehaviour
 
         private void OnAdvanceClicked()
         {
-            Debug.Log($"[MagicWords] OnAdvanceClicked - sequence={(_sequence == null ? "null" : "set")}, "
-                + $"isRevealing={_isRevealing}");
-
             if (_sequence == null)
                 return;
 
             if (_isRevealing)
             {
-                Debug.Log("[MagicWords] Advance while revealing - completing reveal immediately instead of skipping to next line");
                 _activeBox.CompleteRevealImmediately();
                 OnRevealComplete();
                 return;
@@ -110,13 +95,8 @@ namespace MagicWords.Monobehaviour
         {
             _autoAdvanceTimer.Stop();
 
-            Debug.Log($"[MagicWords] NextDialogue - HasStarted={_sequence.HasStarted}, "
-                + $"CurrentNumber={_sequence.CurrentNumber}, Count={_sequence.Count}, "
-                + $"IsFinished={_sequence.IsFinished}");
-
             if (_sequence.IsFinished)
             {
-                Debug.Log("[MagicWords] Sequence finished - ending conversation");
                 EndDialogue();
                 return;
             }
@@ -131,11 +111,6 @@ namespace MagicWords.Monobehaviour
             var otherBox = speaksOnLeft ? rightBox : leftBox;
             var portrait = speaksOnLeft ? leftPortrait : rightPortrait;
             var otherPortrait = speaksOnLeft ? rightPortrait : leftPortrait;
-
-            Debug.Log($"[MagicWords] ShowLine #{_sequence.CurrentNumber}/{_sequence.Count} - "
-                + $"speaker='{line.SpeakerName}', position={line.Position}, box={box.gameObject.name}, "
-                + $"textLength={line.DisplayText?.Length ?? -1}, avatarUrl='{line.AvatarUrl}', "
-                + $"text preview='{(line.DisplayText?.Length > 40 ? line.DisplayText.Substring(0, 40) + "..." : line.DisplayText)}'");
 
             otherBox.SnapHidden();
             otherBox.gameObject.SetActive(false);
@@ -152,23 +127,14 @@ namespace MagicWords.Monobehaviour
             otherPortrait.SetSpeaking(false);
 
             _isRevealing = true;
-            Debug.Log($"[MagicWords] ShowLine #{_sequence.CurrentNumber} - starting reveal, "
-                + $"box.activeInHierarchy={box.gameObject.activeInHierarchy}, "
-                + $"box.activeSelf={box.gameObject.activeSelf}");
             box.PlayReveal(line.DisplayText, config.CharactersPerSecond, OnRevealComplete);
 
             var token = ++_lineToken;
-            Debug.Log($"[MagicWords] ShowLine #{_sequence.CurrentNumber} - avatar load token={token}");
             StartCoroutine(_avatarLoader.Load(line.AvatarUrl, sprite =>
             {
                 if (token != _lineToken)
-                {
-                    Debug.Log($"[MagicWords] Avatar callback for token={token} dropped - "
-                        + $"current token is now {_lineToken} (line advanced before avatar loaded)");
                     return;
-                }
 
-                Debug.Log($"[MagicWords] Avatar callback for token={token} applied - sprite={(sprite == null ? "null (fallback)" : sprite.name)}");
                 box.Bind(line.SpeakerName);
                 portrait.Bind(line.SpeakerName, sprite);
             }));
@@ -176,15 +142,12 @@ namespace MagicWords.Monobehaviour
 
         private void OnRevealComplete()
         {
-            Debug.Log($"[MagicWords] OnRevealComplete #{_sequence.CurrentNumber} - starting auto-advance timer "
-                + $"({config.AutoAdvanceDelay}s)");
             _isRevealing = false;
             _autoAdvanceTimer.Start();
         }
 
         private void EndDialogue()
         {
-            Debug.Log("[MagicWords] EndDialogue");
             HideConversation();
             finishedView.Show(_sequence.Count, Replay);
         }
@@ -193,7 +156,6 @@ namespace MagicWords.Monobehaviour
         /// nothing about it has changed and the player asked for the conversation, not a refetch.
         private void Replay()
         {
-            Debug.Log("[MagicWords] Replay");
             finishedView.Hide();
             _sequence = DialogueSequenceBuilder.Build(_response);
             NextDialogue();

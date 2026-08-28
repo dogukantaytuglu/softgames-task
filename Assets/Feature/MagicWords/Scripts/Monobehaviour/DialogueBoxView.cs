@@ -34,10 +34,7 @@ namespace MagicWords.Monobehaviour
 
         public void SlideIn(float duration, Ease ease)
         {
-            Debug.Log($"[MagicWords] {gameObject.name}.SlideIn - duration={duration}, ease={ease}, "
-                + $"localScale before={transform.localScale}");
-            transform.DOScale(Vector3.one, duration).SetEase(ease).SetTarget(transform)
-                .OnComplete(() => Debug.Log($"[MagicWords] {gameObject.name}.SlideIn complete - localScale={transform.localScale}"));
+            transform.DOScale(Vector3.one, duration).SetEase(ease).SetTarget(transform);
         }
 
         public void PlayReveal(string text, float charactersPerSecond, Action onComplete)
@@ -50,16 +47,8 @@ namespace MagicWords.Monobehaviour
             dialogueText.maxVisibleCharacters = 0;
 
             var duration = charactersPerSecond > 0f ? totalVisibleChars / charactersPerSecond : 0f;
-            Debug.Log($"[MagicWords] {gameObject.name}.PlayReveal - textLength={text?.Length ?? -1}, "
-                + $"totalVisibleChars={totalVisibleChars}, charactersPerSecond={charactersPerSecond}, "
-                + $"computedDuration={duration}, dialogueText.enabled={dialogueText.enabled}, "
-                + $"dialogueText.gameObject.activeInHierarchy={dialogueText.gameObject.activeInHierarchy}, "
-                + $"rectWidth={((RectTransform)dialogueText.transform).rect.width}");
-
             if (duration <= 0f)
             {
-                Debug.Log($"[MagicWords] {gameObject.name}.PlayReveal - duration<=0, snapping to full "
-                    + $"({totalVisibleChars} chars) and completing immediately");
                 dialogueText.maxVisibleCharacters = totalVisibleChars;
                 onComplete?.Invoke();
                 return;
@@ -67,24 +56,17 @@ namespace MagicWords.Monobehaviour
 
             dialogueText.DOMaxVisibleCharacters(totalVisibleChars, duration)
                 .SetTarget(dialogueText)
-                .OnComplete(() =>
-                {
-                    Debug.Log($"[MagicWords] {gameObject.name}.PlayReveal tween OnComplete - "
-                        + $"maxVisibleCharacters={dialogueText.maxVisibleCharacters}");
-                    onComplete?.Invoke();
-                });
+                .OnComplete(() => onComplete?.Invoke());
         }
 
         public void CompleteRevealImmediately()
         {
-            Debug.Log($"[MagicWords] {gameObject.name}.CompleteRevealImmediately");
             DOTween.Kill(dialogueText);
             dialogueText.maxVisibleCharacters = dialogueText.textInfo.characterCount;
         }
 
         private void OnDisable()
         {
-            Debug.Log($"[MagicWords] {gameObject.name}.OnDisable - killing tweens");
             transform.DOKill();
             DOTween.Kill(dialogueText);
         }
