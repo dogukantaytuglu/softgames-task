@@ -4,9 +4,33 @@ namespace Sound
 {
     public static class SoundService
     {
+        private const string EnabledPrefKey = "Sound.Enabled";
         private const int PoolSize = 8;
         private static AudioSource[] _pool;
         private static SoundConfig[] _activeConfig;
+        private static bool? _isEnabled;
+
+        public static bool IsEnabled
+        {
+            get
+            {
+                if (_isEnabled == null)
+                {
+                    _isEnabled = PlayerPrefs.GetInt(EnabledPrefKey, 1) == 1;
+                    AudioListener.volume = _isEnabled.Value ? 1f : 0f;
+                }
+
+                return _isEnabled.Value;
+            }
+        }
+
+        public static void SetEnabled(bool enabled)
+        {
+            _isEnabled = enabled;
+            AudioListener.volume = enabled ? 1f : 0f;
+            PlayerPrefs.SetInt(EnabledPrefKey, enabled ? 1 : 0);
+            PlayerPrefs.Save();
+        }
 
         public static void Play(SoundConfig config)
         {

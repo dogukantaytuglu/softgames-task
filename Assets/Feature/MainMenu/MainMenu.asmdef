@@ -1,6 +1,9 @@
 {
 	"name": "MainMenu",
 	"references": [
-		"SceneServices.Monobehaviour"
+		"SceneServices.Monobehaviour",
+		"DOTween.Modules",
+		"DOTweenPro.Scripts",
+		"Unity.TextMeshPro"
 	]
 }
