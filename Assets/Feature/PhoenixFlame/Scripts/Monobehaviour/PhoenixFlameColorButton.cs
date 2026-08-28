@@ -9,6 +9,7 @@ namespace PhoenixFlame.Monobehaviour
     {
         [SerializeField] private int colorIndex;
         [SerializeField] private Button button;
+        [SerializeField] private GameObject disabledOverlay;
 
         private Action<int> _onSelected;
 
@@ -23,6 +24,17 @@ namespace PhoenixFlame.Monobehaviour
             _onSelected = onSelected;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => _onSelected?.Invoke(colorIndex));
+        }
+
+        public void SetInteractable(bool interactable)
+        {
+            if (button.interactable == interactable)
+                return;
+
+            button.interactable = interactable;
+
+            if (disabledOverlay != null)
+                disabledOverlay.SetActive(!interactable);
         }
     }
 }

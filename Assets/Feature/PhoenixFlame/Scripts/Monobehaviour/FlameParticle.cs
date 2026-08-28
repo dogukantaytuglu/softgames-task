@@ -19,6 +19,8 @@ namespace PhoenixFlame.Monobehaviour
         private static readonly int ColorIndex = Animator.StringToHash(ColorIndexParam);
         private const string ColorIndexParam = "ColorIndex";
 
+        public bool IsTransitioning => animator.IsInTransition(0);
+
         public void Initialize(PhoenixFlameConfig config, Animator fakeLightAnimator = null)
         {
             _config = config;

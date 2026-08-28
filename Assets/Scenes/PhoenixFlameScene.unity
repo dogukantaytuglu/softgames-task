@@ -677,9 +677,9 @@ MonoBehaviour:
   flameSpawnPoint: {fileID: 1074971713}
   fakeLightAnimator: {fileID: 1754738775}
   buttons:
+  - {fileID: 1811691807}
   - {fileID: 1494263247}
   - {fileID: 1916372024}
-  - {fileID: 1811691807}
 --- !u!4 &1009391658
 Transform:
   m_ObjectHideFlags: 0
@@ -1833,6 +1833,14 @@ PrefabInstance:
     - target: {fileID: 4996294706589402771, guid: 767483dca7912614c9548f5f200c4d26, type: 3}
       propertyPath: m_Name
       value: OrangeButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 6794868342162560380, guid: 767483dca7912614c9548f5f200c4d26, type: 3}
+      propertyPath: m_Interactable
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6794868342162560380, guid: 767483dca7912614c9548f5f200c4d26, type: 3}
+      propertyPath: m_Colors.m_ColorMultiplier
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

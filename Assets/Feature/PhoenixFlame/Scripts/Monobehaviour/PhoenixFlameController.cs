@@ -9,14 +9,25 @@ namespace PhoenixFlame.Monobehaviour
         [SerializeField] private Animator fakeLightAnimator;
         [SerializeField] private PhoenixFlameColorButton[] buttons;
 
+        private FlameParticle _flameParticle;
+
         private void Awake()
         {
-            var flameParticle = Instantiate(config.FlamePrefab, flameSpawnPoint.position, flameSpawnPoint.rotation, flameSpawnPoint);
-            flameParticle.Initialize(config, fakeLightAnimator);
+            _flameParticle = Instantiate(config.FlamePrefab, flameSpawnPoint.position, flameSpawnPoint.rotation, flameSpawnPoint);
+            _flameParticle.Initialize(config, fakeLightAnimator);
 
             foreach (var button in buttons)
             {
-                button.Initialize(flameParticle.SetColor);
+                button.Initialize(_flameParticle.SetColor);
+            }
+        }
+
+        private void Update()
+        {
+            var interactable = !_flameParticle.IsTransitioning;
+            foreach (var button in buttons)
+            {
+                button.SetInteractable(interactable);
             }
         }
 
