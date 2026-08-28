@@ -10,8 +10,8 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 **Choice:** Removed all personal/career-strategy content from the three `ai-context/` docs —
 the salary figures, interview-stage/funnel narrative, the recruiter's name, "job-search
-session" references, and the direct "the project needs visual polish" self-assessment quote (replaced
-with neutral descriptions where the underlying point still needed to be made). `BRIEF.md` §1 and
+session" references, and a blunt self-assessment quote about the visuals (replaced with neutral
+descriptions where the underlying point still needed to be made). `BRIEF.md` §1 and
 §8 were rewritten to drop the personal framing while keeping every technical fact that decisions
 elsewhere in this log actually depend on (the skill background, the build-size gap, the
 "must be defensible" constraint). §6 keeps its technical content (build-size measurement is a
@@ -30,7 +30,10 @@ real gap during verification**, worth remembering: a first pass redacted the quo
 left the adjacent salary figures sitting in the same historical sentence untouched — checking
 "does the target phrase still appear anywhere in `git log -p`" isn't enough; the actual sensitive
 tokens (names, numbers) need their own explicit check independent of whichever phrase prompted
-the scrub.
+the scrub. **A second gap**, same root cause: one of the sensitive phrases turned out to live in
+a commit *message* (an old end-of-session priority-list commit), not just file content — a
+`--blob-callback` pass alone doesn't touch those, so `--replace-message` had to run too. Verifying
+"is it gone" needs checking both, not just `git grep`-ing tree content.
 
 **Explicitly NOT touched, and shouldn't be:** the developer's full name as it appears in
 `ProjectSettings.asset`'s `companyName` field and in `MainMenuScene.unity`'s "A Case Project By
