@@ -77,9 +77,14 @@ namespace TimerUtil
 
             if (_remainingLoopCount == 0)
             {
-                OnCountdownComplete?.Invoke();
+                // Stop() runs before the callback, not after: OnCountdownComplete is free to
+                // call Start() again on this same timer (a common pattern - "on complete, arm
+                // the next one"), and that restart must win. Stopping first, then only
+                // destroying if nothing re-started us in the meantime, means a reentrant Start()
+                // is never immediately undone by this method's own trailing cleanup.
                 Stop();
-                if (DestroyOnComplete)
+                OnCountdownComplete?.Invoke();
+                if (DestroyOnComplete && State is TimerState.Stopped)
                 {
                     Destroy();
                 }

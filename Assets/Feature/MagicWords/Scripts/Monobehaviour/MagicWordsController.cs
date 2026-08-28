@@ -39,7 +39,7 @@ namespace MagicWords.Monobehaviour
             progressView.Initialize();
             advanceButton.onClick.AddListener(OnAdvanceClicked);
 
-            _autoAdvanceTimer = TimerService.CreateCountdownTimer(config.AutoAdvanceDelay, loopCount: 1)
+            _autoAdvanceTimer = TimerService.CreateCountdownTimer("auto", config.AutoAdvanceDelay, loopCount: 1)
                 .OnComplete(NextDialogue);
 
             Fetch();
@@ -127,7 +127,7 @@ namespace MagicWords.Monobehaviour
             otherPortrait.SetSpeaking(false);
 
             _isRevealing = true;
-            box.PlayReveal(line.DisplayText, config.CharactersPerSecond, OnRevealComplete);
+            box.PlayReveal(line.DisplayText, config.Duration, OnRevealComplete);
 
             var token = ++_lineToken;
             StartCoroutine(_avatarLoader.Load(line.AvatarUrl, sprite =>

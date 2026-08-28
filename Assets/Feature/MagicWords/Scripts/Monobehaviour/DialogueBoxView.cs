@@ -37,32 +37,16 @@ namespace MagicWords.Monobehaviour
             transform.DOScale(Vector3.one, duration).SetEase(ease).SetTarget(transform);
         }
 
-        public void PlayReveal(string text, float charactersPerSecond, Action onComplete)
+        public void PlayReveal(string text, float duration, Action onComplete)
         {
-            DOTween.Kill(dialogueText);
-
-            dialogueText.text = text;
-            dialogueText.ForceMeshUpdate();
-            var totalVisibleChars = dialogueText.textInfo.characterCount;
-            dialogueText.maxVisibleCharacters = 0;
-
-            var duration = charactersPerSecond > 0f ? totalVisibleChars / charactersPerSecond : 0f;
-            if (duration <= 0f)
-            {
-                dialogueText.maxVisibleCharacters = totalVisibleChars;
-                onComplete?.Invoke();
-                return;
-            }
-
-            dialogueText.DOMaxVisibleCharacters(totalVisibleChars, duration)
-                .SetTarget(dialogueText)
+            dialogueText.text = "";
+            dialogueText.DOText(text, duration)
                 .OnComplete(() => onComplete?.Invoke());
         }
 
         public void CompleteRevealImmediately()
         {
-            DOTween.Kill(dialogueText);
-            dialogueText.maxVisibleCharacters = dialogueText.textInfo.characterCount;
+            DOTween.Kill(dialogueText, true);
         }
 
         private void OnDisable()

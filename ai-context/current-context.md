@@ -16,7 +16,16 @@ stale), a real stale-`AssetDatabase` bug cost two rounds of visible regressions
 (lost Main Menu button colors/order, `HomeButton` snapping to screen-center) before
 being root-caused and fixed, and Ace of Shadows gained a hold-to-fast-forward button.
 Sound itself (button click, card movement, dialogue, fire burning) is the **next**
-piece of work, not yet started.
+piece of work, not yet started. **D45 (2026-08-28, same day) is a live pair-debugging
+session on Magic Words**, started from a UI bug report (the progress pill's fill
+overflowing its track — fixed, committed, pushed) that led into two real, dated
+dialogue-screen bugs: text never becoming visible for each side's first line, and
+auto-advance silently stalling. Both are root-caused with git-history evidence; the
+shared `TimerUtil` half is fixed; the developer independently rewrote
+`DialogueBoxView.PlayReveal` around DOTween's `DOText`, sidestepping the other root
+cause rather than patching it directly. **Not yet confirmed as a full end-to-end fix**,
+and two smaller bugs surfaced along the way are still open — see items 11-12 in the
+open-items list below and D45 in `decisions.md` for the complete trace.
 
 ✅ **Phoenix Flame is verified ON DEVICE by the developer (2026-08-27).** Not just
 Play Mode — they ran it on a real device, saw all three colour states, and called the
@@ -92,10 +101,17 @@ The README architecture/decisions write-up is **done** (D43) — that item is cl
    `2` / `340` Round 2 was tuned around. At 1px a full deck rises 143px instead of
    286px, halving the pile-height signal the retune exists to create. May be a
    deliberate hand-tune; flagged, never overridden.
-3. **Magic Words' portrait groundwork is committed but unverified** —
-   `SpeakerPortraitView`, `SpeakerInitial` and the disc/ring/glow/glyph sprites are in
-   version control, but two consecutive agent runs died mid-verification so none of it
-   has been seen in Play Mode. Also still open on that screen: the dialogue box
+3. ~~**Magic Words' portrait groundwork is committed but unverified**~~ —
+   **superseded by D45 (2026-08-28): it has now been seen in Play Mode, extensively,
+   and a real bug was found.** `LeftDialogueBox`/`RightDialogueBox` are children of
+   `LeftPortrait`/`RightPortrait` (from the same commit that added the portraits,
+   `4388204`), and `SpeakerPortraitView.Hide()` deactivates the portrait at startup —
+   which meant, until `4bc966e` removed a synchronous placeholder `Bind()` call that
+   had been masking it as a side effect, a line's dialogue text could try to reveal
+   while its parent portrait (and therefore the box itself) was still inactive in the
+   hierarchy. D45's `DOText` rewrite of `PlayReveal` sidesteps this specific symptom
+   (see "Magic Words architecture"), but the box-under-portrait parenting itself is
+   still odd and not restructured. Still open on that screen: the dialogue box
    positions, and dropping the now-redundant in-box avatar chips.
 4. **Two small sprite defects remain — and D40 recorded one of them backwards.**
    `UI.spriteatlas` still has `enableRotation: 1` (unsafe for 9-sliced sprites — the
@@ -147,6 +163,18 @@ The README architecture/decisions write-up is **done** (D43) — that item is cl
    brazier sprites too (needs its own Animator — `Bowl` is a separate branch from
    `FakeLight`), desaturate the baked rim so it reads as hot metal, or keep it as
    deliberate "the coals stay orange" logic. Currently reads as an oversight.
+11. 🔴 **`MagicWordsConfig.Duration` is silently running at the C# default (`2`), not
+   the tuned `2.2` (D45, 2026-08-28).** Renaming the field from `charactersPerSecond`
+   to `duration` with no `[FormerlySerializedAs]` orphaned the `.asset` file's old
+   `charactersPerSecond: 2.2` YAML key — verified live in the Editor. Needs the asset
+   resaved through the Inspector (or the attribute added) before the tuned value
+   actually takes effect. See "Magic Words architecture" for detail.
+12. **`DialogueBoxView.CompleteRevealImmediately()` double-fires `OnRevealComplete`
+   (D45, 2026-08-28).** `DOTween.Kill(dialogueText, true)` completes the tween *and*
+   fires its own `OnComplete`, and `MagicWordsController.OnAdvanceClicked` then calls
+   `OnRevealComplete()` again explicitly right after. Currently harmless only because
+   `Timer.Start()` no-ops when already started — not guarded by design. See "Magic
+   Words architecture".
 
 ## 🛠 If Unity or the MCP bridge misbehaves
 
@@ -191,9 +219,19 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   rendering TMP synthetic faux-bold because `fontStyle: Bold` was set on a Rubik asset
   with no bold weight wired. **Failure handling now works** — the parser no longer
   throws on non-JSON, requests have a 10s timeout, and a failed fetch no longer
-  announces "That's the end of the conversation." **Not verified:** the large speaker
-  portraits are committed as groundwork only and have never run in Play Mode; box
-  positions and the redundant in-box avatar chips are still open.
+  announces "That's the end of the conversation." **The `LINE n OF m` progress pill's
+  fill was fixed and tweened in D45 (2026-08-28)** — was `Image.Type.Filled` on a
+  9-sliced sprite, which ignores the sprite border and tapers the rounded caps at low
+  fill amounts; now `Sliced` with the fill driven by `RectTransform.anchorMax.x`, and
+  advances with a DOTween `OutBack` tween instead of snapping. **D45 also found and
+  diagnosed two real dialogue bugs** (portrait-inactive-hierarchy causing invisible
+  text on each side's first line, and a `TimerUtil` reentrancy bug silently killing
+  the auto-advance timer) — see "Magic Words architecture" and the open-items list
+  for full detail and current status. **Not verified end-to-end by the developer as
+  of D45:** the large speaker portraits are now exercised by real Play Mode testing
+  (no longer "never run"), but a full clean 17-line run with both D45 fixes together
+  hasn't been confirmed; box positions and the redundant in-box avatar chips are
+  still open.
 - **Phoenix Flame: built, and past both its fire pass and its UI/UX round (D41).**
   A config-driven flame (own prefab + a runtime-instanced material) recolors via a
   3-state Animator Controller (Orange/Green/Blue), driven by 3 UI buttons. The fire's
@@ -656,34 +694,75 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   TimerUtil's `Action` events, DOTween's `OnComplete`), `AvatarSpriteLoader`
   (coroutine `UnityWebRequestTexture.GetTexture`, resolves to `null` - never
   throws - on any failure so the caller falls back to a placeholder sprite),
-  `DialogueBoxView` (one per screen side; `SlideIn`/`SnapHidden` tween
-  `RectTransform.anchoredPosition.x` only, `PlayReveal` is the DOTween Pro TMP
-  typewriter technique - lock in the full string first via `ForceMeshUpdate()`
-  so wrapping is correct from frame one, then `DOMaxVisibleCharacters(0 →
-  textInfo.characterCount)`), `DialogueFinishedView` (same
-  Initialize/Show/Hide shape as Ace of Shadows' `FinishedMessageView`, no
-  Restart button - not asked for, `HomeButtonController` already covers
-  leaving the scene), `MagicWordsController` (composition root).
+  `DialogueBoxView` (one per screen side; `SlideIn` is a `DOScale(0→1)` on the
+  box root, `SnapHidden` sets `localScale` to zero directly. **`PlayReveal`
+  rewritten in D45 (2026-08-28)** to DOTween Pro's `DOText` typewriter
+  shortcut, replacing the old `ForceMeshUpdate()` +
+  `textInfo.characterCount` + `DOMaxVisibleCharacters` approach — that old
+  approach silently broke (0 visible characters, reveal "completes" with
+  nothing shown) whenever the box's TMP component wasn't active *in the
+  hierarchy* yet, because `ForceMeshUpdate()` can't rebuild mesh/character
+  data for an inactive object. `DOText` sidesteps this entirely: its
+  rich-text-tag-aware reveal parses the plain string itself (so a
+  `<sprite name="...">` emoji token still reveals as one atomic step), with
+  no dependency on the live TMP/Canvas render state at all.
+  `CompleteRevealImmediately()` is now `DOTween.Kill(dialogueText, true)` -
+  ⚠️ **this also fires the tween's own `OnComplete`**, so
+  `MagicWordsController.OnAdvanceClicked` calling `OnRevealComplete()` again
+  right after double-fires it; currently harmless only because
+  `Timer.Start()` no-ops when already started, not because it's guarded by
+  design - see D45.), `DialogueFinishedView` (same Initialize/Show/Hide shape
+  as Ace of Shadows' `FinishedMessageView`, no Restart button - not asked for,
+  `HomeButtonController` already covers leaving the scene),
+  `MagicWordsController` (composition root).
 - **Tuning lives in `MagicWordsConfig`**
   (`Assets/Feature/MagicWords/Configs/MagicWordsConfig.asset`): `endpointUrl`,
-  `charactersPerSecond` (reveal speed - duration is derived per line from its
-  actual character count, not a fixed duration, so short and long lines read at
-  the same pace), `autoAdvanceDelay`, `boxMoveDuration`, `boxMoveEase`. Same
-  ScriptableObject-with-public-getters pattern as `AceOfShadowsConfig`.
+  `requestTimeoutSeconds`, `duration` (seconds per line's reveal - **renamed
+  from `charactersPerSecond` in D45**; the old field was already being passed
+  straight into `DOText`'s duration parameter, i.e. it was never actually a
+  per-character rate despite the name, so the rename just makes the name
+  honest. Real tradeoff, not just naming: every line now takes the same fixed
+  time to reveal regardless of length, where the design used to pace duration
+  by each line's own character count so short and long lines read at the same
+  speed - not restored as of D45), `autoAdvanceDelay`, `boxMoveDuration`,
+  `boxMoveEase`. Same ScriptableObject-with-public-getters pattern as
+  `AceOfShadowsConfig`. 🔴 **The rename orphaned the `.asset`'s tuned value** -
+  no `[FormerlySerializedAs]` was added, so the asset's old
+  `charactersPerSecond: 2.2` YAML key doesn't map to the new `duration`
+  field. Verified live in the Editor: `MagicWordsConfig.Duration` currently
+  reads `2` (the C# field initializer), not the tuned `2.2` sitting unused in
+  the `.asset` file. Needs the asset resaved through the Inspector (retype
+  `2.2` into the now-correctly-named field) or a
+  `[FormerlySerializedAs("charactersPerSecond")]` attribute to actually take
+  effect - flagged, not fixed.
 - **Fast-forward is one full-screen invisible `Button`** (`AdvanceButton`,
   transparent `Image` with `raycastTarget: true`, last-but-one Canvas sibling so
   `HomeButton` - the actual last sibling - still gets raycast priority over it).
   `MagicWordsController.OnAdvanceClicked` is a 2-state machine: while
   `_isRevealing`, a click calls `DialogueBoxView.CompleteRevealImmediately()`
-  (kills the DOTween text tween, snaps `maxVisibleCharacters` to the full count)
-  and treats that as "reveal finished" (starts the auto-advance timer); once not
-  revealing, a click stops that timer and calls `Advance()` (next line, or ends
-  the sequence if `DialogueSequence.IsFinished`). The auto-advance timer itself
-  is a `TimerUtil.CountdownTimer(config.AutoAdvanceDelay, loopCount: 1)` created
-  once in `Awake()` and restarted (`Stop()` then `Start()`) every time a line's
+  (`DOTween.Kill(dialogueText, true)` - completes and kills the `DOText` reveal
+  tween in one call) and treats that as "reveal finished" (starts the
+  auto-advance timer); once not revealing, a click stops that timer and calls
+  `Advance()` (next line, or ends the sequence if `DialogueSequence.IsFinished`).
+  The auto-advance timer itself is a
+  `TimerUtil.CountdownTimer(config.AutoAdvanceDelay, loopCount: 1)` created once
+  in `Awake()` and restarted (`Stop()` then `Start()`) every time a line's
   reveal completes - safe to restart repeatedly because of the same
   `Stop()`-unregisters/`Start()`-re-registers `TimerUtil` fix from D13 that
-  makes Ace of Shadows' `Restart()` safe.
+  makes Ace of Shadows' `Restart()` safe. **A second, real `TimerUtil` bug found
+  and fixed in D45 (2026-08-28):** `CountdownTimer.OnTimeout()` used to invoke
+  `OnCountdownComplete` *then* call `Stop()` - if the invoked callback
+  reentrantly called `Start()` on that same timer (exactly what
+  `OnRevealComplete → _autoAdvanceTimer.Start()` does when a line's reveal
+  completes synchronously), the outer `OnTimeout()`'s own trailing `Stop()`
+  ran *after* that reentrant restart and immediately killed the freshly-started
+  timer before it ever ticked - silently stuck, no exception. Fixed by
+  reordering `Stop()` before the `Invoke()` in
+  `Assets/Plugins/TimerUtil/Scripts/CountdownTimer.cs`, so a reentrant restart
+  is never undone by the method's own cleanup. This is a shared-plugin fix,
+  not Magic-Words-specific - it protects every `CountdownTimer` consumer in the
+  project (Ace of Shadows' move timer included), though Magic Words was the
+  first place a reentrant-restart-on-complete pattern actually got exercised.
 - **Box entrance is a plain `DOAnchorPosX` toward the center of the screen**
   (`DialogueBoxView.SlideIn`), matching the brief-literal ask. Each box is
   anchored to its own screen edge (`anchorMin/Max = (0,0)` pivot `(0, 0.5)` for
@@ -1149,6 +1228,17 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   guarded in `RegisterTimer`) so `Restart()` still works. Worth upstreaming to the
   `TimerUtil` source repo itself, not just this vendored copy, since any future
   feature that uses a timer and gets navigated away from will hit the same trap.
+  **A second real bug fixed here, 2026-08-28 (D45):** `CountdownTimer.OnTimeout()`
+  called `OnCountdownComplete?.Invoke()` then `Stop()`, in that order. If the
+  invoked callback reentrantly called `Start()` on the same timer instance (a
+  completely normal "on complete, arm the next one" pattern — exactly what Magic
+  Words' auto-advance timer does), the outer call's own trailing `Stop()` ran
+  *after* that reentrant restart and immediately killed the freshly-started timer
+  before it ever got a chance to tick — silently, no exception. Fixed by reordering
+  to `Stop()` then `Invoke()`, and only `Destroy()`-ing if `State` is still
+  `Stopped` after the callback runs (so a reentrant restart isn't destroyed either).
+  Also worth upstreaming — this one affects every `CountdownTimer` consumer in the
+  project, not just the vendored copy here.
 - Input System package only (`activeInputHandler: 1`) — no legacy Input Manager.
 
 ## Immediate next steps
