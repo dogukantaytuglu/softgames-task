@@ -661,9 +661,9 @@ MonoBehaviour:
   flameSpawnPoint: {fileID: 1074971713}
   fakeLightAnimator: {fileID: 1754738775}
   buttons:
-  - {fileID: 1811691807}
-  - {fileID: 1916372024}
   - {fileID: 1494263247}
+  - {fileID: 1916372024}
+  - {fileID: 1811691807}
 --- !u!4 &1009391658
 Transform:
   m_ObjectHideFlags: 0
