@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "AceOfShadows.Logic",
+        "Sound",
         "TimerUtility",
         "Unity.TextMeshPro",
         "DOTween.Modules"

@@ -10,6 +10,12 @@ namespace Sound
 
         public static void Play(SoundConfig config)
         {
+            if (config == null || config.Clip == null)
+            {
+                Debug.LogWarning("SoundService.Play called with no SoundConfig/clip assigned.");
+                return;
+            }
+
             EnsurePool();
             var index = GetFreeSourceIndex();
             var source = _pool[index];

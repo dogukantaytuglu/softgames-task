@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using Sound;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -38,6 +39,8 @@ namespace AceOfShadows.Monobehaviour
         public void MoveTo(Vector2 anchoredPosition, Quaternion localRotation, float duration, Action onComplete)
         {
             transform.DOKill();
+
+            SoundService.Play(_config.MoveSound);
 
             DOTween.Sequence()
                 .SetTarget(transform)

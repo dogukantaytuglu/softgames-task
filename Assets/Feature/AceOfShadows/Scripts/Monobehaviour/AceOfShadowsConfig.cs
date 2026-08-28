@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using Sound;
 using UnityEngine;
 
 namespace AceOfShadows.Monobehaviour
@@ -13,6 +14,7 @@ namespace AceOfShadows.Monobehaviour
         [SerializeField] private float moveDuration = 0.35f;
         [SerializeField] private Ease moveEase = Ease.OutQuad;
         [SerializeField] private List<GameObject> cardVisuals;
+        [SerializeField] private SoundConfig moveSound;
 
         [Header("Stack Layout")]
         [Tooltip("Vertical fan per card, in canvas pixels at the 1080x1920 reference. " +
@@ -48,6 +50,7 @@ namespace AceOfShadows.Monobehaviour
         public float MoveDuration => moveDuration;
         public Ease MoveEase => moveEase;
         public List<GameObject> CardVisuals => cardVisuals;
+        public SoundConfig MoveSound => moveSound;
         public float PerCardOffset => perCardOffset;
         public float MaxPileRise => maxPileRise;
         public float ExitDistance => exitDistance;
