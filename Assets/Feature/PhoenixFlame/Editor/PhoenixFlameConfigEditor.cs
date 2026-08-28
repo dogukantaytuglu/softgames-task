@@ -13,7 +13,6 @@ namespace PhoenixFlame.Editor
         private SerializedProperty _baseMaterial;
         private SerializedProperty _animatorController;
         private SerializedProperty _colorOptions;
-        private SerializedProperty _colorTransitionDuration;
 
         private void OnEnable()
         {
@@ -21,7 +20,6 @@ namespace PhoenixFlame.Editor
             _baseMaterial = serializedObject.FindProperty("baseMaterial");
             _animatorController = serializedObject.FindProperty("animatorController");
             _colorOptions = serializedObject.FindProperty("colorOptions");
-            _colorTransitionDuration = serializedObject.FindProperty("colorTransitionDuration");
         }
 
         public override void OnInspectorGUI()
@@ -31,7 +29,6 @@ namespace PhoenixFlame.Editor
             EditorGUILayout.PropertyField(_flamePrefab);
             EditorGUILayout.PropertyField(_baseMaterial);
             EditorGUILayout.PropertyField(_animatorController);
-            EditorGUILayout.PropertyField(_colorTransitionDuration);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Colors (read from Animator Controller)", EditorStyles.boldLabel);

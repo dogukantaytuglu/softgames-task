@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace PhoenixFlame.Monobehaviour
@@ -9,8 +8,6 @@ namespace PhoenixFlame.Monobehaviour
         [SerializeField] private Transform flameSpawnPoint;
         [SerializeField] private Animator fakeLightAnimator;
         [SerializeField] private PhoenixFlameColorButton[] buttons;
-
-        private Animator _flameAnimator;
 
         private void Awake()
         {
