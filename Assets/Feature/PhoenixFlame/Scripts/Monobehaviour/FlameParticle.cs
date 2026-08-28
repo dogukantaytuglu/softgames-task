@@ -65,7 +65,10 @@ namespace PhoenixFlame.Monobehaviour
         private void OnDestroy()
         {
             if (_config != null)
+            {
                 SoundService.Stop(_config.FireLoopSound);
+                SoundService.Stop(_config.ColorChangeSound);
+            }
 
             if (_runtimeMaterial != null)
             {
