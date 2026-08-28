@@ -1,4 +1,5 @@
 ﻿using PhoenixFlame.Logic;
+using Sound;
 using UnityEngine;
 
 namespace PhoenixFlame.Monobehaviour
@@ -9,6 +10,7 @@ namespace PhoenixFlame.Monobehaviour
         [SerializeField] private Animator animator;
         [SerializeField] private SpriteRenderer bowlHighlightRenderer;
 
+        private PhoenixFlameConfig _config;
         private PhoenixFlameColorState _colorState;
         private Animator _fakeLightAnimator;
         private Material _runtimeMaterial;
@@ -19,6 +21,8 @@ namespace PhoenixFlame.Monobehaviour
 
         public void Initialize(PhoenixFlameConfig config, Animator fakeLightAnimator = null)
         {
+            _config = config;
+
             // The Animator writes colour straight onto the renderer's material, so each
             // flame needs its own copy - animating the shared asset would edit it on disk
             // in the Editor and bleed between instances at runtime. We own this copy, so
@@ -42,6 +46,8 @@ namespace PhoenixFlame.Monobehaviour
             _colorState = new PhoenixFlameColorState(config.ColorOptions.Count);
             animator.SetInteger(ColorIndex, _colorState.CurrentIndex);
 
+            SoundService.Play(config.FireLoopSound);
+
             // The glow sprites live outside this prefab's hierarchy, so an Animator
             // can't reach them from here - they get their own, driven off the same
             // ColorIndex and the same clips.
@@ -63,10 +69,17 @@ namespace PhoenixFlame.Monobehaviour
 
             if (_fakeLightAnimator != null)
                 _fakeLightAnimator.SetInteger(ColorIndex, index);
+
+            SoundService.Play(_config.ColorChangeSound);
         }
 
         private void OnDestroy()
         {
+            // The pooled AudioSource playing the loop lives on SoundService's own
+            // DontDestroyOnLoad object, so it outlives this scene unless stopped here.
+            if (_config != null)
+                SoundService.Stop(_config.FireLoopSound);
+
             if (_runtimeMaterial != null)
             {
                 Destroy(_runtimeMaterial);

@@ -2,7 +2,8 @@
     "name": "PhoenixFlame.Monobehaviour",
     "rootNamespace": "",
     "references": [
-        "PhoenixFlame.Logic"
+        "PhoenixFlame.Logic",
+        "Sound"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

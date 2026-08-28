@@ -25,4 +25,5 @@ MonoBehaviour:
   - displayName: Blue
     baseColor: {r: 0.3, g: 0.55, b: 1, a: 1}
     emissionColor: {r: 0.35, g: 0.85, b: 2.8, a: 1}
-  colorTransitionDuration: 1.5
+  fireLoopSound: {fileID: 11400000, guid: 8e51378ade835e846a0e4fde96756378, type: 2}
+  colorChangeSound: {fileID: 11400000, guid: f41bf7a405f96804596d6b3b3f55d077, type: 2}

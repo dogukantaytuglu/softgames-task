@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Sound;
 using UnityEngine;
 
 namespace PhoenixFlame.Monobehaviour
@@ -13,12 +14,14 @@ namespace PhoenixFlame.Monobehaviour
         // Auto-derived from animatorController by a custom editor - do not hand-edit.
         [SerializeField] private List<PhoenixFlameColorOption> colorOptions;
 
-        [SerializeField] private float colorTransitionDuration = 1.5f;
+        [SerializeField] private SoundConfig fireLoopSound;
+        [SerializeField] private SoundConfig colorChangeSound;
 
         public FlameParticle FlamePrefab => flamePrefab;
         public Material BaseMaterial => baseMaterial;
         public RuntimeAnimatorController AnimatorController => animatorController;
         public IReadOnlyList<PhoenixFlameColorOption> ColorOptions => colorOptions;
-        public float ColorTransitionDuration => colorTransitionDuration;
+        public SoundConfig FireLoopSound => fireLoopSound;
+        public SoundConfig ColorChangeSound => colorChangeSound;
     }
 }
