@@ -10,7 +10,6 @@ namespace SceneServices.Monobehaviour
 
         private void Awake()
         {
-            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(GoHome);
         }
 

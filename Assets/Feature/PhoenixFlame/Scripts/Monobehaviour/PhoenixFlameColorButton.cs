@@ -22,7 +22,6 @@ namespace PhoenixFlame.Monobehaviour
         public void Initialize(Action<int> onSelected)
         {
             _onSelected = onSelected;
-            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => _onSelected?.Invoke(colorIndex));
         }
 

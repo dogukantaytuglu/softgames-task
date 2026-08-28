@@ -42,6 +42,11 @@ namespace Feature.MainMenu.Scripts
             _sequence?.Kill();
             _sequence = DOTween.Sequence().SetTarget(this);
 
+            // Start position of the step that was added last: the anchor a Join attaches to.
+            // DOTween keeps the same value internally (Sequence.lastTweenInsertTime) but does
+            // not expose it, so we mirror it here.
+            var lastStepStart = 0f;
+
             foreach (var step in steps)
             {
                 var tween = BuildTween(step);
@@ -51,20 +56,37 @@ namespace Feature.MainMenu.Scripts
                 switch (step.sequenceMode)
                 {
                     case MainMenuSequenceMode.Append:
+                    {
+                        var startTime = _sequence.Duration(false) + Mathf.Max(0f, step.delay);
                         if (step.delay > 0f)
                             _sequence.AppendInterval(step.delay);
                         _sequence.Append(tween);
+                        lastStepStart = startTime;
                         break;
+                    }
                     case MainMenuSequenceMode.Join:
-                        if (step.delay > 0f)
-                            _sequence.AppendInterval(step.delay);
-                        _sequence.Join(tween);
+                    {
+                        // AppendInterval + Join cannot express "join, but delay seconds later":
+                        // AppendInterval moves DOTween's join anchor to the sequence's current
+                        // end and Join lands exactly there, so the delay never reaches the
+                        // joined tween - it only pads the sequence's total length. Inserting at
+                        // the computed absolute position is the only way to offset a join.
+                        var startTime = Mathf.Max(0f, lastStepStart + step.delay);
+                        _sequence.Insert(startTime, tween);
+                        lastStepStart = startTime;
                         break;
+                    }
                     default:
                         _sequence.Insert(step.delay, tween);
+                        lastStepStart = step.delay;
                         break;
                 }
             }
+        }
+
+        public void SkipIntro()
+        {
+            _sequence?.Complete();
         }
 
         private static Tween BuildTween(MainMenuAnimationStep step)

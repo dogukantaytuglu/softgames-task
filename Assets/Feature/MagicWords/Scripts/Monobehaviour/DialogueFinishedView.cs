@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace MagicWords.Monobehaviour
@@ -22,6 +23,9 @@ namespace MagicWords.Monobehaviour
         [SerializeField] private Button replayButton;
         [SerializeField] private Button retryButton;
 
+        private UnityAction _replayListener;
+        private UnityAction _retryListener;
+
         public void Initialize()
         {
             root.SetActive(false);
@@ -30,7 +34,7 @@ namespace MagicWords.Monobehaviour
         public void Show(int lineCount, Action onReplay)
         {
             lineCountText.text = $"{lineCount} / {lineCount}";
-            Wire(replayButton, onReplay);
+            Wire(replayButton, ref _replayListener, onReplay);
             successPanel.SetActive(true);
             failurePanel.SetActive(false);
             root.SetActive(true);
@@ -41,7 +45,7 @@ namespace MagicWords.Monobehaviour
         public void ShowFailure(string reason, Action onRetry)
         {
             failureReasonText.text = string.IsNullOrWhiteSpace(reason) ? "Unknown error." : reason;
-            Wire(retryButton, onRetry);
+            Wire(retryButton, ref _retryListener, onRetry);
             successPanel.SetActive(false);
             failurePanel.SetActive(true);
             root.SetActive(true);
@@ -52,11 +56,18 @@ namespace MagicWords.Monobehaviour
             root.SetActive(false);
         }
 
-        private static void Wire(Button button, Action action)
+        // Removes only the listener this method previously added (never ButtonClickSound's,
+        // which self-wires additively on the same Button) so repeated calls - e.g. a second
+        // failed fetch re-wiring retryButton - don't stack duplicate callbacks either.
+        private static void Wire(Button button, ref UnityAction cached, Action action)
         {
-            button.onClick.RemoveAllListeners();
-            if (action != null)
-                button.onClick.AddListener(() => action());
+            if (cached != null)
+                button.onClick.RemoveListener(cached);
+
+            cached = action != null ? () => action() : null;
+
+            if (cached != null)
+                button.onClick.AddListener(cached);
         }
     }
 }

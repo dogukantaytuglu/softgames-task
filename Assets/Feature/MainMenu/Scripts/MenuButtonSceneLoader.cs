@@ -12,7 +12,6 @@ namespace Feature.MainMenu.Scripts
 
         public void Initialize()
         {
-            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(LoadScene);
         }
 
