@@ -4,10 +4,19 @@
 > stand." Read this, then `decisions.md` if you need the "why" behind something.
 > The assignment itself is `BRIEF.md`.
 
-Last updated: 2026-08-27 (end of day). **All four screens have a UI/UX round** —
+Last updated: 2026-08-28. **All four screens have a UI/UX round** —
 Phoenix Flame was the last (D41), and its fake-light glow colour-lerps with the flame
-(D42). This day closed with a third `unity-interviewer` audit and an action pass on it
-(**D43** — read that first; it supersedes several claims that used to live here).
+(D42). D43 (2026-08-27) closed the day with a third `unity-interviewer` audit and an
+action pass on it. **D44 (2026-08-28 — read that first) is a prep session for sound**:
+every button in the game now inherits one shared `BaseButton.prefab` (Prefab Variant
+lineage, not just a shared script) so a future click-sound component lands in one
+place; along the way, `SceneFlow` was renamed **`SceneServices`** (the folder,
+namespace, and asmdefs below reflect this — treat any lingering `SceneFlow` mention as
+stale), a real stale-`AssetDatabase` bug cost two rounds of visible regressions
+(lost Main Menu button colors/order, `HomeButton` snapping to screen-center) before
+being root-caused and fixed, and Ace of Shadows gained a hold-to-fast-forward button.
+Sound itself (button click, card movement, dialogue, fire burning) is the **next**
+piece of work, not yet started.
 
 ✅ **Phoenix Flame is verified ON DEVICE by the developer (2026-08-27).** Not just
 Play Mode — they ran it on a real device, saw all three colour states, and called the
@@ -303,12 +312,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   would need a new cross-feature asmdef reference for zero real benefit, since both
   were already single-method/single-purpose with nothing to merge.
 - **`Assets/App/` vs `Assets/Feature/`**: app-level infrastructure that every scene
-  depends on (`SceneFlow`, `FpsCounter`) lives under `Assets/App/`; independent,
-  deletable content features (`MainMenu`, `AceOfShadows`, `MagicWords`,
-  `PhoenixFlame`) live under `Assets/Feature/`. Split out 2026-08-23 (D13) — before
-  this both kinds of thing sat in `Assets/Feature/` together, which stopped being
-  legible once SceneFlow (infra) landed alongside AceOfShadows (content). Answers
-  "which of these can I delete without breaking the app" from the tree alone.
+  depends on (`SceneServices`, `FpsCounter`, the shared `UI/Prefabs/BaseButton.prefab`)
+  lives under `Assets/App/`; independent, deletable content features (`MainMenu`,
+  `AceOfShadows`, `MagicWords`, `PhoenixFlame`) live under `Assets/Feature/`. Split out
+  2026-08-23 (D13) — before this both kinds of thing sat in `Assets/Feature/` together,
+  which stopped being legible once the scene-flow infra landed alongside AceOfShadows
+  (content). Answers "which of these can I delete without breaking the app" from the
+  tree alone. **`SceneFlow` → `SceneServices`, 2026-08-28 (D44)** — same folder, new
+  name, matching the `SceneService` class it actually holds; see D44 for why the
+  namespace itself had to be the *plural* `SceneServices` (a real C# collision, not a
+  style choice).
 - **Every feature's scripts split into `Scripts/Logic/` and `Scripts/Monobehaviour/`
   subfolders**, each its own asmdef, named `<Feature>.Logic` / `<Feature>.Monobehaviour`
   (e.g. `AceOfShadows.Logic`, `FpsCounter.Monobehaviour`). `Logic` asmdefs have
@@ -331,7 +344,9 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   project are thin wiring), `includePlatforms: ["Editor"]`,
   `precompiledReferences: ["nunit.framework.dll"]`,
   `defineConstraints: ["UNITY_INCLUDE_TESTS"]`. **80 EditMode test cases exist**
-  as of D43 (5 FpsCounter, 20 Ace of Shadows, 8 SceneFlow, 6 PhoenixFlame,
+  as of D43 (5 FpsCounter, 20 Ace of Shadows, 8 SceneServices [was SceneFlow's
+  `SceneFlowStateTests`/`SceneFlowState`, renamed `SceneServiceStateTests`/
+  `SceneServiceState` in D44's rename], 6 PhoenixFlame,
   41 MagicWords) — that is an **attribute count, not a run count**: 75 `[Test]`
   methods plus 2 methods carrying 5 bare `[TestCase]`s between them. The suite has
   still never been executed through the Test Runner window (open item 1), so "they
@@ -400,6 +415,32 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `EditorUserBuildSettings.activeBuildTarget` (e.g. `"WebGL"`), **not**
   `"DefaultTexturePlatform"` — setting only the Default bucket has no visible
   effect on Play Mode testing even though it's correctly saved.
+- **Every button in the game is a Prefab Variant of `Assets/App/UI/Prefabs/BaseButton.prefab`
+  (D44, 2026-08-28)** — deliberately minimal (`RectTransform`+`CanvasRenderer`+`Image`+
+  `Button`, nothing else), so a future shared component (the queued click-sound work)
+  lands there once and every variant — `HomeButton`, `MainMenuButton`, `RestartButton`,
+  `FastForwardButton`, `AdvanceButton`, `ReplayButton`, `RetryButton`,
+  `ColorSwatchButton` (Phoenix Flame's 3 color swatches, one shared prefab) — picks
+  it up with zero per-button editing. **Unity has no "make this existing prefab a
+  variant of that one" operation** — a Variant is only created by instantiating the
+  base and saving that as a new asset, so retrofitting an *existing* prefab means
+  recreating its object graph and accepting fresh internal fileIDs, which orphans any
+  scene-level per-instance override targeting the old ones (see the next bullet and
+  D44 for the two regressions this actually caused).
+- **`PrefabUtility.SaveAsPrefabAsset` overwriting an existing prefab, then setting
+  scene-instance overrides on it from a *separate* script call, needs an
+  `AssetDatabase.Refresh()` in between — found the hard way in D44, cost two rounds
+  of regressions before being root-caused.** Without the refresh, the later call's
+  scene load can resolve against a stale snapshot of the just-rebuilt prefab, so any
+  override it writes gets recorded against fileIDs that don't match the actual
+  prefab structure. Unity doesn't error on this — it silently drops the override and
+  the instance falls back to the prefab's own baked-in default. Symptom seen twice:
+  every `MainMenuButton` showing the same color, every `HomeButton` snapping to
+  `(0,0)`. The fix isn't just the refresh — it's **verifying by reloading the scene
+  fresh from disk afterward**, not trusting the in-memory value right after writing
+  it (that in-memory-looks-right gap is exactly what let the bug through a first
+  "verification" pass). Same family of gotcha as D34's bare-property-assignment note,
+  one layer deeper.
 - **`EditorSettings.spritePackerMode` defaults to `Disabled`** — with it disabled,
   every `SpriteRenderer` renders from its raw, unpacked source texture in the
   Editor (including Play Mode) regardless of any `SpriteAtlas` asset's own
@@ -523,6 +564,16 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   hides the finished message, and calls `_timer.Start()` (safe post-`Stop()` —
   resets the countdown fully, see the D13 TimerUtil fix). Not a per-card reset —
   a full rebuild reusing the existing first-time-setup path.
+- **Hold-to-fast-forward (D44, 2026-08-28):** `AceOfShadowsConfig.speedMultiplier`
+  + `FastForwardButtonView` (press-and-hold, `IPointerDownHandler`/`IPointerUpHandler`
+  — not `Button.onClick`, since the effect only applies while held). Rather than
+  teaching the shared `TimerUtil` plugin about speed (Magic Words uses it too),
+  `AceOfShadowsController.Update()` feeds the existing move-cadence `CountdownTimer`
+  extra `TryTick()` calls while held (`speedMultiplier - 1` per frame via an
+  accumulator, so a non-integer multiplier still averages correctly) and divides
+  each card's `CardView.MoveTo` duration by the same multiplier, so the whole
+  sequence compresses rather than piling up overlapping tweens. Button sits centered
+  below the counters, styled to match `HomeButton`'s pill.
 
 ### Rendering & performance (Ace of Shadows)
 - **AceOfShadowsScene has no Skybox and no Directional Light** — it's 100% unlit
@@ -689,6 +740,20 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   (scoped per-component rather than overriding TMP Settings' project-wide
   default sprite asset, which already points at TMP's built-in `EmojiOne`
   sample and isn't Magic Words' to reassign).
+- **Portrait `Bind(name, null)` is no longer called eagerly before the avatar fetch
+  resolves (D44, 2026-08-28).** `SpeakerPortraitView`'s doc comment says the
+  "missing avatar" look (monogram + `NO AVATAR` tag) is a *data* state, never a
+  loading spinner — but the old `ShowLine` bound every portrait to `null` first,
+  showing exactly that placeholder for any speaker whose real avatar just hadn't
+  finished loading yet, contradicting the class's own contract. Fixed by developer,
+  reviewed by Claude. **Trade-off flagged on review, left as-is:** `Bind()` is also
+  the only thing that activates the portrait's GameObject, and now that only
+  happens from inside the (token-gated) async callback — under fast-forward, a
+  superseded line's callback gets dropped, so the portrait can end up invisible or
+  showing the *previous* speaker next to a box that already names the new one. The
+  old eager bind guaranteed at least the correct name/initial showed immediately,
+  regardless of load timing; that guarantee is gone in exchange for fixing the
+  flicker.
 - **Avatars load from the real endpoint URLs at runtime**, with a fallback
   sprite (`additional controls_13`, a plain cream circle from the existing UI
   sprite pack) shown immediately and swapped for the real image if/when it
@@ -710,7 +775,7 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 ### Phoenix Flame architecture
 - **Domain** (`Assets/Feature/PhoenixFlame/Scripts/Logic/`, `noEngineReferences: true`):
   `PhoenixFlameColorState` — the brief's "colour state machine," made testable the same
-  way `SceneFlowState`/`CardDeck` are: `CurrentIndex` + `TrySelect(index)` (throws on
+  way `SceneServiceState`/`CardDeck` are: `CurrentIndex` + `TrySelect(index)` (throws on
   out-of-range, returns `false`/no-ops if `index` is already current so the caller
   doesn't retrigger an identical Animator transition). 6 EditMode tests.
 - **Presentation** (`Scripts/Monobehaviour/`): `PhoenixFlameConfig`
@@ -749,6 +814,14 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   Inspector, a 4th state ("Pink", same colors as Blue, not yet retinted) was added to
   the controller to confirm auto-pickup** — it worked, and that test state/color entry
   is currently in the project as a working proof, not finished content.
+- **`FlameParticle` also owns a material instance for the bowl highlight (D44,
+  2026-08-28), same fix D43 already applied to the particle's own material.**
+  The flame's Animator drives `BowlHighlight`'s `SpriteRenderer.material._BaseColor`/
+  `_EmissionColor` too (added when D42's fake-light work took the bowl recolor over
+  from the flame's own Animator), and without its own runtime instance that write
+  landed on the shared `BrazierBowlFakeLight.mat` asset. `bowlHighlightRenderer` is
+  now instanced and destroyed alongside `_runtimeMaterial`, same `OnDestroy` (kept
+  on `OnDestroy` deliberately in D44's `OnDisable` audit — see that entry).
 - **The scene's fake-light glow lerps with the flame, via a second Animator (D42).**
   `Environment/FakeLight` holds the glow sprites (`FlameHalo`, `EmberPool`,
   `EmberPoolCore`, plus a `ContactShadow` that deliberately does *not* lerp) and
@@ -822,10 +895,14 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - **`AppScene.unity` is build-index 0** and the only scene ever opened directly (in
   Editor Play or in the WebGL build) — every other scene is loaded/unloaded
   *additively* on top of it, one "content" scene at a time. AppScene itself never
-  reloads or unloads. Lives at `Assets/App/SceneFlow/` (not `Assets/Feature/` —
-  see the `Assets/App/` vs `Assets/Feature/` convention above).
-- **`SceneFlow.Logic`** (`Assets/App/SceneFlow/Scripts/Logic/`, `noEngineReferences:
-  true`): `SceneFlowState` — pure state machine holding `CurrentScene`,
+  reloads or unloads. Lives at `Assets/App/SceneServices/` (not `Assets/Feature/` —
+  see the `Assets/App/` vs `Assets/Feature/` convention above). **Renamed from
+  `SceneFlow` 2026-08-28 (D44)** — folder, both asmdefs, and the test folder/asmdef
+  all moved; the namespace is the plural `SceneServices` specifically (a real C#
+  namespace/class-name collision otherwise — see D44).
+- **`SceneServices.Logic`** (`Assets/App/SceneServices/Scripts/Logic/`,
+  `noEngineReferences: true`): `SceneServiceState` (was `SceneFlowState`) — pure
+  state machine holding `CurrentScene`,
   `IsTransitioning`, and `TryBeginNavigation(target, out previousScene)` /
   `CompleteNavigation()`. `TryBeginNavigation` no-ops (returns false) if
   `target` is null/empty/already-current, **or if a navigation is already
@@ -840,12 +917,12 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   (per-instance prefab `sceneName` fields are still hand-typed strings; a
   `SceneAsset`-backed wrapper would be overkill at this scale). 8 EditMode tests
   total.
-- **`SceneFlow.Monobehaviour`**: `SceneService` — a plain static-instance
+- **`SceneServices.Monobehaviour`** (was `SceneFlow.Monobehaviour`): `SceneService` — a plain static-instance
   singleton (not `DontDestroyOnLoad`; unnecessary since it lives in AppScene, which is
   never unloaded) living on a `SceneService` GameObject in `AppScene.unity`.
   Single `Awake()` (merged from a former Awake+Start split, 2026-08-23, D15 — see
   "single init point per feature" below) sets the singleton, then adopts whatever
-  scene is already active (via `SceneFlowState`'s constructor) if one other than
+  scene is already active (via `SceneServiceState`'s constructor) if one other than
   AppScene is already loaded — this is what makes the Editor bootstrap below work
   — otherwise calls `Navigate(homeSceneName)` (default `SceneNames.MainMenu`) to
   boot the first content scene. `Navigate(sceneName)` unloads the previous content
@@ -884,16 +961,23 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   from those scenes a lot. Compiles out entirely in real builds.
 - **`MenuButtonSceneLoader`** (MainMenu) calls `SceneService.Instance.Navigate(sceneName)`
   instead of `SceneManager.LoadScene` directly, guarded against a null `Instance`.
-- **Back-to-home buttons**: `Assets/App/SceneFlow/Prefabs/HomeButton.prefab`
-  (renamed from `BackButton.prefab`, D13) — top-right anchored, `buttons_41` sprite
-  (green "home" icon from `Assets/App/Sprites/UI/buttons.png`, chosen since it reads
-  as "return to main menu" and needs no extra label). Instanced into
-  `AceOfShadowsScene.unity`, `MagicWordsScene.unity`, `PhoenixFlameScene.unity` (not MainMenu —
-  that's home, nothing to go back to). `MagicWords`/`PhoenixFlame` were empty
-  placeholders with no Canvas/EventSystem before this session started — both were
-  added (Screen Space Overlay, same `CanvasScaler` settings as MainMenu/AppScene,
-  `EventSystem` duplicated from AceOfShadows' so the Input-System action-asset
-  wiring matches exactly).
+- **Back-to-home buttons**: `Assets/App/SceneServices/Prefabs/HomeButton.prefab`
+  (renamed from `BackButton.prefab`, D13; folder renamed `SceneFlow`→`SceneServices`
+  D44) — top-right anchored, cream `ui_rounded_base` chrome with an ink home glyph
+  (D39's restyle superseded the original `buttons_41` sprite this bullet used to
+  describe). **Since D44, a Prefab Variant of `Assets/App/UI/Prefabs/BaseButton.prefab`**,
+  converted in place (same asset path/GUID, so this didn't require touching any
+  scene). Instanced into `AceOfShadowsScene.unity` (named `HomeButton`),
+  `MagicWordsScene.unity`/`PhoenixFlameScene.unity` (both named `BackButton` — a
+  leftover name from before D13's rename, never worth touching since nothing
+  depends on the GameObject name) — not MainMenu, that's home, nothing to go back
+  to. **Position, as of the developer's own follow-up fix (D44, 2026-08-28):
+  `anchoredPosition (-111, -111)`** on all three game scenes (was `(-39.87, -42)`/
+  `(-40, -40)` — this doc's own D39 entry still shows the old values, now stale).
+  `MagicWords`/`PhoenixFlame` were empty placeholders with no Canvas/EventSystem
+  before D13's session — both were added (Screen Space Overlay, same `CanvasScaler`
+  settings as MainMenu/AppScene, `EventSystem` duplicated from AceOfShadows' so the
+  Input-System action-asset wiring matches exactly).
 - **Full navigate/back loop verified live in Play Mode** via Unity MCP (AppScene→MainMenu→
   each of the three feature scenes→back→MainMenu), confirming: single active
   `EventSystem` at every step, `SceneService.Instance` persists, FPS counter
@@ -923,8 +1007,13 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `MainMenuButton.prefab` instance with a self-wiring `MenuButtonSceneLoader`
   (`OnValidate` grabs its own `Button` via `TryGetComponent`), calling
   `SceneService.Instance.Navigate` on click (see "Scene-flow architecture").
-  Button art: `Assets/App/Sprites/UI/buttons.png` (blue = Ace of Shadows, green = Magic
-  Words, red/orange = Phoenix Flame). **The button container's width is now a
+  Button art: `Assets/App/Sprites/UI/buttons.png` originally (blue = Ace of Shadows,
+  green = Magic Words, red/orange = Phoenix Flame) — since D44, `MainMenuButton.prefab`
+  is a Prefab Variant of `Assets/App/UI/Prefabs/BaseButton.prefab` on the shared
+  `ui_rounded_base` chrome, and **per the developer's own D44 follow-up fix, the
+  color pairing changed**: Ace of Shadows = orange, Magic Words = blue, Phoenix
+  Flame = green (not the blue/green/orange this bullet used to describe). **The
+  button container's width is now a
   stretch anchor (D33)** — `anchorMin.x/anchorMax.x: 0.1/0.9`, `sizeDelta.x: 0`
   (was a fixed `994.5px`, which was wider than the worst-case portrait canvas
   width and would have clipped on real tall phones).
@@ -1063,6 +1152,15 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
 - Input System package only (`activeInputHandler: 1`) — no legacy Input Manager.
 
 ## Immediate next steps
+
+### 🔊 NEXT: sound (button click, card movement, dialogue, fire burning) — not started
+
+D44 (2026-08-28) was explicitly prep work for this: every button now inherits
+`Assets/App/UI/Prefabs/BaseButton.prefab`, so a click-sound component can be added
+there once instead of per-button. Card movement, dialogue, and fire-burning sound
+still need their own hook points decided (likely `CardView.MoveTo`,
+`DialogueBoxView.PlayReveal`/`SlideIn`, and the Phoenix Flame particle/Animator
+respectively) — none of that design work has happened yet.
 
 ### Every UI/UX round is DONE — the remaining work is not polish
 
