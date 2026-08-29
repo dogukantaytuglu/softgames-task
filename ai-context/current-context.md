@@ -227,14 +227,24 @@ salary figures, interview-stage narrative, recruiter contact name) is done (D47,
    separate retry logic.
    **Not yet rebuilt/redeployed or re-tested on the iPhone 11** — this is attempt
    2, unverified.
-14. **GitHub Pages hosting throws an intermittent client-side error mentioning
-   "limit reached" (2026-08-29), root cause not yet confirmed.** Two live
-   hypotheses, needing the actual error text/screenshot to distinguish: (a) a
-   browser-side `QuotaExceededError` from Unity WebGL's IndexedDB/Cache API data
-   caching (would explain "looks like an exception" and be independent of which
-   host serves the files), or (b) GitHub Pages' undocumented soft bandwidth/rate
-   limits (100GB/month bandwidth is the commonly-cited figure). Not yet
-   diagnosed or fixed — see decisions.md for whichever gets confirmed.
+14. ~~**GitHub Pages hosting throws an intermittent client-side error mentioning
+   "limit reached" (2026-08-29)**~~ — **root-caused and fixed, same day.**
+   Confirmed as the browser-side hypothesis (`QuotaExceededError`), not a GitHub
+   Pages hosting limit: Unity WebGL's data caching writes the build's
+   `Build/*.data`/`*.wasm`/`*.framework.js` into the browser's Cache Storage API,
+   keyed to the whole `dogukantaytuglu.github.io` origin (shared across every
+   project hosted under that account) — repeated redeploys/visits across this
+   project's many rebuild cycles this session can accumulate faster than old
+   entries get evicted, eventually exceeding a device's quota (Safari/WebKit is
+   the strictest). Fixed by **disabling Data Caching outright**
+   (`ProjectSettings.asset`: `webGLDataCaching: 1` → `0`) — developer's own
+   call, weighing "repeat visits always re-download the ~15MB payload instead of
+   loading from cache" against "the crash becomes impossible," reasonable for an
+   interview/portfolio link rather than a daily-returning-player live game. The
+   alternative (patch the deploy script to wrap the loader's `cache.put()` in a
+   try/catch, keeping caching where quota allows) was considered and declined.
+   **Not yet rebuilt/redeployed or verified** — this only takes effect on the
+   next WebGL build.
 
 ## 🛠 If Unity or the MCP bridge misbehaves
 
