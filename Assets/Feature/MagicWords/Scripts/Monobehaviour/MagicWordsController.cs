@@ -51,6 +51,7 @@ namespace MagicWords.Monobehaviour
         {
             _autoAdvanceTimer?.Stop();
             advanceButton.onClick.RemoveListener(OnAdvanceClicked);
+            SoundService.Stop(talkingSound);
         }
 
         private void Fetch()
