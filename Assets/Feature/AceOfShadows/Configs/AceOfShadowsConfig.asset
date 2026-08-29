@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   totalCards: 144
   moveInterval: 1
-  maxRotationDegrees: 11.8
+  maxRotationDegrees: 15.8
   moveDuration: 0.35
   moveEase: 6
   cardVisuals:
@@ -125,7 +125,7 @@ MonoBehaviour:
   - {fileID: 1923345476388917724, guid: e01f4155b5e964c9aabe77c5902e9606, type: 3}
   - {fileID: 6805518078480498624, guid: 32a7dbcc4bdc34612bddcba1e2b714c2, type: 3}
   moveSound: {fileID: 11400000, guid: ff5ccb0c511b49147baf15c937eb5ddc, type: 2}
-  perCardOffset: 1
+  perCardOffset: 1.9
   maxPileRise: 200
   exitDistance: 1600
   exitDuration: 0.5
