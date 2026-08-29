@@ -176,7 +176,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: MINI ARCADE
+  m_text: TRIAL TRIO
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
   m_sharedMaterial: {fileID: -6482371940517145204, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
@@ -1776,7 +1776,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: MINI ARCADE
+  m_text: TRIAL TRIO
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
   m_sharedMaterial: {fileID: -6482371940517145204, guid: 39d7688bf740e4c4ba41fd303e2cf5ee, type: 2}
