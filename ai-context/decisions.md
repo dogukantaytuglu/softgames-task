@@ -6,6 +6,74 @@ submission needs a real justification behind it (`BRIEF.md` §1, §7).
 
 ---
 
+### D48 — Custom "Responsive" WebGL template abandoned for Unity's stock Default template; itch.io added as a second public host (2026-08-29)
+
+**Choice:** Deleted `Assets/WebGLTemplates/Responsive/` entirely (the custom portrait-aware
+HTML/CSS/JS template built in D43 and hardened since) and switched
+`ProjectSettings.asset`'s `webGLTemplate` back to `APPLICATION:Default` (Unity's stock
+template). `defaultScreenWidthWeb`/`defaultScreenHeightWeb` flipped from `1080`/`1920`
+(portrait) to `1920`/`1080` (landscape) — this only sets the WebGL canvas's initial pixel
+buffer size, not the in-game `CanvasScaler` reference resolution, which stays whatever each
+scene's own Canvas is set to. **itch.io added as a second public host**, alongside the
+existing GitHub Pages link — a separate manual build → zip → upload workflow, not wired into
+`Assets/Editor/DeployWebGL.cs` (that script still only targets the `softgames-task-build` GH
+Pages repo).
+
+**Why:** The custom template was fighting a real, reproducible crash
+(`RangeError: Maximum call stack size exceeded`, entirely inside Unity's compiled WASM —
+zero JS frames in the trace, hundreds of repeating `invoke_iii`/`wasm-function[...]` frames)
+plus a persistent mobile first-load bug (top UI clipped, dead space at the bottom, self-fixing
+only when the tab lost and regained focus) across **four structurally different fix attempts**,
+each individually plausible and each disproven on a real iPhone retest:
+1. A custom `ResizeObserver` writing `canvas.width`/`height` directly, reasoning Unity's stock
+   loader.js has no resize logic of its own (true, but irrelevant — see below).
+2. Removing that `ResizeObserver` again, reasoning it was racing Unity's own built-in
+   `matchWebGLToCanvasSize` (confirmed present and on-by-default in the shipped
+   `framework.js`) — the mobile-crop half of this fix (rewriting `html`/`body` height to be
+   JS-driven and self-correcting instead of relying on a single static `100dvh` value) held up
+   through every later round; the ResizeObserver-removal half did not fix the crash alone.
+3. Moving the CSS `aspect-ratio` off `#unity-canvas` itself onto a plain wrapper `<div>`,
+   reasoning a `<canvas>` (a replaced element) being simultaneously the sizing authority and
+   Unity's resize target could feed back into itself on some WebKit versions.
+4. A full document-boundary restructure — splitting the template into a thin outer shell
+   (`index.html`, owning only CSS sizing) and an inner page (`game.html`) loaded via
+   `<iframe>` that owned Unity's canvas/loader entirely, mirroring the isolation pattern found
+   in a real working reference (a YouTube Playables game the developer pulled up — though its
+   actual engine turned out to be PlayCanvas, not Unity, so none of its code was reusable,
+   only the architecture).
+
+None of the four were ever confirmed fixed on a real device before the debugging direction
+changed. Along the way, GitHub Pages' CDN was checked directly (fetched the live files, byte-
+compared against the local build) and ruled out as stale/the cause — the server was correctly
+serving each attempt's actual code every time.
+
+**What actually unblocked this wasn't a fifth fix — it was two corrected assumptions:**
+- The developer found **itch.io's own embed dashboard already solves exactly this problem**
+  natively (Uploads → "This file will be played in the browser" → Embed options: Viewport
+  dimensions, a Fullscreen button checkbox, Manually-set-scaling) — no custom HTML needed at
+  all for a host built for exactly this use case.
+- Checking Unity's actual shipped Default template source (rather than assuming) corrected a
+  wrong claim made earlier in this same debugging session: **Default template already fills
+  100% of the viewport on mobile.** It sniffs `navigator.userAgent` for iPhone/iPad/Android and
+  switches to a `unity-mobile` CSS class (`position:fixed; width:100%; height:100%` on both
+  container and canvas) — genuinely responsive, no custom code needed. Desktop is the one real
+  remaining gap: Default centers the canvas at a literal fixed pixel size
+  (`canvas.style.width/height = "{{{WIDTH}}}px"`, i.e. `1920x1080` now) rather than scaling to
+  fill the browser window — acceptable at this resolution on most monitors, and Default ships
+  its own built-in fullscreen button (`#unity-fullscreen-button` → `unityInstance.SetFullscreen(1)`,
+  Unity's own supported API) as a fallback for exactly that case. A much narrower caveat than
+  the sweeping "Default won't scale on mobile at all" claim that had been driving the whole
+  custom-template effort.
+
+**Lesson worth keeping**: four rounds of plausible-sounding same-document CSS/DOM theories
+about a WASM-internal recursion were all wrong (or at least all insufficient), and the actual
+unblock came from checking a real reference implementation and Unity's actual shipped source
+instead of reasoning from memory/assumption about what "should" be true. The exact WASM-side
+recursion mechanism was never conclusively identified — this decision routes around the whole
+class of problem rather than diagnosing the one root cause.
+
+---
+
 ### D47 — Privacy scrub of `BRIEF.md`/`current-context.md`/`decisions.md`, retroactively across git history (2026-08-29)
 
 **Choice:** Removed all personal/career-strategy content from the three `ai-context/` docs —

@@ -80,11 +80,11 @@ the ~20MB D36 measured; within the brief's ~10-15MB instant-play budget), and
 see the open-items list). `ai-context/build-size-plan.md` can be treated as
 superseded/closed rather than a live plan.
 
-Two new topics opened this session (2026-08-29): a landscape-on-desktop /
-portrait-on-mobile layout request plus a first-load mobile resolution glitch
-(fixed by refresh), and intermittent GitHub Pages hosting errors mentioning a
-"limit reached" — see open items 13-14 below. Both still being scoped/diagnosed,
-not yet acted on.
+Two more topics closed this session (2026-08-29): a WebGL responsive/canvas-resize
+saga that ended in dropping the custom template entirely for Unity's stock
+Default template (item 13 below, full account in `decisions.md` D48), and
+intermittent GitHub Pages hosting errors traced to a browser-side
+`QuotaExceededError` and fixed by disabling WebGL Data Caching (item 14 below).
 
 The README architecture/decisions write-up is **done** (D43) — that item is closed.
 **The `BRIEF.md`/`current-context.md` privacy scrub (personal/career-strategy content —
@@ -174,59 +174,21 @@ salary figures, interview-stage narrative, recruiter contact name) is done (D47,
    `Timer.Start()` no-ops when already started — not guarded by design. See "Magic
    Words architecture".
 13. ~~**Landscape-on-desktop / portrait-on-mobile requested (2026-08-29)**~~ —
-   **decided against.** Considered rotating the portrait canvas via CSS on wide
-   viewports (cheap but sideways-text-janky) and authoring real per-scene landscape
-   layouts (correct but real scope this late); developer chose to **keep the
-   current pillarboxed-portrait behavior everywhere** — the brief only asks for
-   "responsive on mobile + desktop," which the centered-portrait-pane already
-   satisfies. No further action here. **The separately-real first-load mobile bug
-   IS fixed (2026-08-29)** — header/top UI appearing cut off ("the whole screen
-   looks rolled down") until a manual refresh, root-caused as the mobile-browser
-   address-bar-collapse timing bug (`html, body { height: 100% }` computes against
-   the pre-collapse viewport and nothing corrected it afterward). Fixed in
-   `Assets/WebGLTemplates/Responsive/index.html`: added `height: 100dvh` alongside
-   the `100%` fallback, plus a `window.visualViewport` resize listener that
-   force-sets `documentElement.style.height` for browsers without `dvh` support.
-   **A second, independent bug found the same day (2026-08-29):** the canvas's
-   actual WebGL render buffer never tracked its CSS-scaled display box on *any*
-   platform, PC included — `ProjectSettings.asset`'s `defaultScreenWidthWeb`/
-   `defaultScreenHeightWeb` were still Unity's stock `960`/`600` (an unrelated
-   landscape default, confirmed via the shipped
-   `softgames-task-build.loader.js`, which has zero `ResizeObserver`/canvas-resize
-   logic at all), so Unity always rendered into a fixed 960x600 buffer that the
-   browser just stretched to fill whatever CSS gave it — never the device's real
-   resolution. Fixed: `ProjectSettings.asset` defaults bumped to `1080`/`1920`
-   (matches the portrait reference resolution), and the template now has a
-   `ResizeObserver` on `#unity-canvas` that syncs `canvas.width`/`height` to
-   `clientWidth`/`clientHeight * devicePixelRatio` on load and on every display-size
-   change. Independent of the mobile-crop fix above — this one is about render
-   resolution, not page layout — and stacks with it cleanly.
-   **First real-device test (iPhone 11, Chrome for iOS — note: still WebKit/
-   `WKWebView` under Apple's policy, same engine as Safari, just Google's own
-   toolbar UI — 2026-08-29) showed the mobile fix did NOT work** — confirmed the deployed build actually had the fix (checked the
-   live `softgames-task-build` repo's `index.html`/`loader.js` directly, not
-   assumed): `ResizeObserver` present, canvas baked at `1080x1920`. On cold load
-   the top UI (FPS pill, sound toggle) was missing entirely and there was dead
-   space at the bottom below the last button; backgrounding the tab and
-   returning fixed it instantly, every time. **Root-caused as a known iOS Safari
-   quirk, not something the `100dvh`/single-`visualViewport`-listener fix
-   actually addressed**: Safari's own viewport metrics (`innerHeight`,
-   `visualViewport.height`, even the `dvh` CSS unit) can be transiently wrong for
-   a short window right after first paint, computed against a provisional
-   address-bar/safe-area state — and a static CSS height has no way to retry once
-   it's wrong, which is exactly why the first attempt didn't help. **Rewritten
-   (same day)**: `html`/`body` height is now JS-driven
-   (`applyViewportHeight()`, reads `visualViewport.height` falling back to
-   `innerHeight`) and re-applied on a burst of triggers after load — immediate
-   call, `load`, double-`requestAnimationFrame`, `setTimeout` at 300ms and 1000ms,
-   plus `resize`/`orientationchange`/`pageshow`/`focus`/`visibilitychange`/
-   `visualViewport.resize` for later real changes — specifically to self-correct
-   automatically instead of requiring the manual background-and-return the bug
-   report showed fixes it. Calls `syncCanvasResolution()` each time too, so the
-   canvas render-buffer fix composes with this rather than needing its own
-   separate retry logic.
-   **Not yet rebuilt/redeployed or re-tested on the iPhone 11** — this is attempt
-   2, unverified.
+   **superseded, closed.** After four increasingly drastic same-document fix
+   attempts on a custom WebGL template all failed to resolve a real crash
+   (`RangeError: Maximum call stack size exceeded`, WASM-internal) and a mobile
+   first-load crop bug, the custom `Assets/WebGLTemplates/Responsive/` template
+   was **deleted entirely** and the project reverted to Unity's stock Default
+   WebGL template (`webGLTemplate: APPLICATION:Default`), with
+   `defaultScreenWidthWeb`/`Height` now `1920`/`1080`. **itch.io was added as a
+   second public host** alongside GitHub Pages, using itch's own embed/fullscreen
+   dashboard controls instead of custom HTML. Full blow-by-blow of the four
+   attempts (kept for anyone debugging a similar WebGL resize issue later) and
+   the two corrected assumptions that actually unblocked this (itch's embed
+   settings; Unity's real Default template already fills mobile viewports via
+   UA-sniffing, contradicting an earlier wrong claim made mid-session) are in
+   **`decisions.md` D48** — this entry intentionally stays short. See "WebGL
+   build + hosting" below for the current state.
 14. ~~**GitHub Pages hosting throws an intermittent client-side error mentioning
    "limit reached" (2026-08-29)**~~ — **root-caused and fixed, same day.**
    Confirmed as the browser-side hypothesis (`QuotaExceededError`), not a GitHub
@@ -1306,27 +1268,44 @@ hosted at a public link. Full detail, grading criteria, and task-by-task guidanc
   `#181327` plum, so no dark-chrome variant is needed.
 - **WebGL build + hosting:** build settings are **Brotli compression +
   Decompression Fallback enabled** (Player Settings → Publishing Settings) — this
-  combination is required because the host (GitHub Pages) can't send a
-  `Content-Encoding: br` header, and Decompression Fallback embeds a client-side
-  JS decompressor so it works anyway while keeping compressed transfer well under
-  the uncompressed size. **Corrected 2026-08-26 (D36)**: actual current deployed
-  transfer measured directly off the hosted `.unityweb` files is **~20MB**, not
-  the previously-claimed ~13MB — this doc's own number was stale/wrong, caught by
-  a fresh `unity-interviewer` audit measuring the real files instead of trusting
-  the earlier claim. Verified working live (the build loads and runs), but the
-  size itself is now over the ~10-15MB instant-play budget the brief flags as its
-  highest-leverage item — see D36 for the root-cause breakdown (an uncapped
-  6.9MB flame texture, ~7MB of font atlases including an unused Rubik asset).
-  - Hosted at **https://dogukantaytuglu.github.io/softgames-task-build/**, a
-    **separate repo** `github.com/dogukantaytuglu/softgames-task-build` (public,
-    required for free GitHub Pages), sibling folder at
-    `E:\Projects\UnityProjects\softgames-task-build`.
-  - **Deploy mechanism: manual, one click.** `Assets/Editor/DeployWebGL.cs` adds
-    **Build → Build & Deploy WebGL** to the Unity menu — builds straight into the
-    `softgames-task-build` folder, `git add`/commit/push automatically, shows a
-    result dialog either way. This replaced an attempted CI pipeline (GitHub
-    Actions) — see D8 for why that was abandoned. No auto-trigger on push; you
-    have to click the menu item each time you want a new deploy live.
+  combination is required because GitHub Pages can't send a `Content-Encoding: br`
+  header, and Decompression Fallback embeds a client-side JS decompressor so it
+  works anyway while keeping compressed transfer well under the uncompressed
+  size. Build size is now reported at **~15MB** (down from the ~20MB D36
+  measured), within the brief's ~10-15MB instant-play budget — see "NEXT JOB"
+  above, that item is closed.
+  - **WebGL Template: Unity's stock `APPLICATION:Default`, not a custom one
+    (2026-08-29, D48)** — a custom "Responsive" template (built D43, hardened
+    since) was deleted entirely after four failed fix attempts at a real crash
+    and a mobile crop bug; see item 13 above and `decisions.md` D48 for the full
+    account. `ProjectSettings.asset`'s `defaultScreenWidthWeb`/`Height` are now
+    `1920`/`1080` (was `1080`/`1920`) — this is only the WebGL canvas's initial
+    pixel buffer size, unrelated to any in-game `CanvasScaler` reference
+    resolution. Default template fills 100% of the viewport on mobile
+    automatically (UA-sniffed `unity-mobile` CSS class) and centers a fixed-pixel
+    canvas on desktop, with its own built-in fullscreen button
+    (`unityInstance.SetFullscreen(1)`).
+  - **Two public hosts now, as of D48:**
+    - **GitHub Pages**: `https://dogukantaytuglu.github.io/softgames-task-build/`,
+      a **separate repo** `github.com/dogukantaytuglu/softgames-task-build`
+      (public, required for free GitHub Pages), sibling folder at
+      `E:\Projects\UnityProjects\softgames-task-build`. **Deploy mechanism:
+      manual, one click.** `Assets/Editor/DeployWebGL.cs` adds **Build → Build &
+      Deploy WebGL** to the Unity menu — builds straight into the
+      `softgames-task-build` folder, `git add`/commit/push automatically, shows a
+      result dialog either way. This replaced an attempted CI pipeline (GitHub
+      Actions) — see D8 for why that was abandoned. No auto-trigger on push; you
+      have to click the menu item each time you want a new deploy live. The
+      script always uses whatever `webGLTemplate` Player Settings currently has
+      set (no override) — if this project's Player Settings ever gets switched
+      to a *different* template for local experimentation, remember to switch
+      back to `APPLICATION:Default` before deploying here.
+    - **itch.io (added D48)**: a separate, manual build → zip → upload workflow,
+      not wired into `DeployWebGL.cs`. Fullscreen/embed sizing is controlled
+      entirely through itch's own dashboard (game's edit page → Uploads → "This
+      file will be played in the browser" → Embed options: Viewport dimensions,
+      **Fullscreen button** checkbox, Manually-set-scaling) rather than any
+      custom code in this project.
 - **Responsive canvas / touch+mouse / real-device verification:** not yet
   independently confirmed this session — the CanvasScaler setup exists (main menu,
   Ace of Shadows overlay) but nobody has checked a real phone yet. Still on the
