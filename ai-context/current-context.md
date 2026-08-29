@@ -71,15 +71,20 @@ else changed" is not evidence; `git diff --stat` against a known-good line count
 
 Building and deploying is **no longer a blocker** — the site has already been built
 and redeployed with D43's changes (custom WebGL template, WebGL quality tier,
-product/company name, README) live. What's left, in priority order:
+product/company name, README) live.
 
-1. **The build-size measurement write-up** (`BRIEF.md` §6) — deliberately parked, with
-   a full plan in `ai-context/build-size-plan.md`. The developer wants to talk through
-   the optimisation before it happens, so the README ships with *no* size numbers
-   rather than half-measured ones.
-2. **Increase the card scatter** (`AceOfShadowsConfig.perCardOffset`, currently `1`) —
-   **the developer is taking this one themselves.** At 1px a top card covers the one
-   below by 0.3%, which arguably doesn't meet the brief's "partially covering."
+~~**The build-size measurement write-up**~~ and ~~**increase the card scatter**~~ are
+both **closed (2026-08-29)** — build size is now reported at **~15MB** (down from
+the ~20MB D36 measured; within the brief's ~10-15MB instant-play budget), and
+`AceOfShadowsConfig.perCardOffset` is retuned to `1.9` (the developer's own hand-tune,
+see the open-items list). `ai-context/build-size-plan.md` can be treated as
+superseded/closed rather than a live plan.
+
+Two new topics opened this session (2026-08-29): a landscape-on-desktop /
+portrait-on-mobile layout request plus a first-load mobile resolution glitch
+(fixed by refresh), and intermittent GitHub Pages hosting errors mentioning a
+"limit reached" — see open items 13-14 below. Both still being scoped/diagnosed,
+not yet acted on.
 
 The README architecture/decisions write-up is **done** (D43) — that item is closed.
 **The `BRIEF.md`/`current-context.md` privacy scrub (personal/career-strategy content —
@@ -98,10 +103,11 @@ salary figures, interview-stage narrative, recruiter contact name) is done (D47,
 1. **EditMode tests have never been run through the Test Runner** — its API cannot be
    driven over MCP (needs its window; rejected as a user interaction). Outstanding
    since D39. Assertions were evaluated directly against the real code instead.
-2. **`AceOfShadowsConfig` ships `perCardOffset: 1` / `maxPileRise: 200`**, not the
-   `2` / `340` Round 2 was tuned around. At 1px a full deck rises 143px instead of
-   286px, halving the pile-height signal the retune exists to create. May be a
-   deliberate hand-tune; flagged, never overridden.
+2. ~~**`AceOfShadowsConfig` shipped `perCardOffset: 1`**~~ — **RESOLVED
+   2026-08-29.** The developer retuned it themselves to `1.9` (close to the `2`
+   Round 2 was originally tuned around); `maxPileRise` is still `200`, not `340`,
+   but at `1.9` a full deck now rises ~272px, close enough to the tuned ~286px
+   that the halved-signal problem this item flagged no longer applies.
 3. ~~**Magic Words' portrait groundwork is committed but unverified**~~ —
    **superseded by D45 (2026-08-28): it has now been seen in Play Mode, extensively,
    and a real bug was found.** `LeftDialogueBox`/`RightDialogueBox` are children of
@@ -167,6 +173,68 @@ salary figures, interview-stage narrative, recruiter contact name) is done (D47,
    `OnRevealComplete()` again explicitly right after. Currently harmless only because
    `Timer.Start()` no-ops when already started — not guarded by design. See "Magic
    Words architecture".
+13. ~~**Landscape-on-desktop / portrait-on-mobile requested (2026-08-29)**~~ —
+   **decided against.** Considered rotating the portrait canvas via CSS on wide
+   viewports (cheap but sideways-text-janky) and authoring real per-scene landscape
+   layouts (correct but real scope this late); developer chose to **keep the
+   current pillarboxed-portrait behavior everywhere** — the brief only asks for
+   "responsive on mobile + desktop," which the centered-portrait-pane already
+   satisfies. No further action here. **The separately-real first-load mobile bug
+   IS fixed (2026-08-29)** — header/top UI appearing cut off ("the whole screen
+   looks rolled down") until a manual refresh, root-caused as the mobile-browser
+   address-bar-collapse timing bug (`html, body { height: 100% }` computes against
+   the pre-collapse viewport and nothing corrected it afterward). Fixed in
+   `Assets/WebGLTemplates/Responsive/index.html`: added `height: 100dvh` alongside
+   the `100%` fallback, plus a `window.visualViewport` resize listener that
+   force-sets `documentElement.style.height` for browsers without `dvh` support.
+   **A second, independent bug found the same day (2026-08-29):** the canvas's
+   actual WebGL render buffer never tracked its CSS-scaled display box on *any*
+   platform, PC included — `ProjectSettings.asset`'s `defaultScreenWidthWeb`/
+   `defaultScreenHeightWeb` were still Unity's stock `960`/`600` (an unrelated
+   landscape default, confirmed via the shipped
+   `softgames-task-build.loader.js`, which has zero `ResizeObserver`/canvas-resize
+   logic at all), so Unity always rendered into a fixed 960x600 buffer that the
+   browser just stretched to fill whatever CSS gave it — never the device's real
+   resolution. Fixed: `ProjectSettings.asset` defaults bumped to `1080`/`1920`
+   (matches the portrait reference resolution), and the template now has a
+   `ResizeObserver` on `#unity-canvas` that syncs `canvas.width`/`height` to
+   `clientWidth`/`clientHeight * devicePixelRatio` on load and on every display-size
+   change. Independent of the mobile-crop fix above — this one is about render
+   resolution, not page layout — and stacks with it cleanly.
+   **First real-device test (iPhone 11, Chrome for iOS — note: still WebKit/
+   `WKWebView` under Apple's policy, same engine as Safari, just Google's own
+   toolbar UI — 2026-08-29) showed the mobile fix did NOT work** — confirmed the deployed build actually had the fix (checked the
+   live `softgames-task-build` repo's `index.html`/`loader.js` directly, not
+   assumed): `ResizeObserver` present, canvas baked at `1080x1920`. On cold load
+   the top UI (FPS pill, sound toggle) was missing entirely and there was dead
+   space at the bottom below the last button; backgrounding the tab and
+   returning fixed it instantly, every time. **Root-caused as a known iOS Safari
+   quirk, not something the `100dvh`/single-`visualViewport`-listener fix
+   actually addressed**: Safari's own viewport metrics (`innerHeight`,
+   `visualViewport.height`, even the `dvh` CSS unit) can be transiently wrong for
+   a short window right after first paint, computed against a provisional
+   address-bar/safe-area state — and a static CSS height has no way to retry once
+   it's wrong, which is exactly why the first attempt didn't help. **Rewritten
+   (same day)**: `html`/`body` height is now JS-driven
+   (`applyViewportHeight()`, reads `visualViewport.height` falling back to
+   `innerHeight`) and re-applied on a burst of triggers after load — immediate
+   call, `load`, double-`requestAnimationFrame`, `setTimeout` at 300ms and 1000ms,
+   plus `resize`/`orientationchange`/`pageshow`/`focus`/`visibilitychange`/
+   `visualViewport.resize` for later real changes — specifically to self-correct
+   automatically instead of requiring the manual background-and-return the bug
+   report showed fixes it. Calls `syncCanvasResolution()` each time too, so the
+   canvas render-buffer fix composes with this rather than needing its own
+   separate retry logic.
+   **Not yet rebuilt/redeployed or re-tested on the iPhone 11** — this is attempt
+   2, unverified.
+14. **GitHub Pages hosting throws an intermittent client-side error mentioning
+   "limit reached" (2026-08-29), root cause not yet confirmed.** Two live
+   hypotheses, needing the actual error text/screenshot to distinguish: (a) a
+   browser-side `QuotaExceededError` from Unity WebGL's IndexedDB/Cache API data
+   caching (would explain "looks like an exception" and be independent of which
+   host serves the files), or (b) GitHub Pages' undocumented soft bandwidth/rate
+   limits (100GB/month bandwidth is the commonly-cited figure). Not yet
+   diagnosed or fixed — see decisions.md for whichever gets confirmed.
 
 ## 🛠 If Unity or the MCP bridge misbehaves
 
