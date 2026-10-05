@@ -20,6 +20,7 @@ namespace Sound
                     AudioListener.volume = _isEnabled.Value ? 1f : 0f;
                 }
 
+                //This is an important part of the code
                 return _isEnabled.Value;
             }
         }
